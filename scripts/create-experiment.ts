@@ -1,6 +1,5 @@
 import { spawn } from "node:child_process"
-import { access, cp, mkdir, mkdtemp, rename, rm } from "node:fs/promises"
-import { tmpdir } from "node:os"
+import { access, mkdir, rm } from "node:fs/promises"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -12,7 +11,6 @@ const experimentNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 class UserError extends Error {}
 
 async function main() {
-  let tempDir = ""
   let finalDir = ""
   let shouldCleanupFinalDir = false
   try {
@@ -24,26 +22,21 @@ async function main() {
     if (await exists(finalDir)) {
       throw new UserError(`Experiment already exists: ${pathForMessage(finalDir)}`)
     }
+    await moveDirectory(tempDir, finalDir)
 
-    tempDir = await mkdtemp(join(tmpdir(), "serlo-editor-experiment-"))
     await runPnpm({
-      args: ["create", "vite", tempDir, "--template", "react-ts"],
+      args: ["create", "vite", finalDir, "--template", "react-ts", "--no-immediate"],
       cwd: repoRoot,
       label: "Vite scaffolding",
     })
 
     await runPnpm({
-      args: ["--dir", tempDir, "install"],
+      args: ["--dir", finalDir, "install"],
       cwd: repoRoot,
       label: "Dependency installation",
     })
 
-    if (!(await exists(join(tempDir, "pnpm-lock.yaml")))) {
-      throw new Error("Dependency installation did not produce pnpm-lock.yaml.")
-    }
-
     shouldCleanupFinalDir = true
-    await moveDirectory(tempDir, finalDir)
 
     console.log(`Created ${pathForMessage(finalDir)}`)
     console.log(`Next:`)
@@ -58,14 +51,6 @@ async function main() {
         await rm(finalDir, { recursive: true, force: true })
       } catch {
         // Ignore cleanup failures; the original error is more important.
-      }
-    }
-
-    if (tempDir) {
-      try {
-        await rm(tempDir, { recursive: true, force: true })
-      } catch {
-        console.error(`Warning: failed to clean up temporary directory ${tempDir}`)
       }
     }
 
@@ -84,20 +69,6 @@ function validateName(nameArg: string | undefined) {
   }
 
   return nameArg
-}
-
-async function moveDirectory(source: string, destination: string) {
-  try {
-    await rename(source, destination)
-    return
-  } catch (error) {
-    if (!isCrossDeviceError(error)) {
-      throw error
-    }
-  }
-
-  await cp(source, destination, { recursive: true, errorOnExist: true })
-  await rm(source, { recursive: true, force: true })
 }
 
 async function runPnpm({ args, cwd, label }: { args: string[]; cwd: string; label: string }) {
@@ -166,12 +137,6 @@ async function exists(path: string) {
 function isMissingFileError(error: unknown) {
   return (
     error instanceof Error && "code" in error && (error as NodeJS.ErrnoException).code === "ENOENT"
-  )
-}
-
-function isCrossDeviceError(error: unknown) {
-  return (
-    error instanceof Error && "code" in error && (error as NodeJS.ErrnoException).code === "EXDEV"
   )
 }
 
