@@ -24,6 +24,8 @@ async function main() {
       throw new UserError(`Experiment already exists: ${finalDirRelative}`)
     }
 
+    shouldCleanupFinalDir = true
+
     await runPnpm({
       args: ["create", "vite", finalDirRelative, "--template", "react-ts", "--no-immediate"],
       cwd: repoRoot,
@@ -35,8 +37,6 @@ async function main() {
       cwd: repoRoot,
       label: "Dependency installation",
     })
-
-    shouldCleanupFinalDir = true
 
     console.log(`Created ${finalDirRelative}`)
     console.log(`Next:`)
