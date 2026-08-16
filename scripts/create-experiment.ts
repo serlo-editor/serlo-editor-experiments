@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process";
-import { access, cp, mkdir, mkdtemp, readFile, rename, rm, writeFile } from "node:fs/promises";
+import { access, cp, mkdir, mkdtemp, rename, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -15,8 +15,6 @@ async function main() {
   let tempDir = "";
   let finalDir = "";
   let shouldCleanupFinalDir = false;
-  let pnpmCacheDir = "";
-
   try {
     const name = validateName(process.argv[2]);
     finalDir = join(experimentsRoot, name);
@@ -28,19 +26,17 @@ async function main() {
     }
 
     tempDir = await mkdtemp(join(tmpdir(), "serlo-editor-experiment-"));
-    pnpmCacheDir = await mkdtemp(join(tmpdir(), "serlo-editor-pnpm-cache-"));
+    await runPnpm({
+      args: ["create", "vite", tempDir, "--template", "react-ts"],
+      cwd: repoRoot,
+      label: "Vite scaffolding",
+    });
 
-    await runPnpm([
-      "create",
-      "vite",
-      tempDir,
-      "--template",
-      "react-ts",
-    ], repoRoot, "Vite scaffolding", pnpmCacheDir);
-
-    await postProcessScaffold(tempDir, name);
-
-    await runPnpm(["--dir", tempDir, "install"], repoRoot, "Dependency installation", pnpmCacheDir);
+    await runPnpm({
+      args: ["--dir", tempDir, "install"],
+      cwd: repoRoot,
+      label: "Dependency installation",
+    });
 
     if (!(await exists(join(tempDir, "pnpm-lock.yaml")))) {
       throw new Error("Dependency installation did not produce pnpm-lock.yaml.");
@@ -73,14 +69,6 @@ async function main() {
       }
     }
 
-    if (pnpmCacheDir) {
-      try {
-        await rm(pnpmCacheDir, { recursive: true, force: true });
-      } catch {
-        console.error(`Warning: failed to clean up pnpm cache directory ${pnpmCacheDir}`);
-      }
-    }
-
     console.error(message);
     process.exitCode = 1;
   }
@@ -100,77 +88,6 @@ function validateName(nameArg: string | undefined) {
   return nameArg;
 }
 
-async function postProcessScaffold(tempDir: string, name: string) {
-  const packageJsonPath = join(tempDir, "package.json");
-  const packageJson = JSON.parse(await readFile(packageJsonPath, "utf8")) as {
-    name?: string;
-    scripts?: Record<string, string>;
-  };
-
-  packageJson.name = name;
-  packageJson.scripts = {
-    ...packageJson.scripts,
-    typecheck: "tsc --noEmit",
-  };
-
-  await writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`);
-
-  await writeFile(
-    join(tempDir, "src", "App.tsx"),
-    `export default function App() {
-  return (
-    <main style={{ fontFamily: "system-ui, sans-serif", padding: "2rem" }}>
-      <h1>${name}</h1>
-      <p>The experiment is running.</p>
-    </main>
-  );
-}
-`,
-  );
-
-  await writeFile(
-    join(tempDir, "src", "main.tsx"),
-    `import { StrictMode } from "react";
-import { createRoot } from "react-dom/client";
-import App from "./App";
-
-createRoot(document.getElementById("root")!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
-);
-`,
-  );
-
-  await writeFile(
-    join(tempDir, "index.html"),
-    `<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>${name}</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
-</html>
-`,
-  );
-
-  await Promise.all(
-    [
-      ".gitignore",
-      "README.md",
-      join("src", "assets"),
-      join("src", "index.css"),
-      join("src", "App.css"),
-      join("public"),
-    ].map((path) => rm(join(tempDir, path), { recursive: true, force: true })),
-  );
-}
-
 async function moveDirectory(source: string, destination: string) {
   try {
     await rename(source, destination);
@@ -185,19 +102,20 @@ async function moveDirectory(source: string, destination: string) {
   await rm(source, { recursive: true, force: true });
 }
 
-async function runPnpm(
-  args: string[],
-  cwd: string,
-  label: string,
-  cacheDir: string,
-) {
+async function runPnpm({
+  args,
+  cwd,
+  label,
+}: {
+  args: string[];
+  cwd: string;
+  label: string;
+}) {
   const child = spawn(pnpmCommand, args, {
     cwd,
     env: {
       ...process.env,
       CI: "1",
-      XDG_CACHE_HOME: cacheDir,
-      npm_config_cache: cacheDir,
     },
     stdio: ["ignore", "pipe", "pipe"],
   });
