@@ -80,9 +80,7 @@ function validateName(nameArg: string | undefined) {
   }
 
   if (!experimentNamePattern.test(nameArg)) {
-    throw new UserError(
-      `Invalid experiment name: ${nameArg}. Use kebab-case like chat-streaming.`,
-    );
+    throw new UserError(`Invalid experiment name: ${nameArg}. Use kebab-case like chat-streaming.`);
   }
 
   return nameArg;
@@ -102,15 +100,7 @@ async function moveDirectory(source: string, destination: string) {
   await rm(source, { recursive: true, force: true });
 }
 
-async function runPnpm({
-  args,
-  cwd,
-  label,
-}: {
-  args: string[];
-  cwd: string;
-  label: string;
-}) {
+async function runPnpm({ args, cwd, label }: { args: string[]; cwd: string; label: string }) {
   const child = spawn(pnpmCommand, args, {
     cwd,
     env: {
@@ -174,11 +164,15 @@ async function exists(path: string) {
 }
 
 function isMissingFileError(error: unknown) {
-  return error instanceof Error && "code" in error && (error as NodeJS.ErrnoException).code === "ENOENT";
+  return (
+    error instanceof Error && "code" in error && (error as NodeJS.ErrnoException).code === "ENOENT"
+  );
 }
 
 function isCrossDeviceError(error: unknown) {
-  return error instanceof Error && "code" in error && (error as NodeJS.ErrnoException).code === "EXDEV";
+  return (
+    error instanceof Error && "code" in error && (error as NodeJS.ErrnoException).code === "EXDEV"
+  );
 }
 
 function pathForMessage(path: string) {

@@ -1,19 +1,23 @@
 {
   "name": "serlo-editor-experiments",
+  "private": true,
   "description": "Experiments for the Serlo Editor",
   "license": "MIT",
-  "private": true,
   "type": "module",
   "scripts": {
+    "check": "pnpm run check:tsc && pnpm run check:format",
+    "check:format": "oxfmt --check",
     "check:tsc": "tsc --noEmit",
-    "experiment:new": "node --experimental-strip-types scripts/create-experiment.ts"
+    "experiment:new": "node --experimental-strip-types scripts/create-experiment.ts",
+    "format": "oxfmt"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
+    "oxfmt": "^0.63.0",
     "typescript": "^7.0.2"
   },
-  "packageManager": "pnpm@11.22.0",
   "engines": {
     "node": "26.7.0"
-  }
+  },
+  "packageManager": "pnpm@11.22.0"
 }

@@ -181,7 +181,7 @@ Vite is intentionally left unpinned. Future experiments may therefore be scaffol
 Use a validation expression equivalent to:
 
 ```js
-/^[a-z0-9]+(?:-[a-z0-9]+)*$/
+/^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 ```
 
 Valid names:
@@ -218,11 +218,11 @@ Implement `scripts/create-experiment.ts` using Node.js standard library modules 
 Preferred modules:
 
 ```ts
-node:fs/promises
-node:path
-node:child_process
-node:process
-node:os
+node: fs / promises;
+node: path;
+node: child_process;
+node: process;
+node: os;
 ```
 
 Do not add a third-party dependency solely for copying directories, replacing placeholders, temp directory management, or process spawning.
