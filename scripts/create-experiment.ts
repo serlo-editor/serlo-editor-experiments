@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process"
-import { access, mkdir, rm } from "node:fs/promises"
+import { access, mkdir, readdir, rm } from "node:fs/promises"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -15,10 +15,11 @@ async function main() {
   let shouldCleanupFinalDir = false
   try {
     const name = validateName(process.argv[2])
-    finalDirRelative = join("experiments", name)
+    const experimentDirName = await createExperimentDirName(name)
+    finalDirRelative = join("experiments", experimentDirName)
     finalDir = join(repoRoot, finalDirRelative)
 
-    await mkdir(dirname(finalDir))
+    await mkdir(dirname(finalDir), { recursive: true })
 
     if (await exists(finalDir)) {
       throw new UserError(`Experiment already exists: ${finalDirRelative}`)
@@ -41,7 +42,7 @@ async function main() {
     console.log(`Created ${finalDirRelative}`)
     console.log(`Next:`)
     console.log(`  pnpm --dir ${finalDirRelative} dev`)
-    console.log(`  pnpm --filter ${name} dev`)
+    console.log(`  pnpm --filter ${experimentDirName} dev`)
     console.log(`  pnpm --dir ${finalDirRelative} build`)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
@@ -57,6 +58,36 @@ async function main() {
     console.error(message)
     process.exitCode = 1
   }
+}
+
+async function createExperimentDirName(name: string) {
+  const date = formatLocalDate(new Date())
+  const nextNumber = await getNextExperimentNumber(date)
+  return `${date}-${String(nextNumber).padStart(2, "0")}-${name}`
+}
+
+async function getNextExperimentNumber(date: string) {
+  const experimentRoot = join(repoRoot, "experiments")
+
+  if (!(await exists(experimentRoot))) {
+    return 1
+  }
+
+  const entries = await readdir(experimentRoot, { withFileTypes: true })
+  const prefix = `${date}-`
+  const usedNumbers = entries
+    .filter((entry) => entry.isDirectory() && entry.name.startsWith(prefix))
+    .map((entry) => Number(entry.name.slice(prefix.length).split("-")[0]))
+    .filter((number) => Number.isInteger(number) && number > 0)
+
+  return usedNumbers.length === 0 ? 1 : Math.max(...usedNumbers) + 1
+}
+
+function formatLocalDate(date: Date) {
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, "0")
+  const day = String(date.getDate()).padStart(2, "0")
+  return `${year}-${month}-${day}`
 }
 
 function validateName(nameArg: string | undefined) {
