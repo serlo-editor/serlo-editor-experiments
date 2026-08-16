@@ -1,12 +1,18 @@
 {
-  "name": "template",
+  "name": "serlo-editor-experiment",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
     "build": "tsc -b && vite build",
-    "lint": "oxlint",
+    "check": "pnpm run check:tsc && pnpm run check:format && pnpm run check:lint",
+    "check:format": "oxfmt --check",
+    "check:lint": "oxlint",
+    "check:tsc": "tsc --noEmit",
+    "dev": "vite",
+    "fix": "pnpm run fix:format && pnpm run fix:lint && pnpm run check:tsc",
+    "fix:format": "oxfmt",
+    "fix:lint": "oxlint --fix",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -18,6 +24,7 @@
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^6.0.4",
+    "oxfmt": "^0.63.0",
     "oxlint": "^1.75.0",
     "typescript": "~6.0.2",
     "vite": "^8.2.0"
