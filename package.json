@@ -10,7 +10,7 @@
     "check:lint": "oxlint",
     "check:tsc": "tsc --noEmit",
     "new": "node --experimental-strip-types scripts/create-experiment.ts",
-    "fix": "pnpm run fix:format && pnpm run fix:lint && pnpm run check",
+    "fix": "pnpm run fix:format && pnpm run fix:lint && pnpm run check:tsc",
     "fix:format": "oxfmt",
     "fix:lint": "oxlint --fix"
   },
