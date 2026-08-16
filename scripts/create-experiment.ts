@@ -5,43 +5,44 @@ import { fileURLToPath } from "node:url"
 
 const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm"
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
-const experimentsRoot = join(repoRoot, "experiments")
 const experimentNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 class UserError extends Error {}
 
 async function main() {
+  let finalDirRelative = ""
   let finalDir = ""
   let shouldCleanupFinalDir = false
   try {
     const name = validateName(process.argv[2])
-    finalDir = join(experimentsRoot, name)
+    finalDirRelative = join("experiments", name)
+    finalDir = join(repoRoot, finalDir)
 
-    await mkdir(experimentsRoot, { recursive: true })
+    await mkdir(dirname(finalDir), { recursive: true })
 
     if (await exists(finalDir)) {
-      throw new UserError(`Experiment already exists: ${pathForMessage(finalDir)}`)
+      throw new UserError(`Experiment already exists: ${finalDirRelative}`)
     }
 
     await runPnpm({
-      args: ["create", "vite", finalDir, "--template", "react-ts", "--no-immediate"],
+      args: ["create", "vite", finalDirRelative, "--template", "react-ts", "--no-immediate"],
       cwd: repoRoot,
       label: "Vite scaffolding",
     })
 
     await runPnpm({
-      args: ["--dir", finalDir, "install"],
+      args: ["--dir", finalDirRelative, "install"],
       cwd: repoRoot,
       label: "Dependency installation",
     })
 
     shouldCleanupFinalDir = true
 
-    console.log(`Created ${pathForMessage(finalDir)}`)
+    console.log(`Created ${finalDirRelative}`)
     console.log(`Next:`)
-    console.log(`  pnpm --dir experiments/${name} dev`)
+    console.log(`  pnpm --dir ${finalDirRelative} dev`)
     console.log(`  pnpm --filter ${name} dev`)
-    console.log(`  pnpm --dir experiments/${name} build`)
+    console.log(`  pnpm --dir ${finalDirRelative} build`)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
 
@@ -137,10 +138,6 @@ function isMissingFileError(error: unknown) {
   return (
     error instanceof Error && "code" in error && (error as NodeJS.ErrnoException).code === "ENOENT"
   )
-}
-
-function pathForMessage(path: string) {
-  return path.startsWith(repoRoot) ? path.slice(repoRoot.length + 1) : path
 }
 
 void main()
