@@ -22,7 +22,6 @@ async function main() {
     if (await exists(finalDir)) {
       throw new UserError(`Experiment already exists: ${pathForMessage(finalDir)}`)
     }
-    await moveDirectory(tempDir, finalDir)
 
     await runPnpm({
       args: ["create", "vite", finalDir, "--template", "react-ts", "--no-immediate"],
