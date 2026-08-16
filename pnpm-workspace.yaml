@@ -1,4 +1,5 @@
 packages:
   - "experiments/*"
+  - template
 
 sharedWorkspaceLockfile: false
