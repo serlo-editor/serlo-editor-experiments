@@ -2,6 +2,10 @@
 command = "pnpm"
 args = ["oxfmt", "--lsp"]
 
+[language-server.tsc]
+command = "pnpm"
+args = ["tsc", "--lsp", "--stdio"]
+
 [[language]]
 name = "css"
 language-servers = [{ name = "oxfmt", only-features = ["format"] }]
@@ -14,7 +18,7 @@ auto-format = true
 
 [[language]]
 name = "javascript"
-language-servers = [{ name = "oxfmt", only-features = ["format"] }]
+language-servers = [{ name = "oxfmt", only-features = ["format"] }, "tsc"]
 auto-format = true
 
 [[language]]
@@ -24,10 +28,10 @@ auto-format = true
 
 [[language]]
 name = "tsx"
-language-servers = [{ name = "oxfmt", only-features = ["format"] }]
+language-servers = [{ name = "oxfmt", only-features = ["format"] }, "tsc"]
 auto-format = true
 
 [[language]]
 name = "typescript"
-language-servers = [{ name = "oxfmt", only-features = ["format"] }]
+language-servers = [{ name = "oxfmt", only-features = ["format"] }, "tsc"]
 auto-format = true
