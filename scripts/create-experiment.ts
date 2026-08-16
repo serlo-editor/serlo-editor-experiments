@@ -1,6 +1,6 @@
 import { spawn } from "node:child_process"
-import { access, mkdir, readdir, rm } from "node:fs/promises"
-import { dirname, join, resolve } from "node:path"
+import { access, cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises"
+import { dirname, join, relative, resolve, sep } from "node:path"
 import { fileURLToPath } from "node:url"
 
 const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm"
@@ -27,11 +27,8 @@ async function main() {
 
     shouldCleanupFinalDir = true
 
-    await runPnpm({
-      args: ["create", "vite", finalDirRelative, "--template", "react-ts", "--no-immediate"],
-      cwd: repoRoot,
-      label: "Vite scaffolding",
-    })
+    await copyTemplate(finalDir)
+    await updatePackageName(finalDir, experimentDirName)
 
     await runPnpm({
       args: ["--dir", finalDirRelative, "install"],
@@ -58,6 +55,28 @@ async function main() {
     console.error(message)
     process.exitCode = 1
   }
+}
+
+async function copyTemplate(destinationDir: string) {
+  await cp(join(repoRoot, "template"), destinationDir, {
+    filter: (source) => !isNodeModulesPath(source),
+    force: false,
+    recursive: true,
+  })
+}
+
+async function updatePackageName(experimentDir: string, name: string) {
+  const packageJsonPath = join(experimentDir, "package.json")
+  const packageJson = JSON.parse(await readFile(packageJsonPath, "utf8")) as { name?: string }
+
+  packageJson.name = name
+
+  await writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`)
+}
+
+function isNodeModulesPath(source: string) {
+  const relativePath = relative(join(repoRoot, "template"), source)
+  return relativePath === "node_modules" || relativePath.startsWith(`node_modules${sep}`)
 }
 
 async function createExperimentDirName(name: string) {
