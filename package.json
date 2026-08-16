@@ -5,6 +5,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "check:tsc": "tsc --noEmit",
     "experiment:new": "node --experimental-strip-types scripts/create-experiment.ts"
   },
   "devDependencies": {
