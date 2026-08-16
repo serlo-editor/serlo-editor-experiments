@@ -1,0 +1,4 @@
+packages:
+  - "experiments/*"
+
+sharedWorkspaceLockfile: false
