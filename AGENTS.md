@@ -1,6 +1,7 @@
 # AGENTS
 
 - Create experiments with `pnpm new <name>`.
+- Since only experiments / prototpyes are added to the repository, avoid adding any kind of tests (no e2e tests / no unit tests).
 - The `dir template` directory is the template for newly generated experiments.
 - Name experiments in the format `experiments/YYYY-MM-DD-NN-<name>`, where `NN` is an ongoing number to avoid conflicts when multiple experiments are added.
 - Valid names must be kebab-case.
