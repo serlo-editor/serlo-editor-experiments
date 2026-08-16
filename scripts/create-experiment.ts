@@ -16,9 +16,9 @@ async function main() {
   try {
     const name = validateName(process.argv[2])
     finalDirRelative = join("experiments", name)
-    finalDir = join(repoRoot, finalDir)
+    finalDir = join(repoRoot, finalDirRelative)
 
-    await mkdir(dirname(finalDir), { recursive: true })
+    await mkdir(dirname(finalDir))
 
     if (await exists(finalDir)) {
       throw new UserError(`Experiment already exists: ${finalDirRelative}`)
