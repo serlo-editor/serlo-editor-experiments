@@ -5,15 +5,19 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "check": "pnpm run check:tsc && pnpm run check:format",
+    "check": "pnpm run check:tsc && pnpm run check:format && pnpm run check:lint",
     "check:format": "oxfmt --check",
+    "lint": "oxlint",
     "check:tsc": "tsc --noEmit",
     "experiment:new": "node --experimental-strip-types scripts/create-experiment.ts",
-    "format": "oxfmt"
+    "fix": "pnpm run fix:format && pnpm run fix:lint",
+    "fix:format": "oxfmt",
+    "fix:lint": "oxlint --fix"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
     "oxfmt": "^0.63.0",
+    "oxlint": "^1.78.0",
     "typescript": "^7.0.2"
   },
   "engines": {
