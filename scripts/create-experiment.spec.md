@@ -9,20 +9,15 @@ main(nameArg)
   finalDir = experiments/name
   fail if finalDir exists
 
-  tempRoot = mkdtemp(os.tmpdir())
-  tempDir = tempRoot/name
+  tempDir = mkdtemp(os.tmpdir())
 
   try:
     run pnpm create vite tempDir --template react-ts
-    patch package.json name = experiment name
-    replace starter app with minimal app
-    delete unneeded Vite files (.gitignore, assets, App.css, vite.svg, etc.)
-    run pnpm install in tempDir
+    remove tempDir/.gitignore
     move tempDir -> experiments/name
-    delete tempRoot
-    print next steps
+    delete tempDir
   catch error:
-    delete tempRoot and any partial finalDir
+    delete tempDir and any partial finalDir
     print readable error + stderr if available
     exit non-zero
 ```
@@ -43,8 +38,6 @@ Reject spaces, uppercase, underscores, traversal, and special chars.
 - Use a temp directory first
 - Install inside the temp scaffold
 - Only move into `experiments/<name>` after success
-- Keep the generated app frontend-only and minimal
 - Remove the generated local `.gitignore`
 - Keep a local `pnpm-lock.yaml` inside each experiment
-- Use `pnpm.cmd` on Windows, `pnpm` elsewhere
-```
+- Use `pnpm` elsewhere (no support for 'pnpm.cmd' on Windows needed)
