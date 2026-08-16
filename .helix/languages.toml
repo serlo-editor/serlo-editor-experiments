@@ -1,0 +1,33 @@
+[language-server.oxfmt]
+command = "pnpm"
+args = ["oxfmt", "--lsp"]
+
+[[language]]
+name = "css"
+language-servers = [{ name = "oxfmt", only-features = ["format"] }]
+auto-format = true
+
+[[language]]
+name = "html"
+language-servers = [{ name = "oxfmt", only-features = ["format"] }]
+auto-format = true
+
+[[language]]
+name = "javascript"
+language-servers = [{ name = "oxfmt", only-features = ["format"] }]
+auto-format = true
+
+[[language]]
+name = "toml"
+language-servers = [{ name = "oxfmt", only-features = ["format"] }]
+auto-format = true
+
+[[language]]
+name = "tsx"
+language-servers = [{ name = "oxfmt", only-features = ["format"] }]
+auto-format = true
+
+[[language]]
+name = "typescript"
+language-servers = [{ name = "oxfmt", only-features = ["format"] }]
+auto-format = true
