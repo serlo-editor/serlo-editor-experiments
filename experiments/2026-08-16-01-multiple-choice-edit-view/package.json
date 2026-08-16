@@ -1,7 +1,7 @@
 {
   "name": "2026-08-16-01-multiple-choice-edit-view",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "build": "tsc -b && vite build",

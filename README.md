@@ -2,7 +2,6 @@
 
 Small Vite/React/TypeScript experiments in one pnpm workspace for creating the Serlo Editor.
 
-
 ## Create
 
 ```bash

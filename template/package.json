@@ -1,7 +1,7 @@
 {
   "name": "serlo-editor-experiment",
-  "private": true,
   "version": "0.0.0",
+  "private": true,
   "type": "module",
   "scripts": {
     "build": "tsc -b && vite build",

@@ -1,5 +1,5 @@
-import "./app.css";
+import "./app.css"
 
 export default function App() {
-  return <p>Hello World</p>;
+  return <p>Hello World</p>
 }
