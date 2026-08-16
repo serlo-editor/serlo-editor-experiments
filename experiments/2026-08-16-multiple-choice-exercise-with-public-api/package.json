@@ -1,0 +1,32 @@
+{
+  "name": "2026-08-16-multiple-choice-exercise-with-public-api",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b && vite build",
+    "check": "pnpm run check:tsc && pnpm run check:format && pnpm run check:lint",
+    "check:format": "oxfmt --check",
+    "check:lint": "oxlint",
+    "check:tsc": "tsc --noEmit",
+    "dev": "vite",
+    "fix": "pnpm run fix:format && pnpm run fix:lint && pnpm run check:tsc",
+    "fix:format": "oxfmt",
+    "fix:lint": "oxlint --fix",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8"
+  },
+  "devDependencies": {
+    "@types/node": "^26.2.0",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.4",
+    "oxfmt": "^0.63.0",
+    "oxlint": "^1.75.0",
+    "typescript": "~7.0.2",
+    "vite": "^8.2.0"
+  }
+}
