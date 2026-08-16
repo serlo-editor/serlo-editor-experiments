@@ -1,5 +1,5 @@
 import { spawn } from "node:child_process"
-import { access, cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises"
+import { access, cp, mkdir, readFile, rm, writeFile } from "node:fs/promises"
 import { dirname, join, relative, resolve, sep } from "node:path"
 import { fileURLToPath } from "node:url"
 
@@ -15,7 +15,7 @@ async function main() {
   let shouldCleanupFinalDir = false
   try {
     const name = validateName(process.argv[2])
-    const experimentDirName = await createExperimentDirName(name)
+    const experimentDirName = createExperimentDirName(name)
     finalDirRelative = join("experiments", experimentDirName)
     finalDir = join(repoRoot, finalDirRelative)
 
@@ -79,27 +79,9 @@ function isNodeModulesPath(source: string) {
   return relativePath === "node_modules" || relativePath.startsWith(`node_modules${sep}`)
 }
 
-async function createExperimentDirName(name: string) {
+function createExperimentDirName(name: string) {
   const date = formatLocalDate(new Date())
-  const nextNumber = await getNextExperimentNumber(date)
-  return `${date}-${String(nextNumber).padStart(2, "0")}-${name}`
-}
-
-async function getNextExperimentNumber(date: string) {
-  const experimentRoot = join(repoRoot, "experiments")
-
-  if (!(await exists(experimentRoot))) {
-    return 1
-  }
-
-  const entries = await readdir(experimentRoot, { withFileTypes: true })
-  const prefix = `${date}-`
-  const usedNumbers = entries
-    .filter((entry) => entry.isDirectory() && entry.name.startsWith(prefix))
-    .map((entry) => Number(entry.name.slice(prefix.length).split("-")[0]))
-    .filter((number) => Number.isInteger(number) && number > 0)
-
-  return usedNumbers.length === 0 ? 1 : Math.max(...usedNumbers) + 1
+  return `${date}-${name}`
 }
 
 function formatLocalDate(date: Date) {
