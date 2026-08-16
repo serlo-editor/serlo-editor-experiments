@@ -1,17 +1,10 @@
 {
   "name": "serlo-editor-experiments",
-  "version": "0.0.0",
-  "private": true,
-  "description": "",
-  "license": "MIT",
-  "devEngines": {
-    "packageManager": {
-      "name": "pnpm",
-      "version": "^11.22.0",
-      "onFail": "download"
-    }
-  },
+  "description": "Experiments for the Serlo Editor",
   "type": "module",
+  "license": "MIT",
+  "private": true,
+  "packageManager": "pnpm@11.22.0",
   "devDependencies": {
     "typescript": "^7.0.2"
   }
