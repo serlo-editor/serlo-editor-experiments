@@ -49,7 +49,7 @@ async function main() {
       try {
         await rm(finalDir, { recursive: true, force: true })
       } catch {
-        // Ignore cleanup failures; the original error is more important.
+        console.error(`Warning: Error while cleaning up ${finalDir}`)
       }
     }
 
