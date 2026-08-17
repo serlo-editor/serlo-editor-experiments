@@ -1,0 +1,13 @@
+{
+  "name": "2026-08-17-simple-ai-spec-implementation",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node --experimental-strip-types index.ts",
+    "dev": "node --watch --experimental-strip-types index.ts"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
+  }
+}
