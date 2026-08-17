@@ -5,8 +5,10 @@ Small Vite/React/TypeScript experiments in one pnpm workspace for creating the S
 ## Create
 
 ```bash
-pnpm new <name-of-experiment>
+pnpm new react <name-of-experiment>
 ```
+
+Templates currently include `react`.
 
 Names must be kebab-case.
 

@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url"
 
 const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm"
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
-const experimentNamePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+const namePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
 class UserError extends Error {}
 
@@ -14,20 +14,30 @@ async function main() {
   let finalDir = ""
   let shouldCleanupFinalDir = false
   try {
-    const name = validateName(process.argv[2])
+    const templateName = process.argv[2]
+    const name = validateName(process.argv[3])
     const experimentDirName = createExperimentDirName(name)
     finalDirRelative = join("experiments", experimentDirName)
     finalDir = join(repoRoot, finalDirRelative)
 
-    await mkdir(dirname(finalDir), { recursive: true })
+    if (!templateName) {
+      throw new UserError("Missing template name.")
+    }
+
+    const templateDir = resolve(repoRoot, "templates", templateName)
+
+    if (!(await exists(templateDir))) {
+      throw new UserError(`Unknown template: ${templateName}`)
+    }
 
     if (await exists(finalDir)) {
       throw new UserError(`Experiment already exists: ${finalDirRelative}`)
     }
 
+    await mkdir(dirname(finalDir), { recursive: true })
     shouldCleanupFinalDir = true
 
-    await copyTemplate(finalDir)
+    await copyTemplate(templateDir, finalDir)
     await updatePackageName(finalDir, experimentDirName)
 
     await runPnpm({
@@ -57,9 +67,9 @@ async function main() {
   }
 }
 
-async function copyTemplate(destinationDir: string) {
-  await cp(join(repoRoot, "template"), destinationDir, {
-    filter: (source) => !isNodeModulesPath(source),
+async function copyTemplate(templateDir: string, destinationDir: string) {
+  await cp(templateDir, destinationDir, {
+    filter: (source) => !isNodeModulesPath(templateDir, source),
     force: false,
     recursive: true,
   })
@@ -74,8 +84,8 @@ async function updatePackageName(experimentDir: string, name: string) {
   await writeFile(packageJsonPath, `${JSON.stringify(packageJson, null, 2)}\n`)
 }
 
-function isNodeModulesPath(source: string) {
-  const relativePath = relative(join(repoRoot, "template"), source)
+function isNodeModulesPath(templateDir: string, source: string) {
+  const relativePath = relative(templateDir, source)
   return relativePath === "node_modules" || relativePath.startsWith(`node_modules${sep}`)
 }
 
@@ -96,7 +106,7 @@ function validateName(nameArg: string | undefined) {
     throw new UserError("Missing experiment name.")
   }
 
-  if (!experimentNamePattern.test(nameArg)) {
+  if (!namePattern.test(nameArg)) {
     throw new UserError(`Invalid experiment name: ${nameArg}. Use kebab-case like chat-streaming.`)
   }
 
