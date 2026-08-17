@@ -22,21 +22,18 @@ interface Schema<Value> {
 
 type AnySchema = Schema<unknown>
 
-type ValueOf<S extends AnySchema> =
-  S extends Schema<infer Value>
-    ? Value
-    : never
+type ValueOf<S extends AnySchema> = S extends Schema<infer Value> ? Value : never
 ```
 
 This avoids recursively calculating value types from deeply nested schemas, which can exceed TypeScript’s recursion limits.
 
 Schemas describe:
 
-* valid logical values,
-* child schemas,
-* structural constraints,
-* validation,
-* nested JSON serialization.
+- valid logical values,
+- child schemas,
+- structural constraints,
+- validation,
+- nested JSON serialization.
 
 ---
 
@@ -78,31 +75,21 @@ Renderers remain independent of the store implementation.
 Use a generic base handle with schema-specific APIs.
 
 ```ts
-interface StringHandle
-  extends ValueHandle<StringSchema> {
+interface StringHandle extends ValueHandle<StringSchema> {
   get(): string
   set(value: string): void
 }
 ```
 
 ```ts
-interface ArrayHandle<C extends AnySchema>
-  extends ValueHandle<ArraySchema<C>> {
+interface ArrayHandle<C extends AnySchema> extends ValueHandle<ArraySchema<C>> {
   size(): number
 
   at(index: number): HandleOf<C>
 
-  map<R>(
-    callback: (
-      child: HandleOf<C>,
-      index: number,
-    ) => R,
-  ): R[]
+  map<R>(callback: (child: HandleOf<C>, index: number) => R): R[]
 
-  insert(
-    index: number,
-    value: ValueOf<C>,
-  ): HandleOf<C>
+  insert(index: number, value: ValueOf<C>): HandleOf<C>
 
   remove(index: number): ValueOf<C>
 }
@@ -163,9 +150,7 @@ interface DocumentHandle<S extends AnySchema> {
 
   snapshot(): ValueOf<S>
 
-  transaction<R>(
-    callback: () => R,
-  ): R
+  transaction<R>(callback: () => R): R
 }
 ```
 
@@ -188,34 +173,24 @@ Store adapters implement storage-specific behavior.
 
 ```ts
 interface StoreAdapter<Ref> {
-  bind<S extends AnySchema>(
-    schema: S,
-    nodeId: NodeId,
-    ref: Ref,
-  ): HandleOf<S>
+  bind<S extends AnySchema>(schema: S, nodeId: NodeId, ref: Ref): HandleOf<S>
 
-  subscribe(
-    ref: Ref,
-    aspect: SubscriptionAspect,
-    listener: () => void,
-  ): Unsubscribe
+  subscribe(ref: Ref, aspect: SubscriptionAspect, listener: () => void): Unsubscribe
 
-  transaction<R>(
-    callback: () => R,
-  ): R
+  transaction<R>(callback: () => R): R
 }
 ```
 
 Adapters are responsible for:
 
-* resolving store references,
-* reading and writing values,
-* creating and deleting nodes,
-* subscriptions,
-* transactions,
-* stable identity mapping,
-* garbage collection,
-* store-specific optimization.
+- resolving store references,
+- reading and writing values,
+- creating and deleting nodes,
+- subscriptions,
+- transactions,
+- stable identity mapping,
+- garbage collection,
+- store-specific optimization.
 
 They should not redefine schema semantics or renderer behavior.
 
@@ -229,11 +204,7 @@ Editor actions may be represented as reusable operation definitions.
 const ArrayInsert = defineOperation({
   name: "array.insert",
 
-  execute<C extends AnySchema>(
-    handle: ArrayHandle<C>,
-    index: number,
-    value: ValueOf<C>,
-  ) {
+  execute<C extends AnySchema>(handle: ArrayHandle<C>, index: number, value: ValueOf<C>) {
     return handle.insert(index, value)
   },
 })
@@ -241,23 +212,19 @@ const ArrayInsert = defineOperation({
 
 This supports future requirements such as:
 
-* undo and redo,
-* command logging,
-* permissions,
-* keyboard commands,
-* analytics,
-* collaboration.
+- undo and redo,
+- command logging,
+- permissions,
+- keyboard commands,
+- analytics,
+- collaboration.
 
 Common operations remain normal handle methods.
 
 The advanced API should preferably be:
 
 ```ts
-handle.execute(
-  ArrayMove,
-  from,
-  to,
-)
+handle.execute(ArrayMove, from, to)
 ```
 
 rather than a large union-based `dispatch()` API.
@@ -266,15 +233,15 @@ rather than a large union-based `dispatch()` API.
 
 ## Ideas
 
-* React should not directly “subscribe to handles” as a primary abstraction; instead, it should subscribe to *derived reactive views* of the document graph.
-* Separate *structural reactivity* (e.g. array/object shape changes) from *value reactivity* (leaf updates) so updates can be more precisely targeted.
-* Consider introducing a unified `useValue(handle, selector?)` hook that can express both full-value and partial subscriptions instead of many schema-specific hooks.
-* Explore whether subscriptions should be expressed at the schema level (schema declares what is reactive) rather than at the hook level (hooks infer reactivity).
-* Investigate a fine-grained dependency tracking system where components automatically track accessed fields during render, similar to proxy-based reactivity systems.
-* Evaluate whether `useSyncExternalStore` is sufficient long-term or if a custom scheduler is needed for batching, prioritization, and cross-handle consistency.
-* Consider decoupling React entirely from the core subscription model by introducing a framework-agnostic reactive core that React merely adapts to.
-* Explore memoization strategies at the handle layer so that unchanged subtrees guarantee referential stability without requiring React-level optimizations.
-* Think about supporting non-React consumers (CLI, server rendering, collaborative engines) using the same subscription primitives, ensuring React is just one adapter among many.
+- React should not directly “subscribe to handles” as a primary abstraction; instead, it should subscribe to _derived reactive views_ of the document graph.
+- Separate _structural reactivity_ (e.g. array/object shape changes) from _value reactivity_ (leaf updates) so updates can be more precisely targeted.
+- Consider introducing a unified `useValue(handle, selector?)` hook that can express both full-value and partial subscriptions instead of many schema-specific hooks.
+- Explore whether subscriptions should be expressed at the schema level (schema declares what is reactive) rather than at the hook level (hooks infer reactivity).
+- Investigate a fine-grained dependency tracking system where components automatically track accessed fields during render, similar to proxy-based reactivity systems.
+- Evaluate whether `useSyncExternalStore` is sufficient long-term or if a custom scheduler is needed for batching, prioritization, and cross-handle consistency.
+- Consider decoupling React entirely from the core subscription model by introducing a framework-agnostic reactive core that React merely adapts to.
+- Explore memoization strategies at the handle layer so that unchanged subtrees guarantee referential stability without requiring React-level optimizations.
+- Think about supporting non-React consumers (CLI, server rendering, collaborative engines) using the same subscription primitives, ensuring React is just one adapter among many.
 
 ---
 
@@ -283,17 +250,10 @@ rather than a large union-based `dispatch()` API.
 The logical serialization format is nested JSON.
 
 ```ts
-interface Codec<
-  Value,
-  JsonValue,
-> {
-  decode(
-    json: JsonValue,
-  ): Result<Value, DecodeError>
+interface Codec<Value, JsonValue> {
+  decode(json: JsonValue): Result<Value, DecodeError>
 
-  encode(
-    value: Value,
-  ): JsonValue
+  encode(value: Value): JsonValue
 }
 ```
 
@@ -317,14 +277,9 @@ Loading and saving are asynchronous repository operations.
 
 ```ts
 interface DocumentRepository {
-  open<S extends AnySchema>(
-    id: DocumentId,
-    schema: S,
-  ): Promise<DocumentHandle<S>>
+  open<S extends AnySchema>(id: DocumentId, schema: S): Promise<DocumentHandle<S>>
 
-  save<S extends AnySchema>(
-    document: DocumentHandle<S>,
-  ): Promise<void>
+  save<S extends AnySchema>(document: DocumentHandle<S>): Promise<void>
 }
 ```
 
@@ -338,11 +293,11 @@ Initially, schemas, handles, operations, and adapters are statically known.
 
 This allows:
 
-* closed TypeScript unions,
-* explicit handle interfaces,
-* strong autocomplete,
-* exhaustive checks,
-* simpler implementation.
+- closed TypeScript unions,
+- explicit handle interfaces,
+- strong autocomplete,
+- exhaustive checks,
+- simpler implementation.
 
 Dynamic plugin registration may be added later through registries and runtime validation.
 
@@ -350,16 +305,16 @@ Dynamic plugin registration may be added later through registries and runtime va
 
 ## Important implementation principles
 
-* Avoid recursive conditional types for deriving deeply nested values.
-* Keep store references private.
-* Use stable logical node identity.
-* Prefer schema-specific handles over one generic mutable object.
-* Keep `DocumentHandle` narrow.
-* Use targeted reads instead of whole-document reads.
-* Introduce first-class operations when undo, logging, permissions, or collaboration require them.
-* Do not design a low-level instruction language before multiple real adapters reveal common behavior.
-* Avoid duplicated dispatch logic across subsystems, but do not avoid all `switch` statements.
-* Treat schema compilation and code generation as optional future optimizations.
+- Avoid recursive conditional types for deriving deeply nested values.
+- Keep store references private.
+- Use stable logical node identity.
+- Prefer schema-specific handles over one generic mutable object.
+- Keep `DocumentHandle` narrow.
+- Use targeted reads instead of whole-document reads.
+- Introduce first-class operations when undo, logging, permissions, or collaboration require them.
+- Do not design a low-level instruction language before multiple real adapters reveal common behavior.
+- Avoid duplicated dispatch logic across subsystems, but do not avoid all `switch` statements.
+- Treat schema compilation and code generation as optional future optimizations.
 
 ---
 

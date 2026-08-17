@@ -198,8 +198,7 @@ Runtime validation must still reject invalid JavaScript input.
 # 5. Rendering component
 
 ```ts
-export interface SerloEditorProps
-  extends Omit<React.ComponentPropsWithoutRef<"div">, "children"> {
+export interface SerloEditorProps extends Omit<React.ComponentPropsWithoutRef<"div">, "children"> {
   readonly editor: SerloEditorInstance
 }
 
