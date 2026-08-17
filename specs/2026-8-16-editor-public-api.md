@@ -12,7 +12,7 @@ The API supports:
 - observing document, interaction, lifecycle, collaboration, and error events,
 - running the editor in educational workflow modes,
 - configuring allowed document types,
-- replacing documents explicitly,
+- loading external documents and replacing documents through distinct operations,
 - integrating collaborative editing through a reserved adapter boundary,
 - exposing editor commands and reactive editor state.
 
@@ -28,15 +28,14 @@ import { SerloEditor, useSerloEditor } from "@serlo/editor"
 function ExerciseEditor() {
   const editor = useSerloEditor({
     mode: "authoring",
+    language: "en",
 
     initialDocument: null,
 
     types: [articleDocumentType, exerciseDocumentType],
 
     onDocumentChange(event) {
-      const document = event.editor.getDocument()
-
-      console.log(document)
+      console.log(event.document)
     },
 
     onError(event) {
@@ -62,14 +61,12 @@ export type EditorMode = "authoring" | "learning" | "feedback-authoring" | "feed
 
 The mode is immutable for the lifetime of an editor instance. Changing the mode requires remounting the hook, normally by changing a React `key`.
 
-Each mode defines which regions of the document may be changed.
-
-Conceptually:
+Each mode defines which document regions may be changed by local UI and API operations. These permissions are part of the domain definition, not merely UI conventions:
 
 ```ts
 const modePermissions = {
   authoring: {
-    writableRegions: ["content"],
+    writableRegions: ["document-type", "content"],
   },
 
   learning: {
@@ -86,7 +83,9 @@ const modePermissions = {
 }
 ```
 
-The exact mutability rules remain to be specified separately.
+For example, learning mode may persist learner results in `response`, but it must not change authored `content`. Feedback authoring may change only `feedback`. This restriction applies consistently to UI edits, imperative commands, replacement edits, undo, and redo. An operation that would modify a non-writable region fails with `"operation-not-allowed"` and leaves the document unchanged.
+
+Remote collaboration updates may still update any region because they represent authoritative external state rather than a local edit. The detailed interaction between domain permissions and collaboration remains to be specified with the collaboration adapter.
 
 ---
 
@@ -112,6 +111,12 @@ export interface UseSerloEditorOptions {
    * Immutable educational workflow mode.
    */
   readonly mode: EditorMode
+
+  /**
+   * BCP 47 language tag used by the editor UI, for example `"en"`
+   * or `"de"`. Omission uses the editor's built-in default language.
+   */
+  readonly language?: string
 
   /**
    * Allowed document types.
@@ -193,18 +198,19 @@ Runtime validation must still reject invalid JavaScript input.
 # 5. Rendering component
 
 ```ts
-export interface SerloEditorProps {
+export interface SerloEditorProps
+  extends Omit<React.ComponentPropsWithoutRef<"div">, "children"> {
   readonly editor: SerloEditorInstance
-  readonly className?: string
-  readonly "aria-label"?: string
 }
 
 export function SerloEditor(props: SerloEditorProps): React.ReactElement
 ```
 
-The component does not accept behavioral callbacks. Event callbacks belong exclusively to `useSerloEditor()`.
+The component supports common HTML container attributes, including `id`, `className`, `style`, `data-*`, and `aria-*`, and forwards them to its root container. It does not accept children or behavioral editor callbacks. Event callbacks belong exclusively to `useSerloEditor()`.
 
-On the server, the component renders an empty hydration container carrying `className` and supported accessibility attributes.
+On the server, the component renders an empty hydration container carrying the supported HTML attributes.
+
+Custom type-selection and fatal-error interfaces are a future feature. The initial API uses built-in interfaces; a later API should provide render hooks or slots so hosts can integrate localization, branding, retry actions, and design-system components without replacing the editor.
 
 ---
 
@@ -220,12 +226,18 @@ export interface SerloEditorInstance {
   getDocument(): DeepReadonly<SerloDocument> | null
 
   /**
-   * Replaces the complete document.
+   * Loads an external document as editor state.
+   *
+   * Loading resets selection and undo/redo history and is not an edit.
    */
-  replaceDocument(
-    document: SerloDocument | null,
-    options?: ReplaceDocumentOptions,
-  ): EditorResult<void>
+  loadDocument(document: SerloDocument | null): EditorResult<void>
+
+  /**
+   * Replaces the complete document as one undoable API edit.
+   *
+   * The replacement must respect the writable regions of the current mode.
+   */
+  replaceDocument(document: SerloDocument): EditorResult<void>
 
   /**
    * Selects and initializes an allowed document type.
@@ -234,22 +246,24 @@ export interface SerloEditorInstance {
 
   /**
    * Focuses the editor.
+   *
+   * Fails when the editor is not ready or has no mounted renderer.
    */
-  focus(): void
+  focus(): EditorResult<void>
 
   /**
    * Undoes the latest undoable change.
    *
-   * Does nothing when undo is unavailable.
+   * Fails when the editor is not ready or undo is unavailable.
    */
-  undo(): void
+  undo(): EditorResult<void>
 
   /**
    * Redoes the latest undone change.
    *
-   * Does nothing when redo is unavailable.
+   * Fails when the editor is not ready or redo is unavailable.
    */
-  redo(): void
+  redo(): EditorResult<void>
 
   /**
    * Subscribes to every public event.
@@ -303,7 +317,9 @@ const secondEditor = useSerloEditor({
 })
 ```
 
-The document is deeply immutable from the consumer’s perspective. Implementations may use structural sharing and must not guarantee reference identity between calls.
+The document is deeply immutable in the TypeScript API. Implementations may use structural sharing and must not guarantee reference identity between calls.
+
+**Open API issue:** `DeepReadonly` provides only compile-time immutability. The specification does not yet guarantee whether returned values are frozen, copied, or otherwise isolated from internal editor state at runtime. This must be resolved before the API is considered stable; no particular solution is proposed yet.
 
 ```ts
 export type DeepReadonly<T> = T extends (...args: never[]) => unknown
@@ -451,49 +467,41 @@ Rules:
 
 ---
 
-# 11. Replacing documents
+# 11. Loading and replacing documents
+
+Loading external state and performing an editor mutation are separate operations. Combining them behind a strategy flag would make autosave and telemetry treat externally loaded state as a user edit and would obscure their different history semantics.
+
+## 11.1 Loading external state
 
 ```ts
-export interface ReplaceDocumentOptions {
-  readonly strategy?: ReplaceDocumentStrategy
-}
-
-export type ReplaceDocumentStrategy = "load" | "edit"
+editor.loadDocument(nextDocument)
 ```
 
-The default strategy is `"load"`.
-
-## 11.1 Load strategy
-
-```ts
-editor.replaceDocument(nextDocument, {
-  strategy: "load",
-})
-```
-
-`"load"`:
+`loadDocument()`:
 
 - replaces the entire document,
 - resets selection,
 - resets undo and redo history,
-- validates and normalizes the new document,
-- may accept `null`,
-- emits a document-change event with subtype `"document-replaced"`.
+- validates, migrates, and normalizes the new document,
+- accepts `null`,
+- emits applicable migration and normalization lifecycle events followed by `"document-loaded"`,
+- does not emit `"document-change"`.
 
-## 11.2 Edit strategy
+Loading is not subject to mode write permissions because it establishes authoritative external state rather than performing a domain edit.
+
+## 11.2 Replacement edit
 
 ```ts
-editor.replaceDocument(nextDocument, {
-  strategy: "edit",
-})
+editor.replaceDocument(nextDocument)
 ```
 
-`"edit"`:
+`replaceDocument()`:
 
-- treats replacement as one undoable edit,
+- treats replacement as one undoable API edit,
 - does not accept `null`,
 - validates the new document,
-- emits a document-change event with subtype `"document-replaced"`.
+- rejects changes to regions that are not writable in the current mode,
+- emits a document-change event with subtype `"document-replaced"` and origin `"api"`.
 
 ## 11.3 Failure
 
@@ -505,7 +513,7 @@ if (!result.ok) {
 }
 ```
 
-Invalid input does not modify the current document. The method returns a failed `EditorResult` and also emits an error event.
+Invalid or disallowed input does not modify the current document. The method returns a failed `EditorResult` but does not also emit an error event. A failure returned directly to the caller is expected operation feedback; emitting it globally would cause hosts that handle both channels to report the same failure twice. Error events are reserved for unsolicited failures that cannot be returned directly to the initiating caller.
 
 ---
 
@@ -540,7 +548,7 @@ if (!result.ok) {
 }
 ```
 
-Programming errors and violated internal invariants may still throw. Runtime failures caused by external input or adapters should use `EditorResult`.
+Programming errors and violated internal invariants may still throw. Runtime failures caused by external input or adapters should use `EditorResult`. A failure returned from a directly invoked operation is not additionally emitted as an error event.
 
 Asynchronous adapter operations may use:
 
@@ -617,6 +625,13 @@ export interface DocumentChangeEvent extends EventBase {
 
   readonly transactionId: string
 
+  /**
+   * Version and canonical document captured for this committed transaction.
+   * They remain the event-time state even if later transactions occur.
+   */
+  readonly documentVersion: number
+  readonly document: DeepReadonly<SerloDocument> | null
+
   readonly changed: readonly DocumentRegion[]
 
   readonly subtype?: "type-selected" | "document-replaced"
@@ -630,26 +645,24 @@ export type DocumentRegion = "content" | "response" | "feedback" | "document-typ
 ```
 
 ```ts
-export type DocumentChangeOrigin = "user" | "remote" | "undo" | "redo" | "replace" | "system"
+export type DocumentChangeOrigin = "user" | "api" | "remote" | "undo" | "redo" | "system"
 ```
 
-A document-change event does not contain the document value. Consumers retrieve the committed document synchronously:
+A document-change event contains the canonical document and version produced by its transaction:
 
 ```ts
 function onDocumentChange(event: DocumentChangeEvent) {
-  const document = event.editor.getDocument()
-
-  save(document)
+  save(event.document)
 }
 ```
 
-When the event is delivered, `getDocument()` already returns the committed new state.
+Consumers should use `event.document` for persistence and asynchronous processing. Calling `event.editor.getDocument()` later may return a newer transaction, which would make the event unsuitable as a stable audit or persistence record.
 
 One public document-change event is emitted per committed editor transaction.
 
 ## 14.4 Type selection
 
-Selecting a document type emits:
+Selecting a document type through the built-in UI emits:
 
 ```ts
 {
@@ -657,13 +670,15 @@ Selecting a document type emits:
   subtype: "type-selected",
   changed: ["document-type", "content"],
   origin: "user",
+  documentVersion: 1,
+  document: selectedDocument,
   transactionId: "...",
   editor,
   timestamp,
 }
 ```
 
-Type selection is therefore not a separate top-level event category.
+Type selection is therefore not a separate top-level event category. Calling `editor.selectDocumentType()` programmatically emits the same event with origin `"api"`; origin identifies the initiator rather than the kind of mutation.
 
 ## 14.5 Learning-mode changes
 
@@ -674,6 +689,8 @@ A learner action that changes the persisted final response is a specialized docu
   type: "document-change",
   changed: ["response"],
   origin: "user",
+  documentVersion: 12,
+  document: learnerDocument,
   transactionId: "...",
   editor,
   timestamp,
@@ -771,9 +788,10 @@ If one event listener throws:
 
 1. delivery continues to other listeners,
 2. the editor emits an `event-listener-failed` error event,
-3. that error event is not delivered back to the listener that failed.
+3. that error event is not delivered back to the listener that failed,
+4. failures thrown while delivering an `event-listener-failed` event do not produce another `event-listener-failed` event.
 
-This prevents one LMS callback from breaking editor processing or creating an infinite recursive error loop. [Confidence: High
+The final guard is necessary because excluding only the original listener is insufficient: another failing error listener could otherwise start recursive failure events. Listener failures during guarded error delivery may be reported through development diagnostics, but they do not re-enter the public event stream. [Confidence: High]
 
 ---
 
@@ -837,8 +855,9 @@ function onEvent(event: EditorEvent) {
 Validation may:
 
 - add default fields,
-- canonicalize values,
-- strip unknown fields.
+- canonicalize values.
+
+Unknown fields must not be silently stripped. If the current internal state representation can preserve them safely, the editor should retain and round-trip them and show a non-fatal warning that parts of the document are not understood by this editor version. If preservation is not possible, loading must fail rather than accept the document and lose data.
 
 When normalization changes the supplied value, the editor emits:
 
@@ -860,9 +879,12 @@ The LMS may then persist the canonical value.
 External JSON is validated:
 
 - during initialization,
+- during `loadDocument()`,
 - during `replaceDocument()`.
 
-Valid input may be normalized into a canonical document. Unknown fields are stripped.
+Valid input may be normalized into a canonical document. Normalization must not silently discard unknown fields.
+
+Forward-compatible preservation of unknown fields—and, where the editor state can represent them, newer document types—is a future feature. Until that feature is implemented, unsupported input that cannot be preserved must be rejected with a visible non-fatal warning or an appropriate failed `EditorResult`, rather than being loaded destructively.
 
 Older supported versions are migrated automatically.
 
@@ -922,7 +944,14 @@ function UndoButton({ editor }: { editor: SerloEditorInstance }) {
   const canUndo = useSerloEditorState(editor, (snapshot) => snapshot.canUndo)
 
   return (
-    <button disabled={!canUndo} onClick={() => editor.undo()}>
+    <button
+      disabled={!canUndo}
+      onClick={() => {
+        const result = editor.undo()
+
+        if (!result.ok) handleCommandFailure(result.error)
+      }}
+    >
       Undo
     </button>
   )
@@ -956,7 +985,7 @@ During initialization, only the following operations are valid:
 - subscriptions,
 - snapshot inspection.
 
-Mutating commands should not execute before readiness. Operations that return `EditorResult` return an `"editor-not-ready"` error.
+Commands do not execute before readiness. They return a failed `EditorResult` containing an `"editor-not-ready"` error. Expected command failures are returned only to the caller and do not additionally emit error events.
 
 ---
 
@@ -1011,6 +1040,7 @@ Missing identity required by configured functionality produces a fatal configura
 The following options are initialization-only:
 
 - `mode`,
+- `language`,
 - `types`,
 - `defaultType`,
 - `identity`,
@@ -1079,7 +1109,7 @@ const editor = useSerloEditor({
   mode: "authoring",
 
   onDocumentChange(event) {
-    autosave.schedule(event.editor.getDocument())
+    autosave.schedule(event.document)
   },
 })
 ```
@@ -1103,7 +1133,7 @@ const editor = useSerloEditor({
   },
 
   onDocumentChange(event) {
-    saveLearnerResponse(event.editor.getDocument())
+    saveLearnerResponse(event.document)
   },
 
   onInteraction(event) {
@@ -1135,7 +1165,7 @@ const editor = useSerloEditor({
 
   onDocumentChange(event) {
     if (event.changed.includes("feedback")) {
-      saveFeedback(event.editor.getDocument())
+      saveFeedback(event.document)
     }
   },
 })
@@ -1198,8 +1228,6 @@ export type {
   EditorErrorEvent,
   DocumentRegion,
   DocumentChangeOrigin,
-  ReplaceDocumentOptions,
-  ReplaceDocumentStrategy,
   FeedbackTarget,
   NodePath,
   Unsubscribe,
@@ -1216,11 +1244,13 @@ The following areas remain intentionally unspecified:
 2. Exact `SerloDocumentType` contract.
 3. Plugin definition and plugin extension API.
 4. Collaboration adapter interface.
-5. Detailed mode-specific mutability rules.
+5. Detailed collaboration behavior when remote updates affect regions that are locally read-only in the current mode.
 6. Feedback range representation.
 7. Exact interaction subtype payloads.
 8. Dedicated reactive document hook.
-9. Custom type-selection UI.
-10. Custom error UI.
+9. Custom type-selection UI (future render-hook or slot feature).
+10. Custom error UI (future render-hook or slot feature).
+11. Forward-compatible preservation of unknown fields and newer document types when the internal state representation permits it.
+12. Runtime isolation guarantees for documents returned by `getDocument()` and carried by events.
 
 These boundaries are reserved without prematurely committing the exploratory API to implementation details.
