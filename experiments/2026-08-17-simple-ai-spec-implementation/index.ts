@@ -1,11 +1,9 @@
-type JsonValue = null | boolean | number | string | JsonValue[] | { [key: string]: JsonValue }
-
 interface Schema<Value> {
   readonly kind: string
   readonly __value?: Value
 }
 
-type AnySchema = Schema<unknown>
+type AnySchema = StringSchema | ArraySchema<any>
 type ValueOf<S extends AnySchema> = S extends Schema<infer Value> ? Value : never
 
 type StringSchema = Schema<string> & { readonly kind: "string" }
@@ -20,47 +18,57 @@ const arraySchema = <C extends AnySchema>(element: C): ArraySchema<C> => ({
   element,
 })
 
-const isStringSchema = (schema: AnySchema): schema is StringSchema => schema.kind === "string"
+type FlatStore = Record<string, unknown>
 
-const isArraySchema = (schema: AnySchema): schema is ArraySchema<AnySchema> =>
-  schema.kind === "array"
-
-function encode<S extends AnySchema>(schema: S, value: ValueOf<S>): JsonValue {
-  if (isStringSchema(schema)) return value as string
-  if (isArraySchema(schema)) {
-    return (value as unknown[]).map((item) => encode(schema.element, item))
+function save<S extends AnySchema>(
+  store: FlatStore,
+  key: string,
+  schema: S,
+  value: ValueOf<S>,
+): void {
+  if (schema.kind === "string") {
+    store[key] = value
+    return
   }
+
+  if (schema.kind === "array") {
+    const childKeys = (value as unknown[]).map((_, index) => `${key}/${index}`)
+    store[key] = childKeys
+
+    ;(value as unknown[]).forEach((item, index) => {
+      save(store, childKeys[index]!, schema.element, item)
+    })
+    return
+  }
+
   throw new Error(`Unknown schema: ${schema.kind}`)
 }
 
-function decode<S extends AnySchema>(schema: S, json: JsonValue): ValueOf<S> {
-  if (isStringSchema(schema)) {
-    if (typeof json !== "string") throw new Error("Expected string")
-    return json as ValueOf<S>
+function load<S extends AnySchema>(
+  store: FlatStore,
+  key: string,
+  schema: S,
+): ValueOf<S> {
+  const value = store[key]
+  if (value === undefined) throw new Error(`Missing key: ${key}`)
+
+  if (schema.kind === "string") {
+    if (typeof value !== "string") throw new Error(`Expected string at ${key}`)
+    return value as ValueOf<S>
   }
-  if (isArraySchema(schema)) {
-    if (!Array.isArray(json)) throw new Error("Expected array")
-    return json.map((item) => decode(schema.element, item)) as ValueOf<S>
+
+  if (schema.kind === "array") {
+    if (!Array.isArray(value)) throw new Error(`Expected array at ${key}`)
+    return value.map(childKey => load(store, childKey, schema.element)) as ValueOf<S>
   }
+
   throw new Error(`Unknown schema: ${schema.kind}`)
-}
-
-type FlatStore = Record<string, string>
-
-function save<S extends AnySchema>(store: FlatStore, key: string, schema: S, value: ValueOf<S>) {
-  store[key] = JSON.stringify(encode(schema, value))
-}
-
-function load<S extends AnySchema>(store: FlatStore, key: string, schema: S): ValueOf<S> {
-  const raw = store[key]
-  if (raw === undefined) throw new Error(`Missing key: ${key}`)
-  return decode(schema, JSON.parse(raw) as JsonValue)
 }
 
 const tagsSchema = arraySchema(stringSchema())
 const store: FlatStore = {}
-const tags = ["ideas", "prototype"]
 
-save(store, "doc:tags", tagsSchema, tags)
-console.log("saved", store["doc:tags"])
-console.log("loaded", load(store, "doc:tags", tagsSchema))
+save(store, "doc:tags", tagsSchema, ["ideas", "prototype"])
+
+console.log(store)
+console.log(load(store, "doc:tags", tagsSchema))
