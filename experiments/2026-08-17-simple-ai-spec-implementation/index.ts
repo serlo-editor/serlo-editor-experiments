@@ -1,9 +1,17 @@
+type JsonValue =
+  | null
+  | boolean
+  | number
+  | string
+  | JsonValue[]
+  | { [key: string]: JsonValue }
+
 interface Schema<Value> {
   readonly kind: string
   readonly __value?: Value
 }
 
-type AnySchema = StringSchema | ArraySchema<any>
+type AnySchema = Schema<unknown>
 type ValueOf<S extends AnySchema> = S extends Schema<infer Value> ? Value : never
 
 type StringSchema = Schema<string> & { readonly kind: "string" }
@@ -18,57 +26,116 @@ const arraySchema = <C extends AnySchema>(element: C): ArraySchema<C> => ({
   element,
 })
 
+const isStringSchema = (schema: AnySchema): schema is StringSchema =>
+  schema.kind === "string"
+
+const isArraySchema = (schema: AnySchema): schema is ArraySchema<AnySchema> =>
+  schema.kind === "array"
+
 type FlatStore = Record<string, unknown>
+type NestedStore = Record<string, JsonValue>
 
-function save<S extends AnySchema>(
-  store: FlatStore,
-  key: string,
-  schema: S,
-  value: ValueOf<S>,
-): void {
-  if (schema.kind === "string") {
-    store[key] = value
-    return
-  }
+interface StoreAdapter<Store> {
+  save<S extends AnySchema>(
+    store: Store,
+    key: string,
+    schema: S,
+    value: ValueOf<S>,
+  ): void
 
-  if (schema.kind === "array") {
-    const childKeys = (value as unknown[]).map((_, index) => `${key}/${index}`)
-    store[key] = childKeys
+  load<S extends AnySchema>(
+    store: Store,
+    key: string,
+    schema: S,
+  ): ValueOf<S>
+}
 
-    ;(value as unknown[]).forEach((item, index) => {
-      save(store, childKeys[index]!, schema.element, item)
-    })
-    return
+const flatStoreAdapter: StoreAdapter<FlatStore> = {
+  save(store, key, schema, value) {
+    if (isStringSchema(schema)) {
+      store[key] = value
+      return
+    }
+
+    if (isArraySchema(schema)) {
+      const childKeys = (value as unknown[]).map((_, index) => `${key}/${index}`)
+      store[key] = childKeys
+
+      ;(value as unknown[]).forEach((item, index) => {
+        flatStoreAdapter.save(store, childKeys[index]!, schema.element, item)
+      })
+      return
+    }
+
+    throw new Error(`Unknown schema: ${schema.kind}`)
+  },
+
+  load(store, key, schema) {
+    const value = store[key]
+    if (value === undefined) throw new Error(`Missing key: ${key}`)
+
+    if (isStringSchema(schema)) {
+      if (typeof value !== "string") throw new Error(`Expected string at ${key}`)
+      return value
+    }
+
+    if (isArraySchema(schema)) {
+      if (!Array.isArray(value)) throw new Error(`Expected array at ${key}`)
+      return value.map(childKey => flatStoreAdapter.load(store, childKey, schema.element))
+    }
+
+    throw new Error(`Unknown schema: ${schema.kind}`)
+  },
+}
+
+function toJson<S extends AnySchema>(schema: S, value: ValueOf<S>): JsonValue {
+  if (isStringSchema(schema)) return value as string
+
+  if (isArraySchema(schema)) {
+    return (value as unknown[]).map(item => toJson(schema.element, item))
   }
 
   throw new Error(`Unknown schema: ${schema.kind}`)
 }
 
-function load<S extends AnySchema>(
-  store: FlatStore,
-  key: string,
-  schema: S,
-): ValueOf<S> {
-  const value = store[key]
-  if (value === undefined) throw new Error(`Missing key: ${key}`)
-
-  if (schema.kind === "string") {
-    if (typeof value !== "string") throw new Error(`Expected string at ${key}`)
+function fromJson<S extends AnySchema>(schema: S, value: JsonValue): ValueOf<S> {
+  if (isStringSchema(schema)) {
+    if (typeof value !== "string") throw new Error("Expected string")
     return value as ValueOf<S>
   }
 
-  if (schema.kind === "array") {
-    if (!Array.isArray(value)) throw new Error(`Expected array at ${key}`)
-    return value.map(childKey => load(store, childKey, schema.element)) as ValueOf<S>
+  if (isArraySchema(schema)) {
+    if (!Array.isArray(value)) throw new Error("Expected array")
+    return value.map(item => fromJson(schema.element, item)) as ValueOf<S>
   }
 
   throw new Error(`Unknown schema: ${schema.kind}`)
 }
 
+const nestedStoreAdapter: StoreAdapter<NestedStore> = {
+  save(store, key, schema, value) {
+    store[key] = toJson(schema, value)
+  },
+
+  load(store, key, schema) {
+    const value = store[key]
+    if (value === undefined) throw new Error(`Missing key: ${key}`)
+    return fromJson(schema, value)
+  },
+}
+
 const tagsSchema = arraySchema(stringSchema())
-const store: FlatStore = {}
+const tags = ["ideas", "prototype"]
 
-save(store, "doc:tags", tagsSchema, ["ideas", "prototype"])
+const flatStore: FlatStore = {}
+flatStoreAdapter.save(flatStore, "doc:tags", tagsSchema, tags)
+console.log("flat", flatStore)
+console.log("flat loaded", flatStoreAdapter.load(flatStore, "doc:tags", tagsSchema))
 
-console.log(store)
-console.log(load(store, "doc:tags", tagsSchema))
+const nestedStore: NestedStore = {}
+nestedStoreAdapter.save(nestedStore, "doc:tags", tagsSchema, tags)
+console.log("nested", nestedStore)
+console.log(
+  "nested loaded",
+  nestedStoreAdapter.load(nestedStore, "doc:tags", tagsSchema),
+)
