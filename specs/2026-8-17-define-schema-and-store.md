@@ -1,99 +1,62 @@
-# Schema-Driven Editor API Architecture
+# Schema-Driven Editor API
 
-## Objective
+## Goal
 
-The editor should support multiple storage implementations—such as flat storage, nested storage, and Yjs—without exposing storage details to renderers or plugins.
-
-The high-level architecture is:
-
-```text
-Schema
-  ↓
-ValueHandle
-  ↓
-Semantic operation
-  ↓
-Store-specific override or universal default
-  ↓
-Store instructions
-  ↓
-Store adapter
-```
+Support multiple storage implementations—such as flat storage, nested storage, and Yjs—without exposing store-specific details to renderers or plugins.
 
 The central rule is:
 
-> Schemas and semantic operations define editor semantics. Store adapters define how those semantics are executed in a particular storage model.
+> Schemas define valid values and editor semantics. Store adapters define how values are stored and mutated.
 
 ---
 
-# 1. Schemas and associated types
+## 1. Schemas with associated types
 
-Each schema carries its corresponding logical value and operation types explicitly.
+Each schema carries its corresponding logical value type explicitly.
 
 ```ts
-interface Schema<Value, Operation> {
+interface Schema<Value> {
   readonly kind: string
-
-  readonly __types?: {
-    value: Value
-    operation: Operation
-  }
+  readonly __value?: Value
 }
 
-type AnySchema = Schema<unknown, unknown>
+type AnySchema = Schema<unknown>
 
 type ValueOf<S extends AnySchema> =
-  NonNullable<S["__types"]>["value"]
-
-type OperationOf<S extends AnySchema> =
-  NonNullable<S["__types"]>["operation"]
+  S extends Schema<infer Value>
+    ? Value
+    : never
 ```
 
-This avoids recursively calculating types such as `ValueOf<S>` from deeply nested schema structures.
+This avoids recursively calculating value types from deeply nested schemas, which can exceed TypeScript’s recursion limits.
 
-Recursive conditional type derivation has already proven unsuitable because complex document schemas can exceed TypeScript’s type-instantiation limits.
+Schemas describe:
 
-A schema may additionally define:
-
+* valid logical values,
 * child schemas,
 * structural constraints,
-* semantic operations,
 * validation,
-* nested JSON codecs,
-* universal default operation implementations.
+* nested JSON serialization.
 
 ---
 
-# 2. `ValueHandle` as the primary live-editing API
+## 2. `ValueHandle` as the live editor API
 
-The primary API represents a live location in the document rather than a complete value snapshot.
+Renderers interact with handles instead of complete JSON values.
 
 ```ts
 interface ValueHandle<S extends AnySchema> {
   readonly schema: S
   readonly nodeId: NodeId
-
-  dispatch(
-    operation: OperationOf<S>,
-  ): OperationResult
 }
 ```
 
-A handle conceptually contains or closes over:
+A handle internally references a value in a store.
 
-```text
-schema
-stable logical nodeId
-private store reference
-store adapter
-```
-
-The store-specific reference is hidden from renderers and plugins.
+The store reference remains hidden and may be:
 
 ```ts
-type FlatRef = {
-  key: string
-}
+type FlatRef = { key: string }
 
 type NestedRef = {
   path: readonly PathSegment[]
@@ -104,99 +67,30 @@ type YjsRef = {
 }
 ```
 
-Renderer and plugin code must not depend on these reference representations.
+Renderers remain independent of the store implementation.
+
+`nodeId` represents stable editor identity and is separate from IDs contained in the document schema itself.
 
 ---
 
-# 3. Stable node identity
+## 3. Schema-specific handles
 
-Every schema value has a stable logical `nodeId`, including scalar values.
+Use a generic base handle with schema-specific APIs.
 
 ```ts
-interface ValueHandle<S extends AnySchema> {
-  readonly nodeId: NodeId
-  readonly schema: S
+interface StringHandle
+  extends ValueHandle<StringSchema> {
+  get(): string
+  set(value: string): void
 }
 ```
-
-The `nodeId` remains stable when:
-
-* the value changes,
-* an array element moves,
-* the nested path changes,
-* the internal store reference changes.
-
-It may be used by renderers:
-
-```tsx
-<div data-node-id={current.nodeId} />
-```
-
-It may also be used for:
-
-* React keys,
-* editor selections,
-* diagnostics,
-* operation history,
-* collaboration,
-* tracking a logical node across structural changes.
-
-The logical `nodeId` is distinct from identifiers that may occur inside the document schema itself.
-
-For example, a schema may contain a domain-level `id` field:
-
-```json
-{
-  "id": "exercise-123",
-  "question": "What is 2 + 2?"
-}
-```
-
-That field belongs to the document value. It is not necessarily the same as the editor’s internal `nodeId`.
-
----
-
-# 4. Handle identity
-
-The API guarantees stable semantic identity through `nodeId`.
-
-It does not guarantee stable JavaScript object identity.
-
-```ts
-firstHandle.nodeId === secondHandle.nodeId
-```
-
-may be true even when:
-
-```ts
-firstHandle !== secondHandle
-```
-
-Store implementations may cache handles, but application code should not depend on this.
-
----
-
-# 5. Generic base handles and schema-specific handles
-
-The API uses a generic base handle with schema-specific extensions.
-
-```ts
-interface ValueHandle<S extends AnySchema> {
-  readonly schema: S
-  readonly nodeId: NodeId
-
-  dispatch(
-    operation: OperationOf<S>,
-  ): OperationResult
-}
-```
-
-Example array handle:
 
 ```ts
 interface ArrayHandle<C extends AnySchema>
   extends ValueHandle<ArraySchema<C>> {
-  length(): number
+  size(): number
+
+  at(index: number): HandleOf<C>
 
   map<R>(
     callback: (
@@ -208,63 +102,32 @@ interface ArrayHandle<C extends AnySchema>
   insert(
     index: number,
     value: ValueOf<C>,
-  ): Result<HandleOf<C>, ArrayInsertError>
+  ): HandleOf<C>
 
-  remove(
-    index: number,
-  ): Result<RemovedValue<C>, ArrayRemoveError>
+  remove(index: number): ValueOf<C>
 }
 ```
 
-Example string handle:
+Common operations are exposed as methods.
 
-```ts
-interface StringHandle
-  extends ValueHandle<StringSchema> {
-  value(): string
-
-  set(
-    value: string,
-  ): Result<void, StringSetError>
-}
-```
-
-Schema-specific APIs provide:
-
-* better autocomplete,
-* clear operation availability,
-* targeted reads,
-* renderer ergonomics,
-* type-safe child handles.
+Uncommon operations may later use a generic execution API.
 
 ---
 
-# 6. Targeted reads instead of full JSON reads
+## 4. Targeted reads
 
-Renderers should normally use schema-specific targeted reads.
+Renderers should read only the data they need.
 
-For an array:
-
-```ts
-array.length()
-
-array.map((child, index) => {
-  return renderChild(child)
-})
-```
-
-For a string:
+For example, consider a simple domain where a document contains a list of tags:
 
 ```ts
-stringHandle.value()
+const tags = array(string())
 ```
 
-The renderer should not need to reconstruct the complete nested JSON value in order to render one node.
+A renderer for this structure should only access the array handle and its children, without reconstructing the full document value.
 
-Example:
-
-```tsx
-function ArrayRenderer<C extends AnySchema>({
+```ts
+function TagsRenderer<C extends AnySchema>({
   current,
 }: {
   current: ArrayHandle<C>
@@ -282,518 +145,46 @@ function ArrayRenderer<C extends AnySchema>({
 }
 ```
 
-`map()` is the preferred high-level traversal API.
+Each `child` in this case would represent a single tag string handle, and the renderer only subscribes to the parts of the document it actually renders.
 
-A lower-level `children()` API should only be introduced when an application use case requires direct access to all child handles.
+Renderers should not reconstruct the complete nested JSON document for ordinary rendering.
+
+A complete logical snapshot is available at the document level.
 
 ---
 
-# 7. Snapshot API
+## 5. `DocumentHandle`
 
-The normal public snapshot API exists at the document level.
-
-```ts
-const value =
-  document.snapshot()
-```
-
-It returns the complete logical nested value of the document.
+The document handle owns document-level operations.
 
 ```ts
-interface DocumentHandle<
-  S extends AnySchema,
-> {
+interface DocumentHandle<S extends AnySchema> {
   readonly root: HandleOf<S>
 
   snapshot(): ValueOf<S>
+
+  transaction<R>(
+    callback: () => R,
+  ): R
 }
 ```
 
-Subtree snapshots are not part of the initial public API.
+Transactions group several mutations into one atomic update.
 
-They may later be added for:
+```ts
+document.transaction(() => {
+  answers.insert(0, "First")
+  answers.insert(1, "Second")
+})
+```
 
-* testing,
-* debugging,
-* copying subtrees,
-* validation tools,
-* integration boundaries.
-
-Ordinary snapshots contain logical nested values and do not automatically include editor `nodeId` metadata.
+Subscribers observe only the committed state.
 
 ---
 
-# 8. Synchronous live editing
+## 6. Store adapters
 
-Handle reads and mutations are synchronous.
-
-```ts
-const value =
-  stringHandle.value()
-
-array.insert(0, newValue)
-```
-
-Stores must maintain a local live representation suitable for synchronous renderer access.
-
-Loading and saving documents remain asynchronous repository operations.
-
-```ts
-const document =
-  await repository.open(documentId)
-
-await repository.save(document)
-```
-
-This separates:
-
-```text
-synchronous live editing
-from
-asynchronous persistence and loading
-```
-
----
-
-# 9. Store adapter visibility
-
-The store adapter is hidden inside bound handles and the document handle.
-
-Renderer and plugin code interact with:
-
-* `ValueHandle`,
-* schema-specific handles,
-* semantic operations,
-* `DocumentHandle`.
-
-They do not receive the raw adapter or the raw store reference.
-
-Store-specific functionality should only be exposed through explicit, dedicated APIs when required.
-
----
-
-# 10. First-class semantic operations
-
-Editor mutations are represented as first-class semantic operations.
-
-```ts
-const ArrayInsert =
-  defineOperation({
-    name: "array.insert",
-
-    create<C extends AnySchema>(
-      index: number,
-      value: ValueOf<C>,
-    ) {
-      return {
-        type: "array.insert" as const,
-        index,
-        value,
-      }
-    },
-
-    defaultImplementation(
-      context,
-      operation,
-    ) {
-      // Lower into store instructions.
-    },
-  })
-```
-
-Semantic operations represent editor intent.
-
-Examples:
-
-```ts
-type SemanticOperation =
-  | ArrayInsert
-  | ArrayRemove
-  | ArrayMove
-  | StringSet
-  | ObjectPropertySet
-  | UnionVariantReplace
-```
-
-They are not tied to a specific storage implementation.
-
----
-
-# 11. Public mutation API
-
-Common operations are exposed as methods on schema-specific handles.
-
-```ts
-array.insert(index, value)
-
-array.remove(index)
-
-stringHandle.set(value)
-```
-
-Uncommon operations may be executed through `dispatch()`.
-
-```ts
-handle.dispatch(
-  someUncommonOperation,
-)
-```
-
-`dispatch()` is an advanced escape hatch rather than the default renderer API.
-
-The operation target is supplied implicitly by the handle:
-
-```ts
-handle.dispatch(operation)
-```
-
-The operation itself does not need to contain the target node reference.
-
----
-
-# 12. Explicit handle methods
-
-Common methods are implemented explicitly.
-
-```ts
-class ArrayHandleImplementation<
-  C extends AnySchema,
-> implements ArrayHandle<C> {
-  insert(
-    index: number,
-    value: ValueOf<C>,
-  ) {
-    return this.dispatch(
-      ArrayInsert.create(
-        index,
-        value,
-      ),
-    )
-  }
-
-  remove(index: number) {
-    return this.dispatch(
-      ArrayRemove.create(index),
-    )
-  }
-}
-```
-
-This approach provides:
-
-* simple TypeScript types,
-* predictable runtime behavior,
-* strong autocomplete,
-* an explicit public API,
-* no dynamic proxy behavior.
-
-The main drawback is forwarding boilerplate.
-
-```ts
-insert(index, value) {
-  return this.dispatch(
-    ArrayInsert.create(
-      index,
-      value,
-    ),
-  )
-}
-```
-
-Reducing this boilerplate is a future challenge.
-
-Possible future solutions include:
-
-* schema compilation,
-* mapped-type method binding,
-* operation method generation,
-* TypeScript code generation.
-
----
-
-# 13. Operation return values
-
-Mutation methods return operation-specific results.
-
-```ts
-const inserted =
-  array.insert(index, value)
-
-const removed =
-  array.remove(index)
-
-const result =
-  stringHandle.set(value)
-```
-
-Each operation defines its own semantic return type.
-
-```ts
-interface ArrayInsertOperation<C> {
-  result:
-    Result<HandleOf<C>, ArrayInsertError>
-}
-
-interface ArrayRemoveOperation<C> {
-  result:
-    Result<RemovedValue<C>, ArrayRemoveError>
-}
-
-interface StringSetOperation {
-  result:
-    Result<void, StringSetError>
-}
-```
-
-Operations are not forced into one generic return shape.
-
----
-
-# 14. Failure model
-
-Expected domain failures return typed results.
-
-```ts
-const result =
-  array.insert(index, value)
-
-if (!result.ok) {
-  handleInsertError(
-    result.error,
-  )
-}
-```
-
-Examples of expected failures:
-
-* schema validation failure,
-* permission rejection,
-* an invalid operation in the current domain state,
-* a rejected collaborative update.
-
-Programmer and infrastructure errors throw exceptions.
-
-Examples:
-
-* missing adapter instruction,
-* invalid adapter configuration,
-* an impossible schema/store mismatch,
-* using an operation with the wrong schema kind.
-
-This creates the distinction:
-
-```text
-Expected domain failure
-→ Result
-
-Programming or infrastructure failure
-→ exception
-```
-
----
-
-# 15. Semantic operations and store instructions
-
-Semantic operations are separate from low-level store instructions.
-
-Example semantic operation:
-
-```text
-ArrayInsert
-```
-
-Possible default lowering:
-
-```text
-AllocateValue
-InsertReference
-```
-
-Complete flow:
-
-```text
-renderer
-    ↓
-ValueHandle method
-    ↓
-semantic operation
-    ↓
-store-specific override?
-    ├── yes
-    │     ↓
-    │ specialized implementation
-    │
-    └── no
-          ↓
-    universal default implementation
-          ↓
-    store instruction program
-          ↓
-    store adapter
-```
-
-Semantic operations retain domain meaning.
-
-Store instructions describe lower-level storage mechanics.
-
----
-
-# 16. Universal default implementations
-
-Each semantic operation has one universal default implementation.
-
-Example:
-
-```ts
-const ArrayInsert =
-  defineOperation({
-    name: "array.insert",
-
-    defaultImplementation(
-      context,
-      operation,
-    ) {
-      const childRef =
-        context.allocateValue(
-          context.schema.childSchema,
-          operation.value,
-        )
-
-      return context.insertReference(
-        context.ref,
-        operation.index,
-        childRef,
-      )
-    },
-  })
-```
-
-A flat store may use this default directly.
-
-A Yjs store may override the complete semantic operation.
-
-```ts
-yjsAdapter.override(
-  ArrayInsert,
-  (context, operation) => {
-    context.yArray.insert(
-      operation.index,
-      [
-        context.convertToYValue(
-          operation.value,
-        ),
-      ],
-    )
-  },
-)
-```
-
-The semantic meaning remains universal even if execution differs between stores.
-
----
-
-# 17. Store instructions
-
-Stores declare the lower-level instructions they support.
-
-Possible starting instruction vocabulary:
-
-```ts
-type InstructionName =
-  | "allocateValue"
-  | "setScalar"
-  | "insertReference"
-  | "removeReference"
-  | "replaceReference"
-```
-
-A store adapter may implement only a subset.
-
-```ts
-interface StoreAdapter<
-  Supported extends InstructionName,
-> {
-  readonly handlers: {
-    [K in Supported]:
-      InstructionHandler<K>
-  }
-}
-```
-
-A default operation implementation declares which instructions it requires.
-
-```ts
-interface Program<
-  Required extends InstructionName,
-  Result,
-> {
-  readonly required: Required
-}
-```
-
-An operation can be executed when the adapter either:
-
-1. implements a direct semantic-operation override, or
-2. implements all instructions required by the universal default.
-
----
-
-# 18. Adapter compatibility
-
-For now, adapter compatibility is validated at startup or when an unsupported operation is executed.
-
-Example error:
-
-```text
-YjsStore cannot execute ObjectReplace:
-
-- no direct override exists
-- required instruction "replaceReference" is missing
-```
-
-Proving every override and fallback relationship entirely through the TypeScript type system is a future challenge.
-
-Runtime validation is acceptable for the initial implementation.
-
----
-
-# 19. Instruction granularity
-
-The exact instruction vocabulary remains an open challenge.
-
-Instructions must be:
-
-* general enough for flat, nested, and Yjs stores,
-* expressive enough for atomic mutations,
-* independent of one specific storage representation,
-* low-level enough to be reusable,
-* high-level enough to avoid inefficient or unnatural lowering.
-
-Potential levels include:
-
-```text
-Low-level:
-- allocate record
-- set field
-- splice references
-
-Medium-level:
-- allocate value
-- insert child
-- replace scalar
-
-High-level:
-- insert array element
-- replace union variant
-```
-
-The initial instruction set should remain small and evolve based on concrete store requirements.
-
----
-
-# 20. Store adapter responsibilities
-
-The store adapter owns storage-specific concerns.
+Store adapters implement storage-specific behavior.
 
 ```ts
 interface StoreAdapter<Ref> {
@@ -805,246 +196,89 @@ interface StoreAdapter<Ref> {
 
   subscribe(
     ref: Ref,
+    aspect: SubscriptionAspect,
     listener: () => void,
   ): Unsubscribe
 
-  execute(
-    instruction: StoreInstruction,
-  ): unknown
-
   transaction<R>(
     callback: () => R,
   ): R
 }
 ```
 
-Responsibilities include:
+Adapters are responsible for:
 
-* resolving references,
-* executing store instructions,
-* direct semantic-operation overrides,
+* resolving store references,
+* reading and writing values,
+* creating and deleting nodes,
 * subscriptions,
 * transactions,
-* node allocation,
-* node removal,
-* garbage collection,
 * stable identity mapping,
-* storage-specific optimization.
+* garbage collection,
+* store-specific optimization.
 
-The adapter does not redefine:
-
-* schema meaning,
-* operation meaning,
-* renderer behavior,
-* logical validation rules,
-* nested JSON serialization semantics.
+They should not redefine schema semantics or renderer behavior.
 
 ---
 
-# 21. `DocumentHandle`
+## 7. First-class semantic operations
 
-A `DocumentHandle` exists above ordinary value handles.
+Editor actions may be represented as reusable operation definitions.
 
 ```ts
-interface DocumentHandle<
-  S extends AnySchema,
-> {
-  readonly root: HandleOf<S>
+const ArrayInsert = defineOperation({
+  name: "array.insert",
 
-  snapshot(): ValueOf<S>
-
-  transaction<R>(
-    callback: () => R,
-  ): R
-}
+  execute<C extends AnySchema>(
+    handle: ArrayHandle<C>,
+    index: number,
+    value: ValueOf<C>,
+  ) {
+    return handle.insert(index, value)
+  },
+})
 ```
 
-It owns document-level concerns such as:
+This supports future requirements such as:
 
-* the root handle,
-* transactions,
-* document snapshots,
-* document lifecycle,
-* integration with the repository.
+* undo and redo,
+* command logging,
+* permissions,
+* keyboard commands,
+* analytics,
+* collaboration.
 
-Node lookup by `nodeId` is not part of the initial public API.
+Common operations remain normal handle methods.
 
-It may be added later if a concrete application requirement appears.
-
-Possible future API:
+The advanced API should preferably be:
 
 ```ts
-document.find(nodeId)
-
-document.find(
-  nodeId,
-  expectedSchema,
+handle.execute(
+  ArrayMove,
+  from,
+  to,
 )
 ```
 
----
-
-# 22. Transactions
-
-Transactions are exposed through the document handle.
-
-```ts
-document.transaction(() => {
-  array.insert(0, first)
-  array.insert(1, second)
-})
-```
-
-Individual semantic operations are atomic.
-
-Transactions group multiple operations into one larger atomic unit.
-
-Nested transactions join the outer transaction.
-
-```ts
-document.transaction(() => {
-  firstOperation()
-
-  document.transaction(() => {
-    secondOperation()
-  })
-})
-```
-
-The inner transaction does not create an independent commit boundary.
+rather than a large union-based `dispatch()` API.
 
 ---
 
-# 23. Transaction visibility
+## Ideas
 
-Subscribers observe only the final committed state of a transaction.
-
-They do not observe intermediate mutations.
-
-```text
-transaction begins
-  mutation A
-  mutation B
-  mutation C
-transaction commits
-
-subscriber receives one coherent update
-```
-
-This supports:
-
-* atomic React rendering,
-* coherent snapshots,
-* batched collaboration updates,
-* one undo entry per transaction,
-* predictable derived state.
+* React should not directly “subscribe to handles” as a primary abstraction; instead, it should subscribe to *derived reactive views* of the document graph.
+* Separate *structural reactivity* (e.g. array/object shape changes) from *value reactivity* (leaf updates) so updates can be more precisely targeted.
+* Consider introducing a unified `useValue(handle, selector?)` hook that can express both full-value and partial subscriptions instead of many schema-specific hooks.
+* Explore whether subscriptions should be expressed at the schema level (schema declares what is reactive) rather than at the hook level (hooks infer reactivity).
+* Investigate a fine-grained dependency tracking system where components automatically track accessed fields during render, similar to proxy-based reactivity systems.
+* Evaluate whether `useSyncExternalStore` is sufficient long-term or if a custom scheduler is needed for batching, prioritization, and cross-handle consistency.
+* Consider decoupling React entirely from the core subscription model by introducing a framework-agnostic reactive core that React merely adapts to.
+* Explore memoization strategies at the handle layer so that unchanged subtrees guarantee referential stability without requiring React-level optimizations.
+* Think about supporting non-React consumers (CLI, server rendering, collaborative engines) using the same subscription primitives, ensuring React is just one adapter among many.
 
 ---
 
-# 24. React subscription model
-
-Core handle read methods are synchronous and non-reactive.
-
-```ts
-array.map(...)
-stringHandle.value()
-```
-
-React subscriptions are explicit and implemented separately.
-
-```ts
-const childIds =
-  useHandleSelector(
-    array,
-    snapshot =>
-      snapshot.childIds,
-  )
-
-const text =
-  useHandleSelector(
-    stringHandle,
-    snapshot =>
-      snapshot.value,
-  )
-```
-
-The core API therefore remains independent of React.
-
-React integration should use `useSyncExternalStore` or an equivalent selector-based abstraction.
-
-```ts
-function useHandleSelector<
-  S extends AnySchema,
-  R,
->(
-  handle: ValueHandle<S>,
-  selector: (
-    snapshot: SnapshotOf<S>,
-  ) => R,
-): R
-```
-
-A parent array renderer subscribes to structural information such as:
-
-* child IDs,
-* child order,
-* array length.
-
-A child renderer subscribes to its own value.
-
-A string change should not rerender the array parent if the array structure remains unchanged.
-
-An insertion should rerender the array parent because membership or order changed.
-
-Store transactions should batch parent and child notifications into one coherent update.
-
----
-
-# 25. Deleted handles
-
-A retained handle becomes detached when its node is removed.
-
-```ts
-handle.isAttached()
-```
-
-Reads and writes through a detached handle fail with a typed stale-handle error.
-
-```ts
-type StaleHandleError = {
-  type: "stale-handle"
-  nodeId: NodeId
-}
-```
-
-The detached handle retains its `nodeId` for diagnostics.
-
-It does not silently return its previous value and does not automatically follow a replacement node.
-
----
-
-# 26. Schema visibility
-
-The concrete schema object is publicly available on the handle.
-
-```ts
-handle.schema
-```
-
-This supports:
-
-* generic renderers,
-* diagnostics,
-* schema-aware tooling,
-* operation construction,
-* editor inspection,
-* testing.
-
-The schema is part of the typed handle contract.
-
----
-
-# 27. Nested JSON codec boundary
+## 9. Serialization boundary
 
 The logical serialization format is nested JSON.
 
@@ -1063,264 +297,23 @@ interface Codec<
 }
 ```
 
-Example logical document value:
-
-```json
-{
-  "question": "What is 2 + 2?",
-  "answers": [
-    "3",
-    "4",
-    "5"
-  ]
-}
-```
-
-Internal stores may use:
-
-* normalized flat nodes,
-* mutable nested objects,
-* Yjs structures.
-
-The serialization boundary remains:
+Distinguish three representations:
 
 ```text
-nested JSON
-    ↕
-schema codec
-    ↕
-store import/export
-    ↕
-internal representation
+serialized nested JSON
+logical schema value
+internal store representation
 ```
 
-Codecs are used for:
+Live editing uses handles.
 
-* persistence,
-* import,
-* export,
-* migrations,
-* validation,
-* snapshots.
-
-Live editing uses handles and semantic operations.
+Import, export, persistence, and migration use codecs and snapshots.
 
 ---
 
-# 28. Schema compilation
+## 10. Repository
 
-Schemas may be compiled once into specialized runtime behavior.
-
-```ts
-const compiled =
-  compileSchema(schema)
-
-compiled.createHandle(...)
-compiled.validate(...)
-compiled.encode(...)
-compiled.decode(...)
-compiled.lowerOperation(...)
-```
-
-Compilation may:
-
-* resolve semantic operation definitions,
-* bind child schemas,
-* create handle factories,
-* collect instruction requirements,
-* validate adapter compatibility,
-* reduce registry lookups,
-* isolate unavoidable TypeScript assertions.
-
-This is a form of partial evaluation: schema-dependent work happens once rather than during every render or mutation.
-
----
-
-# 29. Avoiding central switch statements
-
-The architecture should avoid large central switch statements that must be modified whenever a schema or operation is added.
-
-Adding a schema kind should not require editing separate central switches for:
-
-* rendering,
-* validation,
-* storage,
-* loading,
-* saving,
-* operation dispatch.
-
-Useful mechanisms include:
-
-* schema-local definitions,
-* first-class operation objects,
-* compiled schema handlers,
-* operation registries,
-* adapter override maps,
-* store instruction handlers.
-
-Some runtime dispatch is unavoidable, but it should be concentrated in registration and compilation infrastructure.
-
----
-
-# 30. Static extensibility first
-
-Schemas, operations, instructions, and adapters are statically known in the initial architecture.
-
-This permits:
-
-* closed TypeScript unions,
-* explicit handle interfaces,
-* exhaustive operation types,
-* simpler schema compilation,
-* stronger type inference,
-* simpler adapter validation.
-
-Dynamic plugin registration is a future feature.
-
-It may later require:
-
-* runtime registries,
-* namespaced schema identifiers,
-* namespaced operation identifiers,
-* versioning,
-* startup compatibility validation,
-* fallback behavior for unknown schemas,
-* weaker compile-time exhaustiveness.
-
----
-
-# Open challenges
-
-## 1. Instruction granularity
-
-The correct level for store instructions remains undecided.
-
-The instruction set should be derived from concrete requirements of:
-
-* flat storage,
-* nested storage,
-* Yjs storage.
-
-It should not prematurely assume one storage model.
-
-## 2. Read API
-
-The exact schema-specific read API remains open.
-
-Questions include:
-
-* Should `map()` be the only collection traversal API?
-* Is `children()` needed for non-rendering applications?
-* Should subtree snapshots be exposed?
-* How should object properties expose handles?
-* How should tuple positions expose handles?
-* How should union variants expose handles?
-* How fine-grained should selector snapshots be?
-
-## 3. Handle method boilerplate
-
-Explicit handle methods require forwarding code.
-
-```ts
-insert(index, value) {
-  return this.dispatch(
-    ArrayInsert.create(
-      index,
-      value,
-    ),
-  )
-}
-```
-
-Potential future solutions include:
-
-* code generation,
-* schema compilation,
-* operation-to-method binding,
-* mapped types.
-
-## 4. Compile-time adapter compatibility
-
-The system does not initially prove at compile time that every semantic operation has either:
-
-* a direct adapter override, or
-* all instructions required by its universal default.
-
-Startup or runtime validation is sufficient initially.
-
-Compile-time verification remains a future design challenge.
-
----
-
-# Future ideas
-
-## Schema modules
-
-A schema module could package all related definitions together.
-
-```ts
-interface SchemaModule<
-  Value,
-  Operation,
-> {
-  schema: SchemaDescription
-
-  operations:
-    OperationDefinitions<Operation>
-
-  codec:
-    Codec<Value, Json>
-
-  validator:
-    Validator<Value>
-}
-```
-
-This resembles an ML module because associated types and related behavior are packaged together.
-
-It resembles a typeclass dictionary because a runtime object provides the behavior associated with a type.
-
-## Code generation
-
-Code generation could produce:
-
-* value types,
-* handle types,
-* operation unions,
-* handle forwarding methods,
-* codecs,
-* validators.
-
-This may eliminate boilerplate and bypass TypeScript recursion limits.
-
-## CQRS concepts
-
-The architecture already separates:
-
-```text
-queries
-commands
-storage execution
-```
-
-Possible mapping:
-
-```text
-ValueHandle reads
-→ queries
-
-Semantic operations
-→ commands
-
-Optional operation log
-→ future events
-```
-
-Full event sourcing is not required.
-
-## Repository pattern
-
-A repository may own asynchronous document lifecycle operations.
+Loading and saving are asynchronous repository operations.
 
 ```ts
 interface DocumentRepository {
@@ -1335,130 +328,95 @@ interface DocumentRepository {
 }
 ```
 
-## Aggregate boundaries
-
-Some structured values may form consistency boundaries.
-
-Examples:
-
-* an exercise containing a question and answer,
-* a union whose active variant and value must change atomically,
-* a tuple with fixed child positions.
-
-Aggregates may later define where invariants must be enforced atomically.
-
-## Lenses and optics
-
-Lenses, prisms, and traversals may later provide reusable typed paths through:
-
-* object schemas,
-* tuple schemas,
-* union schemas,
-* collection schemas.
-
-They are not required for the initial architecture.
+Live reads and mutations remain synchronous.
 
 ---
 
-# Condensed architecture
+## 11. Extensibility strategy
+
+Initially, schemas, handles, operations, and adapters are statically known.
+
+This allows:
+
+* closed TypeScript unions,
+* explicit handle interfaces,
+* strong autocomplete,
+* exhaustive checks,
+* simpler implementation.
+
+Dynamic plugin registration may be added later through registries and runtime validation.
+
+---
+
+## Important implementation principles
+
+* Avoid recursive conditional types for deriving deeply nested values.
+* Keep store references private.
+* Use stable logical node identity.
+* Prefer schema-specific handles over one generic mutable object.
+* Keep `DocumentHandle` narrow.
+* Use targeted reads instead of whole-document reads.
+* Introduce first-class operations when undo, logging, permissions, or collaboration require them.
+* Do not design a low-level instruction language before multiple real adapters reveal common behavior.
+* Avoid duplicated dispatch logic across subsystems, but do not avoid all `switch` statements.
+* Treat schema compilation and code generation as optional future optimizations.
+
+---
+
+## Open challenges
+
+### Node identity granularity
+
+Determine whether every primitive value needs its own `nodeId`, or whether some values can be addressed through their parent and property key.
+
+### Read API
+
+Determine the final APIs for arrays, objects, tuples, and unions.
+
+### Handle boilerplate
+
+Explicit handle methods create forwarding boilerplate. Possible future solutions include code generation or operation-to-method binding.
+
+### Adapter commonality
+
+After implementing at least two stores, evaluate whether common lower-level storage instructions should be extracted.
+
+---
+
+## Condensed architecture
 
 ```text
 Schema
-├── associated value type
-├── associated operation type
-├── constraints
+├── associated logical value type
 ├── child schemas
-├── universal operation definitions
+├── constraints
+├── validation
 └── nested JSON codec
-
-CompiledSchema
-├── handle factory
-├── validator
-├── codec
-├── operation lowering
-└── instruction requirements
 
 DocumentHandle
 ├── root handle
 ├── snapshot()
-├── transaction()
-└── document lifecycle
+└── transaction()
 
 ValueHandle
 ├── schema
 ├── stable nodeId
 ├── hidden store reference
-├── dispatch()
 └── schema-specific API
+
+StoreAdapter
+├── storage access
+├── subscriptions
+├── transactions
+├── identity mapping
+└── garbage collection
 
 SemanticOperation
 ├── editor intent
 ├── typed arguments
-├── semantic result type
-├── universal default implementation
-└── required instructions
-
-StoreInstruction
-├── allocation
-├── scalar mutation
-├── reference mutation
-└── structural mutation
-
-StoreAdapter
-├── instruction handlers
-├── semantic-operation overrides
-├── subscriptions
-├── transactions
-├── reference resolution
-├── stable identity mapping
-└── garbage collection
+└── future undo/logging/collaboration support
 
 Repository
 ├── asynchronous loading
-├── asynchronous saving
-└── persistence lifecycle
+└── asynchronous saving
 ```
-
-# Final API direction
-
-```ts
-const document =
-  await repository.open(
-    documentId,
-    documentSchema,
-  )
-
-const root =
-  document.root
-
-document.transaction(() => {
-  root.answers.insert(
-    0,
-    "New answer",
-  )
-
-  root.question.set(
-    "Updated question",
-  )
-})
-
-const json =
-  document.snapshot()
-
-await repository.save(document)
-```
-
-The design prioritizes:
-
-* store-independent renderers,
-* stable logical node identity,
-* explicit schema-specific APIs,
-* fine-grained renderer reads,
-* semantic operations,
-* universal operation defaults,
-* store-specific optimization,
-* typed domain failures,
-* synchronous live editing,
-* asynchronous persistence,
-* atomic transactions,
-* static extensibility initially.
