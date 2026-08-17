@@ -73,11 +73,11 @@ const flatStoreAdapter: StoreAdapter<FlatStore> = {
 }
 
 const nestedStoreAdapter: StoreAdapter<NestedStore> = {
-  save(store, key, schema, value) {
+  save(store, key, _schema, value) {
     store[key] = value
   },
 
-  load(store, key, schema) {
+  load(store, key) {
     const value = store[key]
     if (value === undefined) throw new Error(`Missing key: ${key}`)
     return value
