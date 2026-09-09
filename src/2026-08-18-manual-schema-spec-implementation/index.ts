@@ -24,15 +24,11 @@ interface Schema<V extends Value = Value> {
 
 type ValueOf<S extends Schema> = S extends Schema<infer Value> ? Value : never;
 
-// schema/string
-
 interface StringSchema extends Schema<StringValue> {
   readonly kind: "string";
 }
 
 const string = (): StringSchema => ({ kind: "string" });
-
-// schema/array
 
 interface ArraySchema<C extends Schema> extends Schema<ArrayValue<ValueOf<C>>> {
   readonly kind: "array";
@@ -44,7 +40,7 @@ interface ArraySchema<C extends Schema> extends Schema<ArrayValue<ValueOf<C>>> {
 const array = <C extends Schema>(
   element: C,
   options?: { max?: number; min?: number },
-) => ({
+): ArraySchema<C> => ({
   kind: "array",
   element,
   ...options,
