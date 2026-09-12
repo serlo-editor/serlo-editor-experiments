@@ -1,329 +1,232 @@
 // Value types
 
 export interface StringValue {
-  get(): string;
-  set(value: string): void;
+  get(): string
+  set(value: string): void
 }
 
 export interface ArrayValue<T> {
-  readonly length: number;
-  at(index: number): T;
-  map<R>(fn: (value: T, index: number) => R): R[];
+  readonly length: number
+  at(index: number): T
+  map<R>(fn: (value: T, index: number) => R): R[]
 }
 
-export type Value = StringValue | ArrayValue<unknown>;
+export type Value = StringValue | ArrayValue<unknown>
 
 // Schemas
 
 export interface Schema<V extends Value = Value, JSONValue = unknown> {
-  readonly kind: "string" | "array";
-  readonly __value?: V;
-  readonly __jsonValue?: JSONValue;
+  readonly kind: "string" | "array"
+  readonly __value?: V
+  readonly __jsonValue?: JSONValue
 }
 
-export type ValueOf<S extends Schema> =
-  S extends Schema<infer V, unknown> ? V : never;
+export type ValueOf<S extends Schema> = S extends Schema<infer V, unknown> ? V : never
 
 export type JSONValueOf<S extends Schema> =
-  S extends Schema<Value, infer JSONValue> ? JSONValue : never;
+  S extends Schema<Value, infer JSONValue> ? JSONValue : never
 
 export interface StringSchema extends Schema<StringValue, string> {
-  readonly kind: "string";
+  readonly kind: "string"
 }
 
 export function string(): StringSchema {
-  return { kind: "string" };
+  return { kind: "string" }
 }
 
 export interface ArraySchema<C extends Schema> extends Schema<
   ArrayValue<ValueOf<C>>,
   JSONValueOf<C>[]
 > {
-  readonly kind: "array";
-  readonly element: C;
+  readonly kind: "array"
+  readonly element: C
 }
 
 export function array<C extends Schema>(element: C): ArraySchema<C> {
-  return { kind: "array", element };
+  return { kind: "array", element }
 }
 
-// Store adapter
+// Storage
 
-declare const refBrand: unique symbol;
-export type Ref = string & { readonly [refBrand]: true };
+type StoredValue<Ref> = string | readonly Ref[]
 
-export interface StoreAdapter {
-  string: {
-    get(ref: Ref): string;
-    set(ref: Ref, value: string): void;
-    create(value: string): Ref;
-  };
-  array: {
-    getLength(ref: Ref): number;
-    getItem(ref: Ref, index: number): Ref;
-    create(items: Ref[]): Ref;
-  };
-}
-
-// Value binding and creation
-
-export function bind<S extends Schema>(
-  schema: S,
-  store: StoreAdapter,
-  ref: Ref,
-): ValueOf<S>;
-export function bind(schema: Schema, store: StoreAdapter, ref: Ref): Value {
-  if (schema.kind === "string") {
-    return {
-      get: () => store.string.get(ref),
-      set: (value: string) => store.string.set(ref, value),
-    };
+export abstract class Storage<Ref> {
+  bind<S extends Schema>(schema: S, ref: Ref): ValueOf<S>
+  bind(schema: Schema, ref: Ref): Value {
+    return this.bindValue(schema, ref)
   }
 
-  if (schema.kind === "array") {
-    const arraySchema = schema as ArraySchema<Schema>;
-
-    return {
-      get length() {
-        return store.array.getLength(ref);
-      },
-      at(index: number) {
-        return bind(
-          arraySchema.element,
-          store,
-          store.array.getItem(ref, index),
-        );
-      },
-      map<R>(fn: (value: Value, index: number) => R) {
-        const result: R[] = [];
-        const length = store.array.getLength(ref);
-
-        for (let index = 0; index < length; index += 1) {
-          result.push(fn(this.at(index), index));
-        }
-
-        return result;
-      },
-    } satisfies ArrayValue<Value>;
+  create<S extends Schema>(schema: S, json: JSONValueOf<S>): Ref
+  create(schema: Schema, json: unknown): Ref {
+    const ref = this.createValue(schema, json)
+    this.onCreate(ref)
+    return ref
   }
 
-  throw new Error(`Unsupported schema: ${schema.kind}`);
-}
+  toJSON<S extends Schema>(schema: S, ref: Ref): JSONValueOf<S>
+  toJSON(schema: Schema, ref: Ref): unknown {
+    return this.serialize(schema, ref)
+  }
 
-export function create<S extends Schema>(
-  schema: S,
-  store: StoreAdapter,
-  json: JSONValueOf<S>,
-): Ref;
-export function create(
-  schema: Schema,
-  store: StoreAdapter,
-  json: unknown,
-): Ref {
-  if (schema.kind === "string") {
-    if (typeof json !== "string") {
-      throw new TypeError("Expected string value");
+  protected abstract read(ref: Ref): StoredValue<Ref>
+  protected abstract write(ref: Ref, value: string): void
+  protected abstract make(value: StoredValue<Ref>): Ref
+
+  protected onCreate(_ref: Ref): void {}
+
+  private bindValue(schema: Schema, ref: Ref): Value {
+    if (schema.kind === "string") {
+      return {
+        get: () => this.string(ref),
+        set: (value: string) => {
+          this.string(ref)
+          this.write(ref, value)
+        },
+      }
     }
 
-    return store.string.create(json);
-  }
+    if (schema.kind === "array") {
+      const element = (schema as ArraySchema<Schema>).element
+      const readItems = () => this.array(ref)
+      const bindItem = (item: Ref) => this.bindValue(element, item)
 
-  if (schema.kind === "array") {
-    if (!Array.isArray(json)) {
-      throw new TypeError("Expected array value");
+      return {
+        get length() {
+          return readItems().length
+        },
+        at(index: number) {
+          const items = readItems()
+          checkIndex(index, items.length)
+          return bindItem(items[index]!)
+        },
+        map<R>(fn: (value: Value, index: number) => R) {
+          return readItems().map((item, index) => fn(bindItem(item), index))
+        },
+      } satisfies ArrayValue<Value>
     }
 
-    const arraySchema = schema as ArraySchema<Schema>;
-    const children = json.map((value) =>
-      create(arraySchema.element, store, value),
-    );
-
-    return store.array.create(children);
+    throw new Error(`Unsupported schema: ${schema.kind}`)
   }
 
-  throw new Error(`Unsupported schema: ${schema.kind}`);
-}
+  private createValue(schema: Schema, json: unknown): Ref {
+    if (schema.kind === "string") {
+      if (typeof json !== "string") {
+        throw new TypeError("Expected string value")
+      }
 
-export function toJSON<S extends Schema>(
-  schema: S,
-  store: StoreAdapter,
-  ref: Ref,
-): JSONValueOf<S>;
-export function toJSON(schema: Schema, store: StoreAdapter, ref: Ref): unknown {
-  if (schema.kind === "string") {
-    return store.string.get(ref);
-  }
-
-  if (schema.kind === "array") {
-    const arraySchema = schema as ArraySchema<Schema>;
-    const length = store.array.getLength(ref);
-    const items: unknown[] = [];
-
-    for (let index = 0; index < length; index += 1) {
-      items.push(
-        toJSON(arraySchema.element, store, store.array.getItem(ref, index)),
-      );
+      return this.make(json)
     }
 
-    return items;
+    if (schema.kind === "array") {
+      if (!Array.isArray(json)) {
+        throw new TypeError("Expected array value")
+      }
+
+      const element = (schema as ArraySchema<Schema>).element
+      return this.make(json.map((value) => this.createValue(element, value)))
+    }
+
+    throw new Error(`Unsupported schema: ${schema.kind}`)
   }
 
-  throw new Error(`Unsupported schema: ${schema.kind}`);
+  private serialize(schema: Schema, ref: Ref): unknown {
+    if (schema.kind === "string") {
+      return this.string(ref)
+    }
+
+    if (schema.kind === "array") {
+      const element = (schema as ArraySchema<Schema>).element
+      return this.array(ref).map((item) => this.serialize(element, item))
+    }
+
+    throw new Error(`Unsupported schema: ${schema.kind}`)
+  }
+
+  private string(ref: Ref): string {
+    const value = this.read(ref)
+    if (typeof value !== "string") {
+      throw new TypeError("Reference is not string")
+    }
+    return value
+  }
+
+  private array(ref: Ref): readonly Ref[] {
+    const value = this.read(ref)
+    if (typeof value === "string") {
+      throw new TypeError("Reference is not array")
+    }
+    return value
+  }
 }
 
 function checkIndex(index: number, length: number): void {
   if (!Number.isInteger(index) || index < 0 || index >= length) {
-    throw new RangeError("Array index out of bounds");
+    throw new RangeError("Array index out of bounds")
   }
 }
 
-// Flat store
+// Yjs storage
 
-type FlatNode =
-  | { readonly kind: "string"; value: string }
-  | { readonly kind: "array"; items: Ref[] };
+import * as Y from "yjs"
 
-export class FlatStore implements StoreAdapter {
-  private readonly nodes = new Map<Ref, FlatNode>();
+export type YNode = Y.Text | Y.Array<YNode>
 
-  readonly string: StoreAdapter["string"] = {
-    get: (ref) => {
-      const node = this.node(ref);
-      if (node.kind !== "string")
-        throw new TypeError("Reference is not string");
-      return node.value;
-    },
-    set: (ref, value) => {
-      const node = this.node(ref);
-      if (node.kind !== "string")
-        throw new TypeError("Reference is not string");
-      node.value = value;
-    },
-    create: (value) => this.save({ kind: "string", value }),
-  };
-
-  readonly array: StoreAdapter["array"] = {
-    getLength: (ref) => this.arrayNode(ref).items.length,
-    getItem: (ref, index) => {
-      const items = this.arrayNode(ref).items;
-      checkIndex(index, items.length);
-      return items[index]!;
-    },
-    create: (items) => {
-      items.forEach((item) => this.node(item));
-      return this.save({ kind: "array", items: [...items] });
-    },
-  };
-
-  private save(node: FlatNode): Ref {
-    const ref = `flat-${this.nodes.size}` as Ref;
-    this.nodes.set(ref, node);
-    return ref;
-  }
-
-  private node(ref: Ref): FlatNode {
-    const node = this.nodes.get(ref);
-    if (!node) throw new Error("Unknown reference");
-    return node;
-  }
-
-  private arrayNode(ref: Ref): Extract<FlatNode, { kind: "array" }> {
-    const node = this.node(ref);
-    if (node.kind !== "array") throw new TypeError("Reference is not array");
-    return node;
-  }
-}
-
-// Yjs store
-
-import * as Y from "yjs";
-
-type YNode = Y.Map<unknown> | Y.Array<Ref>;
-
-export class YjsStore implements StoreAdapter {
-  readonly doc: Y.Doc;
-  private readonly nodes: Y.Map<YNode>;
+export class YjsStorage extends Storage<YNode> {
+  readonly doc: Y.Doc
+  private readonly roots: Y.Array<YNode>
 
   constructor(doc = new Y.Doc()) {
-    this.doc = doc;
-    this.nodes = doc.getMap<YNode>("manual-schema-store");
+    super()
+    this.doc = doc
+    this.roots = doc.getArray<YNode>("manual-schema-storage")
   }
 
-  readonly string: StoreAdapter["string"] = {
-    get: (ref) => {
-      const value = this.stringNode(ref).get("value");
-      if (typeof value !== "string")
-        throw new TypeError("Invalid string value");
-      return value;
-    },
-    set: (ref, value) => this.stringNode(ref).set("value", value),
-    create: (value) => {
-      const node = new Y.Map<unknown>();
-      node.set("kind", "string");
-      node.set("value", value);
-      return this.save(node);
-    },
-  };
-
-  readonly array: StoreAdapter["array"] = {
-    getLength: (ref) => this.arrayNode(ref).length,
-    getItem: (ref, index) => {
-      const node = this.arrayNode(ref);
-      checkIndex(index, node.length);
-      return node.get(index);
-    },
-    create: (items) => {
-      items.forEach((item) => this.node(item));
-      const node = new Y.Array<Ref>();
-      node.insert(0, [...items]);
-      return this.save(node);
-    },
-  };
-
-  private save(node: YNode): Ref {
-    const ref = crypto.randomUUID() as Ref;
-    this.nodes.set(ref, node);
-    return ref;
+  protected read(ref: YNode): StoredValue<YNode> {
+    if (ref instanceof Y.Text) return ref.toString()
+    if (ref instanceof Y.Array) return ref.toArray()
+    throw new TypeError("Unknown reference")
   }
 
-  private node(ref: Ref): YNode {
-    if (typeof ref !== "string") throw new Error("Unknown reference");
-    const node = this.nodes.get(ref);
-    if (!node) throw new Error("Unknown reference");
-    return node;
-  }
-
-  private stringNode(ref: Ref): Y.Map<unknown> {
-    const node = this.node(ref);
-    if (!(node instanceof Y.Map) || node.get("kind") !== "string") {
-      throw new TypeError("Reference is not string");
+  protected write(ref: YNode, value: string): void {
+    if (!(ref instanceof Y.Text)) {
+      throw new TypeError("Reference is not string")
     }
-    return node;
+
+    this.doc.transact(() => {
+      ref.delete(0, ref.length)
+      ref.insert(0, value)
+    })
   }
 
-  private arrayNode(ref: Ref): Y.Array<Ref> {
-    const node = this.node(ref);
-    if (!(node instanceof Y.Array))
-      throw new TypeError("Reference is not array");
-    return node;
+  protected make(value: StoredValue<YNode>): YNode {
+    if (typeof value === "string") return new Y.Text(value)
+
+    const node = new Y.Array<YNode>()
+    node.push([...value])
+    return node
+  }
+
+  protected override onCreate(ref: YNode): void {
+    this.roots.push([ref])
   }
 }
 
 // Example usage
 
-export const tags = array(string());
+export const tags = array(string())
 
-function showTagExample(name: string, store: StoreAdapter): void {
-  const ref = create(tags, store, ["schema", "store"]);
-  const values = bind(tags, store, ref);
+function showTagExample<Ref>(name: string, storage: Storage<Ref>): void {
+  const ref = storage.create(tags, ["schema", "storage"])
+  const values = storage.bind(tags, ref)
 
-  values.at(0).set(`${name} schema`);
+  values.at(0).set(`${name} schema`)
   console.log(
     `${name} tags:`,
     values.map((tag) => tag.get()),
-  );
-  console.log(`${name} JSON:`, toJSON(tags, store, ref));
+  )
+  console.log(`${name} JSON:`, storage.toJSON(tags, ref))
 }
 
-showTagExample("FlatStore", new FlatStore());
-showTagExample("YjsStore", new YjsStore());
+const storage = new YjsStorage()
+showTagExample("Yjs", storage)
+console.log("Yjs document:", storage.doc.toJSON())
