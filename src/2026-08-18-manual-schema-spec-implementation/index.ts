@@ -19,6 +19,7 @@ export interface Schema<V extends Value = Value, JSONValue = unknown> {
   readonly kind: "string" | "array"
   readonly __value?: V
   readonly __jsonValue?: JSONValue
+  accept<Context, Result>(visitor: SchemaVisitor<Context, Result>, context: Context): Result
 }
 
 export type ValueOf<S extends Schema> = S extends Schema<infer V, unknown> ? V : never
@@ -26,12 +27,22 @@ export type ValueOf<S extends Schema> = S extends Schema<infer V, unknown> ? V :
 export type JSONValueOf<S extends Schema> =
   S extends Schema<Value, infer JSONValue> ? JSONValue : never
 
+export interface SchemaVisitor<Context, Result> {
+  visitString(schema: StringSchema, context: Context): Result
+  visitArray(schema: ArraySchema<Schema>, context: Context): Result
+}
+
 export interface StringSchema extends Schema<StringValue, string> {
   readonly kind: "string"
 }
 
 export function string(): StringSchema {
-  return { kind: "string" }
+  return {
+    kind: "string",
+    accept(visitor, context) {
+      return visitor.visitString(this, context)
+    },
+  }
 }
 
 export interface ArraySchema<C extends Schema> extends Schema<
@@ -43,7 +54,13 @@ export interface ArraySchema<C extends Schema> extends Schema<
 }
 
 export function array<C extends Schema>(element: C): ArraySchema<C> {
-  return { kind: "array", element }
+  return {
+    kind: "array",
+    element,
+    accept(visitor, context) {
+      return visitor.visitArray(this, context)
+    },
+  }
 }
 
 // Storage
@@ -53,57 +70,73 @@ type StoredValue<Ref> = string | readonly Ref[]
 export abstract class Storage<Ref> {
   bind<S extends Schema>(schema: S, ref: Ref): ValueOf<S>
   bind(schema: Schema, ref: Ref): Value {
-    if (schema.kind === "string") {
-      return {
+    const visitor: SchemaVisitor<Ref, Value> = {
+      visitString: (_schema, ref) => ({
         get: () => this.string(ref),
         set: (value: string) => {
           this.string(ref)
           this.write(ref, value)
         },
-      }
+      }),
+      visitArray: (schema, ref) => {
+        const readItems = () => this.array(ref)
+        const bindItem = (item: Ref) => schema.element.accept(visitor, item)
+
+        return {
+          get length() {
+            return readItems().length
+          },
+          at(index: number) {
+            const items = readItems()
+            assertValidIndex(index, items.length)
+            return bindItem(items[index]!)
+          },
+          map<R>(fn: (value: Value, index: number) => R) {
+            return readItems().map((item, index) => fn(bindItem(item), index))
+          },
+        } satisfies ArrayValue<Value>
+      },
     }
 
-    if (schema.kind === "array") {
-      const element = (schema as ArraySchema<Schema>).element
-      const readItems = () => this.array(ref)
-      const bindItem = (item: Ref) => this.bind(element, item)
-
-      return {
-        get length() {
-          return readItems().length
-        },
-        at(index: number) {
-          const items = readItems()
-          assertValidIndex(index, items.length)
-          return bindItem(items[index]!)
-        },
-        map<R>(fn: (value: Value, index: number) => R) {
-          return readItems().map((item, index) => fn(bindItem(item), index))
-        },
-      } satisfies ArrayValue<Value>
-    }
-
-    throw new Error(`Unsupported schema: ${schema.kind}`)
+    return schema.accept(visitor, ref)
   }
 
   save<S extends Schema>(schema: S, json: JSONValueOf<S>): Ref {
-    const ref = this.createValue(schema, json)
+    const visitor: SchemaVisitor<unknown, Ref> = {
+      visitString: (_schema, json) => {
+        if (typeof json !== "string") {
+          throw new TypeError("Expected string value")
+        }
+
+        return this.make(json)
+      },
+      visitArray: (schema, json) => {
+        if (!Array.isArray(json)) {
+          throw new TypeError("Expected array value")
+        }
+
+        return this.make(
+          json.map((value) => schema.element.accept(visitor, value)),
+        )
+      },
+    }
+
+    const ref = schema.accept(visitor, json)
     this.onCreate(ref)
     return ref
   }
 
   load<S extends Schema>(schema: S, ref: Ref): JSONValueOf<S>
   load(schema: Schema, ref: Ref): unknown {
-    if (schema.kind === "string") {
-      return this.string(ref)
+    const visitor: SchemaVisitor<Ref, unknown> = {
+      visitString: (_schema, ref) => this.string(ref),
+      visitArray: (schema, ref) =>
+        this.array(ref).map((item) =>
+          schema.element.accept(visitor, item),
+        ),
     }
 
-    if (schema.kind === "array") {
-      const element = (schema as ArraySchema<Schema>).element
-      return this.array(ref).map((item) => this.load(element, item))
-    }
-
-    throw new Error(`Unsupported schema: ${schema.kind}`)
+    return schema.accept(visitor, ref)
   }
 
   protected abstract read(ref: Ref): StoredValue<Ref>
@@ -111,27 +144,6 @@ export abstract class Storage<Ref> {
   protected abstract make(value: StoredValue<Ref>): Ref
 
   protected onCreate(_ref: Ref): void {}
-
-  private createValue(schema: Schema, json: unknown): Ref {
-    if (schema.kind === "string") {
-      if (typeof json !== "string") {
-        throw new TypeError("Expected string value")
-      }
-
-      return this.make(json)
-    }
-
-    if (schema.kind === "array") {
-      if (!Array.isArray(json)) {
-        throw new TypeError("Expected array value")
-      }
-
-      const element = (schema as ArraySchema<Schema>).element
-      return this.make(json.map((value) => this.createValue(element, value)))
-    }
-
-    throw new Error(`Unsupported schema: ${schema.kind}`)
-  }
 
   private string(ref: Ref): string {
     const value = this.read(ref)
