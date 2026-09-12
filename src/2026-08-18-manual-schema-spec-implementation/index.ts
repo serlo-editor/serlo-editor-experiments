@@ -53,28 +53,6 @@ type StoredValue<Ref> = string | readonly Ref[]
 export abstract class Storage<Ref> {
   bind<S extends Schema>(schema: S, ref: Ref): ValueOf<S>
   bind(schema: Schema, ref: Ref): Value {
-    return this.bindValue(schema, ref)
-  }
-
-  create<S extends Schema>(schema: S, json: JSONValueOf<S>): Ref
-  create(schema: Schema, json: unknown): Ref {
-    const ref = this.createValue(schema, json)
-    this.onCreate(ref)
-    return ref
-  }
-
-  toJSON<S extends Schema>(schema: S, ref: Ref): JSONValueOf<S>
-  toJSON(schema: Schema, ref: Ref): unknown {
-    return this.serialize(schema, ref)
-  }
-
-  protected abstract read(ref: Ref): StoredValue<Ref>
-  protected abstract write(ref: Ref, value: string): void
-  protected abstract make(value: StoredValue<Ref>): Ref
-
-  protected onCreate(_ref: Ref): void {}
-
-  private bindValue(schema: Schema, ref: Ref): Value {
     if (schema.kind === "string") {
       return {
         get: () => this.string(ref),
@@ -88,7 +66,7 @@ export abstract class Storage<Ref> {
     if (schema.kind === "array") {
       const element = (schema as ArraySchema<Schema>).element
       const readItems = () => this.array(ref)
-      const bindItem = (item: Ref) => this.bindValue(element, item)
+      const bindItem = (item: Ref) => this.bind(element, item)
 
       return {
         get length() {
@@ -96,7 +74,7 @@ export abstract class Storage<Ref> {
         },
         at(index: number) {
           const items = readItems()
-          checkIndex(index, items.length)
+          assertValidIndex(index, items.length)
           return bindItem(items[index]!)
         },
         map<R>(fn: (value: Value, index: number) => R) {
@@ -107,6 +85,32 @@ export abstract class Storage<Ref> {
 
     throw new Error(`Unsupported schema: ${schema.kind}`)
   }
+
+  save<S extends Schema>(schema: S, json: JSONValueOf<S>): Ref {
+    const ref = this.createValue(schema, json)
+    this.onCreate(ref)
+    return ref
+  }
+
+  load<S extends Schema>(schema: S, ref: Ref): JSONValueOf<S>
+  load(schema: Schema, ref: Ref): unknown {
+    if (schema.kind === "string") {
+      return this.string(ref)
+    }
+
+    if (schema.kind === "array") {
+      const element = (schema as ArraySchema<Schema>).element
+      return this.array(ref).map((item) => this.load(element, item))
+    }
+
+    throw new Error(`Unsupported schema: ${schema.kind}`)
+  }
+
+  protected abstract read(ref: Ref): StoredValue<Ref>
+  protected abstract write(ref: Ref, value: string): void
+  protected abstract make(value: StoredValue<Ref>): Ref
+
+  protected onCreate(_ref: Ref): void {}
 
   private createValue(schema: Schema, json: unknown): Ref {
     if (schema.kind === "string") {
@@ -129,19 +133,6 @@ export abstract class Storage<Ref> {
     throw new Error(`Unsupported schema: ${schema.kind}`)
   }
 
-  private serialize(schema: Schema, ref: Ref): unknown {
-    if (schema.kind === "string") {
-      return this.string(ref)
-    }
-
-    if (schema.kind === "array") {
-      const element = (schema as ArraySchema<Schema>).element
-      return this.array(ref).map((item) => this.serialize(element, item))
-    }
-
-    throw new Error(`Unsupported schema: ${schema.kind}`)
-  }
-
   private string(ref: Ref): string {
     const value = this.read(ref)
     if (typeof value !== "string") {
@@ -159,7 +150,7 @@ export abstract class Storage<Ref> {
   }
 }
 
-function checkIndex(index: number, length: number): void {
+function assertValidIndex(index: number, length: number): void {
   if (!Number.isInteger(index) || index < 0 || index >= length) {
     throw new RangeError("Array index out of bounds")
   }
@@ -216,7 +207,7 @@ export class YjsStorage extends Storage<YNode> {
 export const tags = array(string())
 
 function showTagExample<Ref>(name: string, storage: Storage<Ref>): void {
-  const ref = storage.create(tags, ["schema", "storage"])
+  const ref = storage.save(tags, ["schema", "storage"])
   const values = storage.bind(tags, ref)
 
   values.at(0).set(`${name} schema`)
@@ -224,7 +215,7 @@ function showTagExample<Ref>(name: string, storage: Storage<Ref>): void {
     `${name} tags:`,
     values.map((tag) => tag.get()),
   )
-  console.log(`${name} JSON:`, storage.toJSON(tags, ref))
+  console.log(`${name} JSON:`, storage.load(tags, ref))
 }
 
 const storage = new YjsStorage()
