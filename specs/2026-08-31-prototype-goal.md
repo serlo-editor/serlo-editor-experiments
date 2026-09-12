@@ -6,10 +6,10 @@ Build embeddable educational editor for creating and editing structured learning
 
 Prototype focuses on authoring these content types:
 
-* Multiple-choice exercise
-* Fill-in-the-gap exercise
-* Free-form exercise
-* Text
+- Multiple-choice exercise
+- Fill-in-the-gap exercise
+- Free-form exercise
+- Text
 
 Other educational elements will be added later.
 
@@ -32,6 +32,6 @@ Editor must eventually support exact tuples, named child slots, arrays, optional
 
 ## Prototype Goals
 
-* Provide WYSIWYG authoring for some example types: multiple-choice, fill-in-the-gap and rich-text.
-* Save / Load complete document as JSON.
-* Establish architecture that can later support more element types, learning modes, collaboration, validation, AI features, and transformations.
+- Provide WYSIWYG authoring for some example types: multiple-choice, fill-in-the-gap and rich-text.
+- Save / Load complete document as JSON.
+- Establish architecture that can later support more element types, learning modes, collaboration, validation, AI features, and transformations.

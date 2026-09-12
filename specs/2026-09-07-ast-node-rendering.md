@@ -2,7 +2,7 @@
 
 ## Context
 
- I need to describe AST nodes with schema objects, for example:
+I need to describe AST nodes with schema objects, for example:
 
 ```ts
 const Tags = Schema.array(Schema.string())
@@ -42,8 +42,8 @@ This keeps core model reusable for load/save, validation, migrations, transforma
 
 ## Follow-up
 
-Editor is an AST of educational units. An educational unit is plugin-like: it represents one meaningful       learning-content element, defined by a specific composition of state.
-                                                                                                           
- Examples: multiple-choice exercise, rich-text element, question set.
- 
- Editor adapter maps each unit type to React editing behavior. So the same apater pattern is used for the editor and rendering as for the adapter and loading / saving. 
+Editor is an AST of educational units. An educational unit is plugin-like: it represents one meaningful learning-content element, defined by a specific composition of state.
+
+Examples: multiple-choice exercise, rich-text element, question set.
+
+Editor adapter maps each unit type to React editing behavior. So the same apater pattern is used for the editor and rendering as for the adapter and loading / saving.
