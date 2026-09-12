@@ -19,7 +19,7 @@ export interface Schema<V extends Value = Value, JSONValue = unknown> {
   readonly kind: "string" | "array"
   readonly __value?: V
   readonly __jsonValue?: JSONValue
-  accept<Context, Result>(visitor: SchemaVisitor<Context, Result>, context: Context): Result
+  visit<Input, Output>(visitor: SchemaVisitor<Input, Output>, input: Input): Output
 }
 
 export type ValueOf<S extends Schema> = S extends Schema<infer V, unknown> ? V : never
@@ -27,9 +27,9 @@ export type ValueOf<S extends Schema> = S extends Schema<infer V, unknown> ? V :
 export type JSONValueOf<S extends Schema> =
   S extends Schema<Value, infer JSONValue> ? JSONValue : never
 
-export interface SchemaVisitor<Context, Result> {
-  visitString(schema: StringSchema, context: Context): Result
-  visitArray(schema: ArraySchema<Schema>, context: Context): Result
+export interface SchemaVisitor<Input, Output> {
+  string(schema: StringSchema, input: Input): Output
+  array(schema: ArraySchema<Schema>, input: Input): Output
 }
 
 export interface StringSchema extends Schema<StringValue, string> {
@@ -39,8 +39,8 @@ export interface StringSchema extends Schema<StringValue, string> {
 export function string(): StringSchema {
   return {
     kind: "string",
-    accept(visitor, context) {
-      return visitor.visitString(this, context)
+    visit(visitor, input) {
+      return visitor.string(this, input)
     },
   }
 }
@@ -57,8 +57,8 @@ export function array<C extends Schema>(element: C): ArraySchema<C> {
   return {
     kind: "array",
     element,
-    accept(visitor, context) {
-      return visitor.visitArray(this, context)
+    visit(visitor, input) {
+      return visitor.array(this, input)
     },
   }
 }
@@ -71,16 +71,16 @@ export abstract class Storage<Ref> {
   bind<S extends Schema>(schema: S, ref: Ref): ValueOf<S>
   bind(schema: Schema, ref: Ref): Value {
     const visitor: SchemaVisitor<Ref, Value> = {
-      visitString: (_schema, ref) => ({
+      string: (_schema, ref) => ({
         get: () => this.string(ref),
         set: (value: string) => {
           this.string(ref)
           this.write(ref, value)
         },
       }),
-      visitArray: (schema, ref) => {
+      array: (schema, ref) => {
         const readItems = () => this.array(ref)
-        const bindItem = (item: Ref) => schema.element.accept(visitor, item)
+        const bindItem = (item: Ref) => schema.element.visit(visitor, item)
 
         return {
           get length() {
@@ -98,30 +98,28 @@ export abstract class Storage<Ref> {
       },
     }
 
-    return schema.accept(visitor, ref)
+    return schema.visit(visitor, ref)
   }
 
   save<S extends Schema>(schema: S, json: JSONValueOf<S>): Ref {
     const visitor: SchemaVisitor<unknown, Ref> = {
-      visitString: (_schema, json) => {
+      string: (_schema, json) => {
         if (typeof json !== "string") {
           throw new TypeError("Expected string value")
         }
 
         return this.make(json)
       },
-      visitArray: (schema, json) => {
+      array: (schema, json) => {
         if (!Array.isArray(json)) {
           throw new TypeError("Expected array value")
         }
 
-        return this.make(
-          json.map((value) => schema.element.accept(visitor, value)),
-        )
+        return this.make(json.map((value) => schema.element.visit(visitor, value)))
       },
     }
 
-    const ref = schema.accept(visitor, json)
+    const ref = schema.visit(visitor, json)
     this.onCreate(ref)
     return ref
   }
@@ -129,14 +127,11 @@ export abstract class Storage<Ref> {
   load<S extends Schema>(schema: S, ref: Ref): JSONValueOf<S>
   load(schema: Schema, ref: Ref): unknown {
     const visitor: SchemaVisitor<Ref, unknown> = {
-      visitString: (_schema, ref) => this.string(ref),
-      visitArray: (schema, ref) =>
-        this.array(ref).map((item) =>
-          schema.element.accept(visitor, item),
-        ),
+      string: (_schema, ref) => this.string(ref),
+      array: (schema, ref) => this.array(ref).map((item) => schema.element.visit(visitor, item)),
     }
 
-    return schema.accept(visitor, ref)
+    return schema.visit(visitor, ref)
   }
 
   protected abstract read(ref: Ref): StoredValue<Ref>
