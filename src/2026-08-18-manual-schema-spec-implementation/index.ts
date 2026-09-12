@@ -155,6 +155,33 @@ export function create(
   throw new Error(`Unsupported schema: ${schema.kind}`);
 }
 
+export function toJSON<S extends Schema>(
+  schema: S,
+  store: StoreAdapter,
+  ref: Ref,
+): JSONValueOf<S>;
+export function toJSON(schema: Schema, store: StoreAdapter, ref: Ref): unknown {
+  if (schema.kind === "string") {
+    return store.string.get(ref);
+  }
+
+  if (schema.kind === "array") {
+    const arraySchema = schema as ArraySchema<Schema>;
+    const length = store.array.getLength(ref);
+    const items: unknown[] = [];
+
+    for (let index = 0; index < length; index += 1) {
+      items.push(
+        toJSON(arraySchema.element, store, store.array.getItem(ref, index)),
+      );
+    }
+
+    return items;
+  }
+
+  throw new Error(`Unsupported schema: ${schema.kind}`);
+}
+
 function checkIndex(index: number, length: number, allowEnd = false): void {
   if (
     !Number.isInteger(index) ||
@@ -320,4 +347,21 @@ export class YjsStore implements StoreAdapter {
   }
 }
 
+// Example usage
+
 export const tags = array(string());
+
+function showTagExample(name: string, store: StoreAdapter): void {
+  const ref = create(tags, store, ["schema", "store"]);
+  const values = bind(tags, store, ref);
+
+  values.at(0).set(`${name} schema`);
+  console.log(
+    `${name} tags:`,
+    values.map((tag) => tag.get()),
+  );
+  console.log(`${name} JSON:`, toJSON(tags, store, ref));
+}
+
+showTagExample("FlatStore", new FlatStore());
+showTagExample("YjsStore", new YjsStore());
