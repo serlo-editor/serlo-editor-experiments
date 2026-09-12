@@ -33,7 +33,9 @@ export interface StringSchema extends Schema<StringValue, string> {
   readonly kind: "string";
 }
 
-export const string = (): StringSchema => ({ kind: "string" });
+export function string(): StringSchema {
+  return { kind: "string" };
+}
 
 export interface ArraySchema<C extends Schema> extends Schema<
   ArrayValue<ValueOf<C>>,
@@ -43,10 +45,9 @@ export interface ArraySchema<C extends Schema> extends Schema<
   readonly element: C;
 }
 
-export const array = <C extends Schema>(element: C): ArraySchema<C> => ({
-  kind: "array",
-  element,
-});
+export function array<C extends Schema>(element: C): ArraySchema<C> {
+  return { kind: "array", element };
+}
 
 // Store adapter
 
