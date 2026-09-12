@@ -9,8 +9,6 @@ export interface ArrayValue<T> {
   readonly length: number;
   at(index: number): T;
   map<R>(fn: (value: T, index: number) => R): R[];
-  insert(index: number, value: unknown): void;
-  remove(index: number): void;
 }
 
 export type Value = StringValue | ArrayValue<unknown>;
@@ -63,8 +61,6 @@ export interface StoreAdapter {
   array: {
     getLength(ref: Ref): number;
     getItem(ref: Ref, index: number): Ref;
-    insertItem(ref: Ref, index: number, child: Ref): void;
-    removeItem(ref: Ref, index: number): void;
     create(items: Ref[]): Ref;
   };
 }
@@ -107,13 +103,6 @@ export function bind(schema: Schema, store: StoreAdapter, ref: Ref): Value {
         }
 
         return result;
-      },
-      insert(index: number, value: unknown) {
-        const child = create(arraySchema.element, store, value);
-        store.array.insertItem(ref, index, child);
-      },
-      remove(index: number) {
-        store.array.removeItem(ref, index);
       },
     } satisfies ArrayValue<Value>;
   }
@@ -182,13 +171,8 @@ export function toJSON(schema: Schema, store: StoreAdapter, ref: Ref): unknown {
   throw new Error(`Unsupported schema: ${schema.kind}`);
 }
 
-function checkIndex(index: number, length: number, allowEnd = false): void {
-  if (
-    !Number.isInteger(index) ||
-    index < 0 ||
-    index > length ||
-    (!allowEnd && index === length)
-  ) {
+function checkIndex(index: number, length: number): void {
+  if (!Number.isInteger(index) || index < 0 || index >= length) {
     throw new RangeError("Array index out of bounds");
   }
 }
@@ -224,17 +208,6 @@ export class FlatStore implements StoreAdapter {
       const items = this.arrayNode(ref).items;
       checkIndex(index, items.length);
       return items[index]!;
-    },
-    insertItem: (ref, index, child) => {
-      const items = this.arrayNode(ref).items;
-      checkIndex(index, items.length, true);
-      this.node(child);
-      items.splice(index, 0, child);
-    },
-    removeItem: (ref, index) => {
-      const items = this.arrayNode(ref).items;
-      checkIndex(index, items.length);
-      items.splice(index, 1);
     },
     create: (items) => {
       items.forEach((item) => this.node(item));
@@ -298,17 +271,6 @@ export class YjsStore implements StoreAdapter {
       const node = this.arrayNode(ref);
       checkIndex(index, node.length);
       return node.get(index);
-    },
-    insertItem: (ref, index, child) => {
-      const node = this.arrayNode(ref);
-      checkIndex(index, node.length, true);
-      this.node(child);
-      node.insert(index, [child]);
-    },
-    removeItem: (ref, index) => {
-      const node = this.arrayNode(ref);
-      checkIndex(index, node.length);
-      node.delete(index, 1);
     },
     create: (items) => {
       items.forEach((item) => this.node(item));
