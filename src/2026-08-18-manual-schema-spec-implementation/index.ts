@@ -50,19 +50,22 @@ export const array = <C extends Schema>(element: C): ArraySchema<C> => ({
 
 // Store adapter
 
-export type Ref = unknown;
+declare const refBrand: unique symbol;
+export type Ref = string & { readonly [refBrand]: true };
 
 export interface StoreAdapter {
-  getString(ref: Ref): string;
-  setString(ref: Ref, value: string): void;
-
-  getArrayLength(ref: Ref): number;
-  getArrayItem(ref: Ref, index: number): Ref;
-  insertArrayItem(ref: Ref, index: number, child: Ref): void;
-  removeArrayItem(ref: Ref, index: number): void;
-
-  createString(value: string): Ref;
-  createArray(items: Ref[]): Ref;
+  string: {
+    get(ref: Ref): string;
+    set(ref: Ref, value: string): void;
+    create(value: string): Ref;
+  };
+  array: {
+    getLength(ref: Ref): number;
+    getItem(ref: Ref, index: number): Ref;
+    insertItem(ref: Ref, index: number, child: Ref): void;
+    removeItem(ref: Ref, index: number): void;
+    create(items: Ref[]): Ref;
+  };
 }
 
 // Value binding and creation
@@ -75,8 +78,8 @@ export function bind<S extends Schema>(
 export function bind(schema: Schema, store: StoreAdapter, ref: Ref): Value {
   if (schema.kind === "string") {
     return {
-      get: () => store.getString(ref),
-      set: (value: string) => store.setString(ref, value),
+      get: () => store.string.get(ref),
+      set: (value: string) => store.string.set(ref, value),
     };
   }
 
@@ -85,14 +88,18 @@ export function bind(schema: Schema, store: StoreAdapter, ref: Ref): Value {
 
     return {
       get length() {
-        return store.getArrayLength(ref);
+        return store.array.getLength(ref);
       },
       at(index: number) {
-        return bind(arraySchema.element, store, store.getArrayItem(ref, index));
+        return bind(
+          arraySchema.element,
+          store,
+          store.array.getItem(ref, index),
+        );
       },
       map<R>(fn: (value: Value, index: number) => R) {
         const result: R[] = [];
-        const length = store.getArrayLength(ref);
+        const length = store.array.getLength(ref);
 
         for (let index = 0; index < length; index += 1) {
           result.push(fn(this.at(index), index));
@@ -102,10 +109,10 @@ export function bind(schema: Schema, store: StoreAdapter, ref: Ref): Value {
       },
       insert(index: number, value: unknown) {
         const child = create(arraySchema.element, store, value);
-        store.insertArrayItem(ref, index, child);
+        store.array.insertItem(ref, index, child);
       },
       remove(index: number) {
-        store.removeArrayItem(ref, index);
+        store.array.removeItem(ref, index);
       },
     } satisfies ArrayValue<Value>;
   }
@@ -128,7 +135,7 @@ export function create(
       throw new TypeError("Expected string value");
     }
 
-    return store.createString(json);
+    return store.string.create(json);
   }
 
   if (schema.kind === "array") {
@@ -141,7 +148,7 @@ export function create(
       create(arraySchema.element, store, value),
     );
 
-    return store.createArray(children);
+    return store.array.create(children);
   }
 
   throw new Error(`Unsupported schema: ${schema.kind}`);
@@ -156,8 +163,22 @@ type FlatNode =
 export class FlatStore implements StoreAdapter {
   private readonly nodes = new Map<Ref, FlatNode>();
 
+  readonly string: StoreAdapter["string"] = {
+    get: (ref) => this.getString(ref),
+    set: (ref, value) => this.setString(ref, value),
+    create: (value) => this.createString(value),
+  };
+
+  readonly array: StoreAdapter["array"] = {
+    getLength: (ref) => this.getArrayLength(ref),
+    getItem: (ref, index) => this.getArrayItem(ref, index),
+    insertItem: (ref, index, child) => this.insertArrayItem(ref, index, child),
+    removeItem: (ref, index) => this.removeArrayItem(ref, index),
+    create: (items) => this.createArray(items),
+  };
+
   createString(value: string): Ref {
-    const ref = Symbol("string");
+    const ref = `flat-${this.nodes.size}` as Ref;
     this.nodes.set(ref, { kind: "string", value });
     return ref;
   }
@@ -165,7 +186,7 @@ export class FlatStore implements StoreAdapter {
   createArray(items: Ref[]): Ref {
     for (const item of items) this.node(item);
 
-    const ref = Symbol("array");
+    const ref = `flat-${this.nodes.size}` as Ref;
     this.nodes.set(ref, { kind: "array", items: [...items] });
     return ref;
   }
@@ -183,24 +204,24 @@ export class FlatStore implements StoreAdapter {
   }
 
   getArrayLength(ref: Ref): number {
-    return this.array(ref).items.length;
+    return this.arrayNode(ref).items.length;
   }
 
   getArrayItem(ref: Ref, index: number): Ref {
-    const items = this.array(ref).items;
+    const items = this.arrayNode(ref).items;
     this.checkIndex(index, items.length);
     return items[index]!;
   }
 
   insertArrayItem(ref: Ref, index: number, child: Ref): void {
-    const items = this.array(ref).items;
+    const items = this.arrayNode(ref).items;
     this.checkInsertIndex(index, items.length);
     this.node(child);
     items.splice(index, 0, child);
   }
 
   removeArrayItem(ref: Ref, index: number): void {
-    const items = this.array(ref).items;
+    const items = this.arrayNode(ref).items;
     this.checkIndex(index, items.length);
     items.splice(index, 1);
   }
@@ -211,7 +232,7 @@ export class FlatStore implements StoreAdapter {
     return node;
   }
 
-  private array(ref: Ref): Extract<FlatNode, { kind: "array" }> {
+  private arrayNode(ref: Ref): Extract<FlatNode, { kind: "array" }> {
     const node = this.node(ref);
     if (node.kind !== "array") throw new TypeError("Reference is not array");
     return node;
@@ -234,12 +255,26 @@ export class FlatStore implements StoreAdapter {
 
 import * as Y from "yjs";
 
-type YNode = Y.Map<unknown> | Y.Array<unknown>;
+type YNode = Y.Map<unknown> | Y.Array<Ref>;
 
 export class YjsStore implements StoreAdapter {
   readonly doc: Y.Doc;
   private readonly nodes: Y.Map<YNode>;
   private nextId = 0;
+
+  readonly string: StoreAdapter["string"] = {
+    get: (ref) => this.getString(ref),
+    set: (ref, value) => this.setString(ref, value),
+    create: (value) => this.createString(value),
+  };
+
+  readonly array: StoreAdapter["array"] = {
+    getLength: (ref) => this.getArrayLength(ref),
+    getItem: (ref, index) => this.getArrayItem(ref, index),
+    insertItem: (ref, index, child) => this.insertArrayItem(ref, index, child),
+    removeItem: (ref, index) => this.removeArrayItem(ref, index),
+    create: (items) => this.createArray(items),
+  };
 
   constructor(doc = new Y.Doc()) {
     this.doc = doc;
@@ -254,7 +289,7 @@ export class YjsStore implements StoreAdapter {
   }
 
   createArray(items: Ref[]): Ref {
-    const node = new Y.Array<unknown>();
+    const node = new Y.Array<Ref>();
     node.insert(0, [...items]);
     return this.save(node);
   }
@@ -292,14 +327,14 @@ export class YjsStore implements StoreAdapter {
     node.delete(index, 1);
   }
 
-  private save(node: YNode): string {
+  private save(node: YNode): Ref {
     let ref: string;
     do {
       ref = `node-${this.nextId++}`;
     } while (this.nodes.has(ref));
 
     this.nodes.set(ref, node);
-    return ref;
+    return ref as Ref;
   }
 
   private node(ref: Ref): YNode {
@@ -317,7 +352,7 @@ export class YjsStore implements StoreAdapter {
     return node;
   }
 
-  private arrayNode(ref: Ref): Y.Array<unknown> {
+  private arrayNode(ref: Ref): Y.Array<Ref> {
     const node = this.node(ref);
     if (!(node instanceof Y.Array))
       throw new TypeError("Reference is not array");
