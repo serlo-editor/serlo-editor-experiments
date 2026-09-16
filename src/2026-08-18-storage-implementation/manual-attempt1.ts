@@ -83,6 +83,7 @@ interface ArrayStorageAdapter<Ref extends StorageRef, ElementRef extends Storage
 interface StorageAdapter<StringRef extends StorageRef, ArrayRef extends StorageRef> {
   string(): StringStorageAdapter<StringRef>
   array(): ArrayStorageAdapter<ArrayRef, StringRef | ArrayRef>
+  attach(reference: StringRef | ArrayRef): void
 }
 
 export class Storage<Ref extends StorageRef = StorageRef> {
@@ -116,6 +117,12 @@ export class Storage<Ref extends StorageRef = StorageRef> {
   }
 
   save<S extends Schema>(schema: S, value: JSONValueOf<S>): Ref {
+    const reference = this.saveInternal(schema, value)
+    this.adapter.attach(reference)
+    return reference
+  }
+
+  private saveInternal<S extends Schema>(schema: S, value: JSONValueOf<S>): Ref {
     const visitor: SchemaVisitor<JSONValueOf<S>, Ref> = {
       string: (_schema, value) => {
         if (typeof value !== "string") throw new TypeError("Expected string value")
@@ -125,7 +132,9 @@ export class Storage<Ref extends StorageRef = StorageRef> {
       array: (schema, value) => {
         if (!Array.isArray(value)) throw new TypeError("Expected array value")
 
-        const elementRefs = value.map((elementValue) => this.save(schema.element, elementValue))
+        const elementRefs = value.map((elementValue) =>
+          this.saveInternal(schema.element, elementValue),
+        )
         return this.adapter.array().create(elementRefs)
       },
     }
@@ -154,6 +163,8 @@ type FlatStorageRef = string & {__storageRef: true}
 
 class FlatStorageAdapter implements StorageAdapter<FlatStorageRef, FlatStorageRef> {
   private storage = new Map<string, string | FlatStorageRef[]>()
+
+  attach(_reference: FlatStorageRef): void {}
 
   string(): StringStorageAdapter<FlatStorageRef> {
     return {
@@ -198,6 +209,10 @@ class YjsAdapter implements StorageAdapter<YjsStringRef, YjsArrayRef> {
 
   constructor(doc = new Y.Doc()) {
     this.doc = doc
+  }
+
+  attach(reference: YjsStorageRef): void {
+    this.doc.getMap("root").set("root", reference)
   }
 
   string(): StringStorageAdapter<YjsStringRef> {
