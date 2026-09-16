@@ -83,56 +83,28 @@ interface StorageAdapter<StringRef extends StorageRef, ArrayRef extends StorageR
   array: ArrayStorageAdapter<ArrayRef, StringRef | ArrayRef>
 }
 
-class StringValueImpl<Ref extends StorageRef> implements StringValue {
-  constructor(private reference: Ref, private adapter: StringStorageAdapter<Ref>) {}
-
-  get(): string {
-    return this.adapter.get(this.reference)
-  }
-
-  set(value: string): void {
-    this.adapter.set(this.reference, value)
-  }
-}
-
-class ArrayValueImpl<T extends Value, Ref extends StorageRef> implements ArrayValue<T> {
-  constructor(
-    private reference: Ref,
-    private adapter: ArrayStorageAdapter<Ref, Ref>,
-    private elementFactory: (elementRef: Ref) => T,
-  ) {}
-
-  get length(): number {
-    return this.adapter.getLength(this.reference)
-  }
-
-  at(index: number): T {
-    const elementRef = this.adapter.getElement(this.reference, index)
-    return this.elementFactory(elementRef)
-  }
-
-  map<R>(fn: (value: T, index: number) => R): R[] {
-    return this.adapter.map(this.reference, (elementRef, index) => {
-      const element = this.elementFactory(elementRef)
-      return fn(element, index)
-    })
-  }
-}
-
 export class Storage<Ref extends StorageRef = StorageRef> {
   constructor(private adapter: StorageAdapter<Ref, Ref>) {}
 
   bind<S extends Schema>(schema: S, reference: Ref): ValueOf<S>
   bind(schema: Schema, reference: Ref): Value {
     const visitor: SchemaVisitor<Ref, Value> = {
-      string: (_schema, reference) =>
-        new StringValueImpl(reference, this.adapter.string),
-      array: (schema, reference) =>
-        new ArrayValueImpl(
-          reference,
-          this.adapter.array,
-          (elementReference) => this.bind(schema.element, elementReference),
-        ),
+      string: (_schema, ref) => ({
+        get: () => this.adapter.string.get(ref),
+        set: (value) => this.adapter.string.set(ref, value),
+      }),
+      array: (schema, ref) => {
+        const adapter = this.adapter.array
+        const bind = (elementRef: Ref) => this.bind(schema.element, elementRef)
+
+        return {
+          get length() {
+            return adapter.getLength(ref)
+          },
+          at: (index) => bind(adapter.getElement(ref, index)),
+          map: (fn) => adapter.map(ref, (elementRef, index) => fn(bind(elementRef), index)),
+        } satisfies ArrayValue<Value>
+      },
     }
 
     return schema.visit(visitor, reference)
