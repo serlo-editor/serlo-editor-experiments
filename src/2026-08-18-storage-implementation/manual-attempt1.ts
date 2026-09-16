@@ -1,3 +1,5 @@
+import * as Y from "yjs"
+
 // Value types
 
 export interface StringValue {
@@ -178,6 +180,75 @@ class FlatStorageAdapter implements StorageAdapter<FlatStorageRef, FlatStorageRe
   }
 }
 
+// Yjs storage
+
+type YjsStorageRef = string & {__storageRef: true}
+type YjsStorageNode = Y.Text | Y.Array<YjsStorageRef>
+
+class YjsAdapter implements StorageAdapter<YjsStorageRef, YjsStorageRef> {
+  readonly doc: Y.Doc
+  private readonly nodes: Y.Map<YjsStorageNode>
+
+  constructor(doc = new Y.Doc()) {
+    this.doc = doc
+    this.nodes = doc.getMap<YjsStorageNode>("manual-schema-storage")
+  }
+
+  string(): StringStorageAdapter<YjsStorageRef> {
+    return {
+      create: (value) => {
+        const reference = this.createReference("string")
+        this.nodes.set(reference, new Y.Text(value))
+        return reference
+      },
+      get: (reference) => {
+        const node = this.node(reference)
+        if (!(node instanceof Y.Text)) throw new TypeError("Expected string value")
+        return node.toString()
+      },
+      set: (reference, value) => {
+        const node = this.node(reference)
+        if (!(node instanceof Y.Text)) throw new TypeError("Expected string value")
+
+        this.doc.transact(() => {
+          node.delete(0, node.length)
+          node.insert(0, value)
+        })
+      },
+    }
+  }
+
+  array(): ArrayStorageAdapter<YjsStorageRef, YjsStorageRef> {
+    return {
+      create: (children) => {
+        const reference = this.createReference("array")
+        const node = new Y.Array<YjsStorageRef>()
+        node.insert(0, children)
+        this.nodes.set(reference, node)
+        return reference
+      },
+      getElementReferences: (reference) => {
+        const node = this.node(reference)
+        if (!(node instanceof Y.Array)) throw new TypeError("Expected array value")
+        return node.toArray()
+      },
+    }
+  }
+
+  private node(reference: YjsStorageRef): YjsStorageNode {
+    const node = this.nodes.get(reference)
+    if (!node) throw new Error("Unknown reference")
+    return node
+  }
+
+  private createReference(kind: "string" | "array"): YjsStorageRef {
+    let reference: string
+    do {
+      reference = `${kind}:${Math.random().toString(36).slice(2)}`
+    } while (this.nodes.has(reference))
+    return reference as YjsStorageRef
+  }
+}
 
 // Example usage
 
@@ -197,3 +268,8 @@ function showTagExample<Ref extends StorageRef>(name: string, storage: Storage<R
 
 const storage = new Storage(new FlatStorageAdapter())
 showTagExample("FlatStorage", storage)
+
+const yjsAdapter = new YjsAdapter()
+const yjsStorage = new Storage(yjsAdapter)
+showTagExample("Yjs", yjsStorage)
+console.log("Yjs document:", yjsAdapter.doc.toJSON())
