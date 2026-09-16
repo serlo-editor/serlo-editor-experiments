@@ -83,8 +83,8 @@ interface StorageAdapter<StringRef extends StorageRef, ArrayRef extends StorageR
   array: ArrayStorageAdapter<ArrayRef, StringRef | ArrayRef>
 }
 
-class StringValueImpl implements StringValue {
-  constructor(private reference: StorageRef, private adapter: StringStorageAdapter<StorageRef>) {}
+class StringValueImpl<Ref extends StorageRef> implements StringValue {
+  constructor(private reference: Ref, private adapter: StringStorageAdapter<Ref>) {}
 
   get(): string {
     return this.adapter.get(this.reference)
@@ -95,11 +95,11 @@ class StringValueImpl implements StringValue {
   }
 }
 
-class ArrayValueImpl<T extends Value> implements ArrayValue<T> {
+class ArrayValueImpl<T extends Value, Ref extends StorageRef> implements ArrayValue<T> {
   constructor(
-    private reference: StorageRef,
-    private adapter: ArrayStorageAdapter<StorageRef, StorageRef>,
-    private elementFactory: (elementRef: StorageRef) => T,
+    private reference: Ref,
+    private adapter: ArrayStorageAdapter<Ref, Ref>,
+    private elementFactory: (elementRef: Ref) => T,
   ) {}
 
   get length(): number {
@@ -119,51 +119,72 @@ class ArrayValueImpl<T extends Value> implements ArrayValue<T> {
   }
 }
 
-class Storage {
-  __constructor(private adapter: StorageAdapter<StorageRef, StorageRef>) {}
+export class Storage<Ref extends StorageRef = StorageRef> {
+  constructor(private adapter: StorageAdapter<Ref, Ref>) {}
 
-  save<S extends Schema>(schema: S, value: JSONValueOf<S>): StorageRef {
-    return schema.visit(
-      {
-        string: (schema, value) => {
-          const ref = {} as StorageRef
-          this.adapter.string.set(ref, value)
-          return ref
-        },
-        array: (schema, value) => {
-          const ref = {} as StorageRef
-          for (const element of value) {
-            const elementRef = this.save(schema.element, element)
-            this.adapter.array.getElement(ref, this.adapter.array.getLength(ref)).set(elementRef)
-          }
-          return ref
-        },
-      },
-      value,
-    )
+  bind<S extends Schema>(schema: S, reference: Ref): ValueOf<S>
+  bind(schema: Schema, reference: Ref): Value {
+    const visitor: SchemaVisitor<Ref, Value> = {
+      string: (_schema, reference) =>
+        new StringValueImpl(reference, this.adapter.string),
+      array: (schema, reference) =>
+        new ArrayValueImpl(
+          reference,
+          this.adapter.array,
+          (elementReference) => this.bind(schema.element, elementReference),
+        ),
+    }
+
+    return schema.visit(visitor, reference)
   }
 
-  load<S extends Schema>(schema: S, reference: StorageRef): JSONValueOf<S> {
-    return schema.visit(
-      {
-        string: (schema, reference) => {
-          return this.adapter.string.get(reference)
+  save<S extends Schema>(schema: S, value: JSONValueOf<S>): Ref {
+    const visitor: SchemaVisitor<unknown, Ref> = {
+      string: (_schema, value) => {
+        if (typeof value !== "string") throw new TypeError("Expected string value")
+
+        const ref = {} as Ref
+        this.adapter.string.set(ref, value)
+        return ref
+      },
+      array: (schema, value) => {
+        if (!Array.isArray(value)) throw new TypeError("Expected array value")
+
+        const ref = {} as Ref
+        for (const element of value) {
+          const elementRef = this.save(schema.element, element)
+          const elementSlot = this.adapter.array.getElement(
+            ref,
+            this.adapter.array.getLength(ref),
+          ) as Ref & {set(reference: Ref): void}
+          elementSlot.set(elementRef)
         }
+        return ref
+      },
+    }
 
+    return schema.visit(visitor, value)
+  }
 
+  load<S extends Schema>(schema: S, reference: Ref): JSONValueOf<S>
+  load(schema: Schema, reference: Ref): unknown {
+    const visitor: SchemaVisitor<Ref, unknown> = {
+      string: (_schema, reference) => this.adapter.string.get(reference),
+      array: (schema, reference) =>
+        this.adapter.array.map(reference, (elementReference) =>
+          this.load(schema.element, elementReference),
+        ),
+    }
 
-      }}
-
-
-
-
+    return schema.visit(visitor, reference)
+  }
 }
 
 // Example usage
 
 export const tags = array(string())
 
-function showTagExample<Ref>(name: string, storage: Storage<Ref>): void {
+function showTagExample<Ref extends StorageRef>(name: string, storage: Storage<Ref>): void {
   const ref = storage.save(tags, ["schema", "storage"])
   const values = storage.bind(tags, ref)
 
