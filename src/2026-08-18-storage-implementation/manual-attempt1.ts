@@ -68,19 +68,19 @@ export function array<C extends Schema>(element: C): ArraySchema<C> {
 type StorageRef = unknown & {__storageRef: true}
 
 interface StringStorageAdapter<Ref extends StorageRef> {
+  create(value: string): Ref
   get(reference: Ref): string
   set(refernece: Ref, value: string): void
 }
 
 interface ArrayStorageAdapter<Ref extends StorageRef, ElementRef extends StorageRef> {
-  getLength(reference: Ref): number
-  getElement(reference: Ref, index: number): ElementRef
-  map<R>(reference: Ref, fn: (elementRef: ElementRef, index: number) => R): R[]
+  create(children: ElementRef[]): Ref
+  getElementReferences(reference: Ref): ElementRef[]
 }
 
 interface StorageAdapter<StringRef extends StorageRef, ArrayRef extends StorageRef> {
-  string: StringStorageAdapter<StringRef>
-  array: ArrayStorageAdapter<ArrayRef, StringRef | ArrayRef>
+  string(): StringStorageAdapter<StringRef>
+  array(): ArrayStorageAdapter<ArrayRef, StringRef | ArrayRef>
 }
 
 export class Storage<Ref extends StorageRef = StorageRef> {
@@ -90,20 +90,20 @@ export class Storage<Ref extends StorageRef = StorageRef> {
   bind(schema: Schema, reference: Ref): Value {
     const visitor: SchemaVisitor<Ref, Value> = {
       string: (_schema, ref) => ({
-        get: () => this.adapter.string.get(ref),
-        set: (value) => this.adapter.string.set(ref, value),
+        get: () => this.adapter.string().get(ref),
+        set: (value) => this.adapter.string().set(ref, value),
       }),
       array: (schema, ref) => {
-        const adapter = this.adapter.array
+        const adapter = this.adapter.array()
         const bind = (elementRef: Ref) => this.bind(schema.element, elementRef)
 
         return {
           get length() {
-            return adapter.getLength(ref)
+            return adapter.getElementReferences(ref).length
           },
-          at: (index) => bind(adapter.getElement(ref, index)),
-          map: (fn) => adapter.map(ref, (elementRef, index) => fn(bind(elementRef), index)),
-        } satisfies ArrayValue<Value>
+          at: (index) => bind(adapter.getElementReferences(ref)[index]),
+          map: (fn) => adapter.getElementReferences(ref).map((elementRef, index) => fn(bind(elementRef), index))
+        }
       },
     }
 
@@ -111,27 +111,17 @@ export class Storage<Ref extends StorageRef = StorageRef> {
   }
 
   save<S extends Schema>(schema: S, value: JSONValueOf<S>): Ref {
-    const visitor: SchemaVisitor<unknown, Ref> = {
+    const visitor: SchemaVisitor<JSONValueOf<S>, Ref> = {
       string: (_schema, value) => {
         if (typeof value !== "string") throw new TypeError("Expected string value")
 
-        const ref = {} as Ref
-        this.adapter.string.set(ref, value)
-        return ref
+        return this.adapter.string().create(value)
       },
       array: (schema, value) => {
         if (!Array.isArray(value)) throw new TypeError("Expected array value")
 
-        const ref = {} as Ref
-        for (const element of value) {
-          const elementRef = this.save(schema.element, element)
-          const elementSlot = this.adapter.array.getElement(
-            ref,
-            this.adapter.array.getLength(ref),
-          ) as Ref & {set(reference: Ref): void}
-          elementSlot.set(elementRef)
-        }
-        return ref
+        const elementRefs = value.map((elementValue) => this.save(schema.element, elementValue))
+        return this.adapter.array().create(elementRefs)
       },
     }
 
@@ -141,16 +131,53 @@ export class Storage<Ref extends StorageRef = StorageRef> {
   load<S extends Schema>(schema: S, reference: Ref): JSONValueOf<S>
   load(schema: Schema, reference: Ref): unknown {
     const visitor: SchemaVisitor<Ref, unknown> = {
-      string: (_schema, reference) => this.adapter.string.get(reference),
-      array: (schema, reference) =>
-        this.adapter.array.map(reference, (elementReference) =>
-          this.load(schema.element, elementReference),
-        ),
+      string: (_schema, reference) => this.adapter.string().get(reference),
+      array: (schema, reference) => this.adapter.array().getElementReferences(reference).map((elementRef) => this.load(schema.element, elementRef)),
     }
 
     return schema.visit(visitor, reference)
   }
 }
+
+// FlatStorage
+
+type FlatStorageRef = string & {__storageRef: true}
+
+class FlatStorageAdapter implements StorageAdapter<FlatStorageRef, FlatStorageRef> {
+  private storage = new Map<string, string | FlatStorageRef[]>()
+
+  string(): StringStorageAdapter<FlatStorageRef> {
+    return {
+      create: (value) => {
+        const reference = `string:${Math.random().toString(36).slice(2)}`
+        this.storage.set(reference, value)
+        return reference as FlatStorageRef
+      },
+      get: (reference) => {
+        const value = this.storage.get(reference)
+        if (typeof value !== "string") throw new TypeError("Expected string value")
+        return value
+      },
+      set: (reference, value) => this.storage.set(reference, value),
+    }
+  }
+
+  array(): ArrayStorageAdapter<FlatStorageRef, FlatStorageRef> {
+    return {
+      create: (children) => {
+        const reference = `array:${Math.random().toString(36).slice(2)}`
+        this.storage.set(reference, children)
+        return reference as FlatStorageRef
+      },
+      getElementReferences: (reference) => {
+        const value = this.storage.get(reference)
+        if (!Array.isArray(value)) throw new TypeError("Expected array value")
+        return value
+      },
+    }
+  }
+}
+
 
 // Example usage
 
@@ -168,6 +195,5 @@ function showTagExample<Ref extends StorageRef>(name: string, storage: Storage<R
   console.log(`${name} JSON:`, storage.load(tags, ref))
 }
 
-const storage = new YjsStorage()
-showTagExample("Yjs", storage)
-console.log("Yjs document:", storage.doc.toJSON())
+const storage = new Storage(new FlatStorageAdapter())
+showTagExample("FlatStorage", storage)
