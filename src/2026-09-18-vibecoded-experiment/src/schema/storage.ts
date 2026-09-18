@@ -1,3 +1,4 @@
+import type { ChildSchema } from "./educational-units.ts"
 import type {
   ArraySchema,
   ArrayValue,
@@ -12,7 +13,13 @@ import type {
   ValueOf,
 } from "./index.ts"
 
-type StorageRef = { readonly __storageRef: true }
+export type StorageRef = { readonly __storageRef: true }
+
+export interface SchemaExtension<Ref extends StorageRef> {
+  bind(schema: ChildSchema, reference: Ref): unknown
+  save(schema: ChildSchema, value: unknown): Ref
+  load(schema: ChildSchema, reference: Ref): unknown
+}
 
 type BooleanStorageAdapter<Ref extends StorageRef> = {
   create(value: boolean): Ref
@@ -51,8 +58,12 @@ export class Storage<Ref extends StorageRef = StorageRef> {
     this.adapter = adapter
   }
 
-  bind<S extends Schema>(schema: S, reference: Ref): ValueOf<S>
-  bind(schema: Schema, reference: Ref): Value {
+  bind<S extends Schema<unknown>>(
+    schema: S,
+    reference: Ref,
+    extension?: SchemaExtension<Ref>,
+  ): ValueOf<S>
+  bind(schema: Schema<unknown>, reference: Ref, extension?: SchemaExtension<Ref>): Value {
     const visitor: SchemaVisitor<Ref, Value> = {
       boolean: (_schema: BooleanSchema, ref) => ({
         get: () => this.adapter.boolean().get(ref),
@@ -62,9 +73,9 @@ export class Storage<Ref extends StorageRef = StorageRef> {
         get: () => this.adapter.string().get(ref),
         set: (value: string) => this.adapter.string().set(ref, value),
       }),
-      array: (schema: ArraySchema<Schema>, ref) => {
+      array: (schema: ArraySchema<Schema<unknown>>, ref) => {
         const adapter = this.adapter.array()
-        const bind = (elementRef: Ref) => this.bind(schema.element, elementRef)
+        const bind = (elementRef: Ref) => this.bind(schema.element, elementRef, extension)
 
         return {
           get length() {
@@ -83,22 +94,31 @@ export class Storage<Ref extends StorageRef = StorageRef> {
         return Object.fromEntries(
           Object.entries(schema.properties).map(([key, propertySchema]) => [
             key,
-            this.bind(propertySchema, propertyReferences[key]!),
+            this.bind(propertySchema, propertyReferences[key]!, extension),
           ]),
         ) as Value
       },
+      child: (schema, ref) => this.extension(extension).bind(schema, ref) as Value,
     }
 
     return schema.visit(visitor, reference)
   }
 
-  save<S extends Schema>(schema: S, value: JSONValueOf<S>): Ref {
-    const reference = this.saveInternal(schema, value)
+  save<S extends Schema<unknown>>(
+    schema: S,
+    value: JSONValueOf<S>,
+    extension?: SchemaExtension<Ref>,
+  ): Ref {
+    const reference = this.saveInternal(schema, value, extension)
     this.adapter.attach(reference)
     return reference
   }
 
-  private saveInternal<S extends Schema>(schema: S, value: JSONValueOf<S>): Ref {
+  private saveInternal<S extends Schema<unknown>>(
+    schema: S,
+    value: JSONValueOf<S>,
+    extension?: SchemaExtension<Ref>,
+  ): Ref {
     const visitor: SchemaVisitor<unknown, Ref> = {
       boolean: (_schema, value) => {
         if (typeof value !== "boolean") throw new TypeError("Expected boolean value")
@@ -114,7 +134,7 @@ export class Storage<Ref extends StorageRef = StorageRef> {
         if (!Array.isArray(value)) throw new TypeError("Expected array value")
 
         const elementRefs = value.map((elementValue) =>
-          this.saveInternal(schema.element, elementValue),
+          this.saveInternal(schema.element, elementValue, extension),
         )
         return this.adapter.array().create(elementRefs)
       },
@@ -126,18 +146,23 @@ export class Storage<Ref extends StorageRef = StorageRef> {
         const propertyRefs: Record<string, Ref> = {}
         const properties = value as Record<string, unknown>
         for (const [key, propertySchema] of Object.entries(schema.properties)) {
-          propertyRefs[key] = this.saveInternal(propertySchema, properties[key])
+          propertyRefs[key] = this.saveInternal(propertySchema, properties[key], extension)
         }
 
         return this.adapter.object().create(propertyRefs)
       },
+      child: (schema, childValue) => this.extension(extension).save(schema, childValue),
     }
 
     return schema.visit(visitor, value)
   }
 
-  load<S extends Schema>(schema: S, reference: Ref): JSONValueOf<S>
-  load(schema: Schema, reference: Ref): unknown {
+  load<S extends Schema<unknown>>(
+    schema: S,
+    reference: Ref,
+    extension?: SchemaExtension<Ref>,
+  ): JSONValueOf<S>
+  load(schema: Schema<unknown>, reference: Ref, extension?: SchemaExtension<Ref>): unknown {
     const visitor: SchemaVisitor<Ref, unknown> = {
       boolean: (_schema, ref) => this.adapter.boolean().get(ref),
       string: (_schema, ref) => this.adapter.string().get(ref),
@@ -145,20 +170,26 @@ export class Storage<Ref extends StorageRef = StorageRef> {
         this.adapter
           .array()
           .getElementReferences(ref)
-          .map((elementRef) => this.load(schema.element, elementRef)),
+          .map((elementRef) => this.load(schema.element, elementRef, extension)),
       object: (schema, ref) => {
         const propertyReferences = this.adapter.object().getPropertyReferences(ref)
 
         return Object.fromEntries(
           Object.entries(schema.properties).map(([key, propertySchema]) => [
             key,
-            this.load(propertySchema, propertyReferences[key]!),
+            this.load(propertySchema, propertyReferences[key]!, extension),
           ]),
         )
       },
+      child: (schema, ref) => this.extension(extension).load(schema, ref),
     }
 
     return schema.visit(visitor, reference)
+  }
+
+  private extension(extension: SchemaExtension<Ref> | undefined): SchemaExtension<Ref> {
+    if (!extension) throw new Error("Child schema needs educational unit storage")
+    return extension
   }
 }
 

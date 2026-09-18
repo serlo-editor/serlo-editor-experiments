@@ -88,7 +88,7 @@ test("rejects child unit type outside field definition", () => {
       units.save({
         ...exerciseJSON,
         question: { id: "image-2", type: "image" as const, url: "wrong.svg" },
-      }),
+      } as never),
     /Unit type image is not allowed in this child field/,
   )
 })

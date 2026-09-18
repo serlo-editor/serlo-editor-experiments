@@ -1,3 +1,5 @@
+import type { ChildSchema } from "./educational-units.ts"
+
 // Value types
 
 export interface BooleanValue {
@@ -16,7 +18,7 @@ export interface ArrayValue<T> {
   map<R>(fn: (value: T, index: number) => R): R[]
 }
 
-export type SchemaProperties = { readonly [key: string]: Schema }
+export type SchemaProperties = { readonly [key: string]: Schema<unknown> }
 
 export type ObjectValue<P extends SchemaProperties> = {
   readonly [K in keyof P]: ValueOf<P[K]>
@@ -26,25 +28,26 @@ export type Value = BooleanValue | StringValue | ArrayValue<unknown> | ObjectVal
 
 // Schemas
 
-export type SchemaKind = "boolean" | "string" | "array" | "object"
+export type SchemaKind = "boolean" | "string" | "array" | "object" | "child"
 
-export interface Schema<V extends Value = Value, JSONValue = unknown> {
+export interface Schema<V = Value, JSONValue = unknown> {
   readonly kind: SchemaKind
   readonly __value?: V
   readonly __jsonValue?: JSONValue
   visit<Input, Output>(visitor: SchemaVisitor<Input, Output>, input: Input): Output
 }
 
-export type ValueOf<S extends Schema> = S extends Schema<infer V, unknown> ? V : never
+export type ValueOf<S extends Schema<unknown>> = S extends Schema<infer V, unknown> ? V : never
 
-export type JSONValueOf<S extends Schema> =
-  S extends Schema<Value, infer JSONValue> ? JSONValue : never
+export type JSONValueOf<S extends Schema<unknown>> =
+  S extends Schema<unknown, infer JSONValue> ? JSONValue : never
 
 export interface SchemaVisitor<Input, Output> {
   boolean(schema: BooleanSchema, input: Input): Output
   string(schema: StringSchema, input: Input): Output
-  array(schema: ArraySchema<Schema>, input: Input): Output
+  array(schema: ArraySchema<Schema<unknown>>, input: Input): Output
   object(schema: ObjectSchema<SchemaProperties>, input: Input): Output
+  child(schema: ChildSchema, input: Input): Output
 }
 
 export interface BooleanSchema extends Schema<BooleanValue, boolean> {
@@ -73,7 +76,7 @@ export function string(): StringSchema {
   }
 }
 
-export interface ArraySchema<C extends Schema> extends Schema<
+export interface ArraySchema<C extends Schema<unknown>> extends Schema<
   ArrayValue<ValueOf<C>>,
   JSONValueOf<C>[]
 > {
@@ -81,7 +84,7 @@ export interface ArraySchema<C extends Schema> extends Schema<
   readonly element: C
 }
 
-export function array<C extends Schema>(element: C): ArraySchema<C> {
+export function array<C extends Schema<unknown>>(element: C): ArraySchema<C> {
   return {
     kind: "array",
     element,
@@ -114,3 +117,4 @@ export function object<P extends SchemaProperties>(properties: P): ObjectSchema<
 }
 
 export * from "./storage.ts"
+export * from "./educational-units.ts"
