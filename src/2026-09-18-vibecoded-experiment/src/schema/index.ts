@@ -112,3 +112,5 @@ export function object<P extends SchemaProperties>(properties: P): ObjectSchema<
     },
   }
 }
+
+export * from "./storage.ts"
