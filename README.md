@@ -15,13 +15,21 @@ Names must be kebab-case.
 ## Run
 
 ```bash
-pnpm --dir experiments/<name> dev
-# or
-pnpm --filter <name> dev
+pnpm --dir src/<name> dev
 ```
 
 ## Build
 
 ```bash
-pnpm --dir experiments/<name> build
+pnpm --dir src/<name> build
 ```
+
+## GitHub Pages
+
+React experiments deploy on every push to `main`:
+
+```text
+https://serlo-editor.github.io/serlo-editor-experiments/
+```
+
+Site index links every React experiment. Enable **Settings → Pages → Source: GitHub Actions** once.
