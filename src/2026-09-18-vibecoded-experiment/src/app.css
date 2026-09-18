@@ -165,12 +165,39 @@ h3 {
   background: #dbeafe;
   transition:
     background 0.15s,
+    opacity 0.15s,
     transform 0.15s;
 }
 
 .add-unit:hover {
   background: #bfdbfe;
   transform: translateY(-1px);
+}
+
+.worksheet-title > button,
+.unit-actions,
+.add-unit {
+  opacity: 0.12;
+}
+
+.worksheet-title > button,
+.unit-actions {
+  transition: opacity 0.15s;
+}
+
+.worksheet-title:hover > button,
+.worksheet-title:focus-within > button,
+.unit:hover .unit-actions,
+.unit:focus-within .unit-actions,
+.unit-slot:hover .add-unit,
+.unit-slot:focus-within .add-unit,
+.units:hover > .add-unit,
+.units:focus-within > .add-unit,
+.worksheet-title > button:focus-visible,
+.unit-actions:focus-within,
+.add-unit:hover,
+.add-unit:focus-visible {
+  opacity: 1;
 }
 
 .check-actions {
