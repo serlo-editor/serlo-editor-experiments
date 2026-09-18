@@ -55,8 +55,7 @@ export const object = <const Fields extends SchemaFields>(
   fields: Fields,
 ): ObjectSchema<Fields> => ({ kind: "object", fields })
 
-// StorageAdapter stores references and nodes. It knows nothing about schemas,
-// educational units, or rendering.
+// Storage
 
 export type StorageNode<Ref> =
   | { kind: "string"; value: string }
@@ -64,10 +63,11 @@ export type StorageNode<Ref> =
   | { kind: "object"; fields: Record<string, Ref> }
 
 export interface StorageAdapter<Ref> {
-  attach(reference: Ref): void
   create(node: StorageNode<Ref>): Ref
   get(reference: Ref): StorageNode<Ref>
 }
+
+type Operation = "bind" | "create" | "load"
 
 interface SchemaExtension<Ref> {
   bind(schema: Schema, reference: Ref): unknown
@@ -75,134 +75,111 @@ interface SchemaExtension<Ref> {
   load(schema: Schema, reference: Ref): unknown
 }
 
-// Storage maps ordinary schemas to storage-backed values. Higher layers handle
-// unknown schema kinds through SchemaExtension.
-export class Storage<Ref> {
-  private readonly adapter: StorageAdapter<Ref>
+export function bind<Ref, S extends Schema>(
+  schema: S,
+  storage: StorageAdapter<Ref>,
+  reference: Ref,
+  extension?: SchemaExtension<Ref>,
+): ValueOf<S> {
+  return walk("bind", schema, reference, storage, extension) as ValueOf<S>
+}
 
-  constructor(adapter: StorageAdapter<Ref>) {
-    this.adapter = adapter
-  }
+export function create<Ref, S extends Schema>(
+  schema: S,
+  storage: StorageAdapter<Ref>,
+  value: JSONValueOf<S>,
+  extension?: SchemaExtension<Ref>,
+): Ref {
+  return walk("create", schema, value, storage, extension) as Ref
+}
 
-  bind<S extends Schema>(schema: S, reference: Ref, extension?: SchemaExtension<Ref>): ValueOf<S> {
-    return this.bindValue(schema, reference, extension) as ValueOf<S>
-  }
+export function load<Ref, S extends Schema>(
+  schema: S,
+  storage: StorageAdapter<Ref>,
+  reference: Ref,
+  extension?: SchemaExtension<Ref>,
+): JSONValueOf<S> {
+  return walk("load", schema, reference, storage, extension) as JSONValueOf<S>
+}
 
-  save<S extends Schema>(schema: S, value: JSONValueOf<S>, extension?: SchemaExtension<Ref>): Ref {
-    const reference = this.create(schema, value, extension)
-    this.adapter.attach(reference)
-    return reference
-  }
+function walk<Ref>(
+  operation: Operation,
+  schema: Schema,
+  input: unknown,
+  storage: StorageAdapter<Ref>,
+  extension?: SchemaExtension<Ref>,
+): unknown {
+  const next = (childSchema: Schema, childInput: unknown) =>
+    walk(operation, childSchema, childInput, storage, extension)
 
-  create<S extends Schema>(
-    schema: S,
-    value: JSONValueOf<S>,
-    extension?: SchemaExtension<Ref>,
-  ): Ref {
-    return this.createValue(schema, value, extension)
-  }
-
-  load<S extends Schema>(
-    schema: S,
-    reference: Ref,
-    extension?: SchemaExtension<Ref>,
-  ): JSONValueOf<S> {
-    return this.loadValue(schema, reference, extension) as JSONValueOf<S>
-  }
-
-  private bindValue(schema: Schema, reference: Ref, extension?: SchemaExtension<Ref>): unknown {
-    if (schema.kind === "string") {
-      return {
-        get: () => this.node(reference, "string").value,
-        set: (value: string) => {
-          this.node(reference, "string").value = value
-        },
-      } satisfies StringValue
+  if (schema.kind === "string") {
+    if (operation === "create") {
+      if (typeof input !== "string") throw new TypeError("Expected string value")
+      return storage.create({ kind: "string", value: input })
     }
 
-    if (schema.kind === "array") {
-      const element = (schema as ArraySchema<Schema>).element
-      const references = () => this.node(reference, "array").children
-      return {
-        get length() {
-          return references().length
-        },
-        at: (index: number) => this.bindValue(element, arrayItem(references(), index), extension),
-        map: <Result>(fn: (value: unknown, index: number) => Result) =>
-          references().map((child, index) => fn(this.bindValue(element, child, extension), index)),
-      }
-    }
-
-    if (schema.kind === "object") {
-      const fields = (schema as ObjectSchema<SchemaFields>).fields
-      const references = this.node(reference, "object").fields
-      return mapFields(fields, (field, name) =>
-        this.bindValue(field, objectField(references, name), extension),
-      )
-    }
-
-    if (extension) return extension.bind(schema, reference)
-    throw unsupported(schema)
+    const reference = input as Ref
+    const node = getNode(storage, reference, "string")
+    if (operation === "load") return node.value
+    return {
+      get: () => getNode(storage, reference, "string").value,
+      set: (value: string) => {
+        getNode(storage, reference, "string").value = value
+      },
+    } satisfies StringValue
   }
 
-  private createValue(schema: Schema, value: unknown, extension?: SchemaExtension<Ref>): Ref {
-    if (schema.kind === "string") {
-      if (typeof value !== "string") throw new TypeError("Expected string value")
-      return this.adapter.create({ kind: "string", value })
-    }
-
-    if (schema.kind === "array") {
-      if (!Array.isArray(value)) throw new TypeError("Expected array value")
-      const element = (schema as ArraySchema<Schema>).element
-      return this.adapter.create({
+  if (schema.kind === "array") {
+    const element = (schema as ArraySchema<Schema>).element
+    if (operation === "create") {
+      if (!Array.isArray(input)) throw new TypeError("Expected array value")
+      return storage.create({
         kind: "array",
-        children: value.map((item) => this.createValue(element, item, extension)),
+        children: input.map((value) => next(element, value)) as Ref[],
       })
     }
 
-    if (schema.kind === "object") {
-      if (!isRecord(value)) throw new TypeError("Expected object value")
-      const fields = (schema as ObjectSchema<SchemaFields>).fields
-      return this.adapter.create({
+    const reference = input as Ref
+    const children = () => getNode(storage, reference, "array").children
+    if (operation === "load") return children().map((child) => next(element, child))
+    return {
+      get length() {
+        return children().length
+      },
+      at: (index: number) => next(element, arrayItem(children(), index)),
+      map: <Result>(fn: (value: unknown, index: number) => Result) =>
+        children().map((child, index) => fn(next(element, child), index)),
+    }
+  }
+
+  if (schema.kind === "object") {
+    const fields = (schema as ObjectSchema<SchemaFields>).fields
+    if (operation === "create") {
+      if (!isRecord(input)) throw new TypeError("Expected object value")
+      return storage.create({
         kind: "object",
-        fields: mapFields(fields, (field, name) => this.createValue(field, value[name], extension)),
+        fields: mapFields(fields, (field, name) => next(field, input[name])) as Record<string, Ref>,
       })
     }
 
-    if (extension) return extension.create(schema, value)
-    throw unsupported(schema)
+    const references = getNode(storage, input as Ref, "object").fields
+    return mapFields(fields, (field, name) => next(field, objectField(references, name)))
   }
 
-  private loadValue(schema: Schema, reference: Ref, extension?: SchemaExtension<Ref>): unknown {
-    if (schema.kind === "string") return this.node(reference, "string").value
+  if (!extension) throw new Error(`Unsupported schema: ${schema.kind}`)
+  if (operation === "create") return extension.create(schema, input)
+  if (operation === "bind") return extension.bind(schema, input as Ref)
+  return extension.load(schema, input as Ref)
+}
 
-    if (schema.kind === "array") {
-      const element = (schema as ArraySchema<Schema>).element
-      return this.node(reference, "array").children.map((child) =>
-        this.loadValue(element, child, extension),
-      )
-    }
-
-    if (schema.kind === "object") {
-      const fields = (schema as ObjectSchema<SchemaFields>).fields
-      const references = this.node(reference, "object").fields
-      return mapFields(fields, (field, name) =>
-        this.loadValue(field, objectField(references, name), extension),
-      )
-    }
-
-    if (extension) return extension.load(schema, reference)
-    throw unsupported(schema)
-  }
-
-  private node<Kind extends StorageNode<Ref>["kind"]>(
-    reference: Ref,
-    kind: Kind,
-  ): Extract<StorageNode<Ref>, { kind: Kind }> {
-    const node = this.adapter.get(reference)
-    if (node.kind !== kind) throw new TypeError(`Reference is not ${kind}`)
-    return node as Extract<StorageNode<Ref>, { kind: Kind }>
-  }
+function getNode<Ref, Kind extends StorageNode<Ref>["kind"]>(
+  storage: StorageAdapter<Ref>,
+  reference: Ref,
+  kind: Kind,
+): Extract<StorageNode<Ref>, { kind: Kind }> {
+  const node = storage.get(reference)
+  if (node.kind !== kind) throw new TypeError(`Reference is not ${kind}`)
+  return node as Extract<StorageNode<Ref>, { kind: Kind }>
 }
 
 const mapFields = <Input, Output>(
@@ -226,9 +203,9 @@ const arrayItem = <Ref>(items: Ref[], index: number): Ref => {
   return items[index]!
 }
 
-const unsupported = (schema: Schema): Error => new Error(`Unsupported schema: ${schema.kind}`)
-
 // Educational units
+
+type AnyObjectSchema = ObjectSchema<SchemaFields>
 
 export type UnitJSON<Definition extends EducationalUnitDefinition> = {
   id: string
@@ -244,22 +221,24 @@ export type EducationalUnitValue<Definition extends EducationalUnitDefinition> =
 
 export interface EducationalUnitDefinition<
   Type extends string = string,
-  Fields extends SchemaFields = SchemaFields,
+  UnitSchema extends AnyObjectSchema = AnyObjectSchema,
   Context = unknown,
   Node = unknown,
 > {
   readonly type: Type
-  readonly schema: ObjectSchema<Fields>
+  readonly schema: UnitSchema
+  readonly storageSchema: AnyObjectSchema
   render(
-    unit: EducationalUnitValue<EducationalUnitDefinition<Type, Fields, Context, Node>>,
+    unit: EducationalUnitValue<EducationalUnitDefinition<Type, UnitSchema, Context, Node>>,
     context: Context,
   ): Node
 }
 
-type UnitValueOf<Definition extends EducationalUnitDefinition> =
-  Definition extends EducationalUnitDefinition ? EducationalUnitValue<Definition> : never
-
 type AnyUnitDefinition = EducationalUnitDefinition
+
+type UnitValueOf<Definition extends AnyUnitDefinition> = Definition extends AnyUnitDefinition
+  ? EducationalUnitValue<Definition>
+  : never
 
 export interface ChildSchema<Definitions extends readonly AnyUnitDefinition[]> extends Schema<
   UnitValueOf<Definitions[number]>,
@@ -271,17 +250,25 @@ export interface ChildSchema<Definitions extends readonly AnyUnitDefinition[]> e
 
 export const educationalUnit = <
   const Type extends string,
-  const Fields extends SchemaFields,
+  const UnitSchema extends AnyObjectSchema,
   Context = unknown,
   Node = unknown,
 >(definition: {
   type: Type
-  schema: ObjectSchema<Fields>
+  schema: UnitSchema
   render: (
-    unit: EducationalUnitValue<EducationalUnitDefinition<Type, Fields, Context, Node>>,
+    unit: EducationalUnitValue<EducationalUnitDefinition<Type, UnitSchema, Context, Node>>,
     context: Context,
   ) => Node
-}): EducationalUnitDefinition<Type, Fields, Context, Node> => definition
+}): EducationalUnitDefinition<Type, UnitSchema, Context, Node> => {
+  if ("id" in definition.schema.fields || "type" in definition.schema.fields) {
+    throw new TypeError("Educational unit schema fields id and type are reserved")
+  }
+  return {
+    ...definition,
+    storageSchema: object({ id: string(), type: string(), ...definition.schema.fields }),
+  }
+}
 
 export const child = <const Definitions extends readonly AnyUnitDefinition[]>(
   ...units: Definitions
@@ -293,17 +280,12 @@ export const child = <const Definitions extends readonly AnyUnitDefinition[]>(
 const unitHeader = object({ id: string(), type: string() })
 
 export class EducationalUnitStorage<Ref, Definitions extends readonly AnyUnitDefinition[]> {
-  private readonly storage: Storage<Ref>
-  private readonly definitions: Map<string, AnyUnitDefinition>
+  private readonly storage: StorageAdapter<Ref>
+  private readonly definitions = new Map<string, AnyUnitDefinition>()
 
-  constructor(storage: Storage<Ref>, units: Definitions) {
+  constructor(storage: StorageAdapter<Ref>, units: Definitions) {
     this.storage = storage
-    this.definitions = new Map()
-
     for (const unit of units) {
-      if ("id" in unit.schema.fields || "type" in unit.schema.fields) {
-        throw new TypeError("Educational unit schema fields id and type are reserved")
-      }
       if (this.definitions.has(unit.type)) {
         throw new TypeError(`Duplicate educational unit type: ${unit.type}`)
       }
@@ -313,7 +295,7 @@ export class EducationalUnitStorage<Ref, Definitions extends readonly AnyUnitDef
 
   save<Definition extends Definitions[number]>(unit: UnitJSON<Definition>): Ref {
     const definition = this.definitionForJSON(unit)
-    return this.storage.save(this.fullSchema(definition), unit, this.extension(undefined))
+    return create(definition.storageSchema, this.storage, unit, this.extension(undefined))
   }
 
   bind<Context>(reference: Ref, context: Context): UnitValueOf<Definitions[number]> {
@@ -334,7 +316,7 @@ export class EducationalUnitStorage<Ref, Definitions extends readonly AnyUnitDef
 
   private bindUnit(reference: Ref, context: unknown): EducationalUnitValue<AnyUnitDefinition> {
     const { id, type, definition } = this.metadata(reference)
-    const value = this.storage.bind(definition.schema, reference, this.extension(context))
+    const value = bind(definition.schema, this.storage, reference, this.extension(context))
     const unit = {
       id,
       type,
@@ -353,8 +335,9 @@ export class EducationalUnitStorage<Ref, Definitions extends readonly AnyUnitDef
   private createChild(schema: Schema, value: unknown): Ref {
     const definition = this.definitionForJSON(value)
     this.assertAllowed(schema, definition.type)
-    return this.storage.create(
-      this.fullSchema(definition),
+    return create(
+      definition.storageSchema,
+      this.storage,
       value as Record<string, unknown>,
       this.extension(undefined),
     )
@@ -362,7 +345,7 @@ export class EducationalUnitStorage<Ref, Definitions extends readonly AnyUnitDef
 
   private loadUnit(reference: Ref): UnitJSON<AnyUnitDefinition> {
     const { id, type, definition } = this.metadata(reference)
-    const fields = this.storage.load(definition.schema, reference, this.extension(undefined))
+    const fields = load(definition.schema, this.storage, reference, this.extension(undefined))
     return { id, type, ...fields }
   }
 
@@ -377,7 +360,7 @@ export class EducationalUnitStorage<Ref, Definitions extends readonly AnyUnitDef
     type: string
     definition: AnyUnitDefinition
   } {
-    const { id, type } = this.storage.load(unitHeader, reference)
+    const { id, type } = load(unitHeader, this.storage, reference)
     return { id, type, definition: this.definition(type) }
   }
 
@@ -395,15 +378,11 @@ export class EducationalUnitStorage<Ref, Definitions extends readonly AnyUnitDef
   }
 
   private assertAllowed(schema: Schema, type: string): void {
-    if (schema.kind !== "child") throw unsupported(schema)
+    if (schema.kind !== "child") throw new Error(`Unsupported schema: ${schema.kind}`)
     const childSchema = schema as ChildSchema<readonly AnyUnitDefinition[]>
     if (!childSchema.units.some((unit) => unit.type === type)) {
       throw new TypeError(`Unit type ${type} is not allowed in this child field`)
     }
-  }
-
-  private fullSchema(definition: AnyUnitDefinition): ObjectSchema<SchemaFields> {
-    return object({ id: string(), type: string(), ...definition.schema.fields })
   }
 }
 
@@ -411,7 +390,7 @@ export const createEducationalUnitStorage = <
   Ref,
   const Definitions extends readonly AnyUnitDefinition[],
 >(options: {
-  storage: Storage<Ref>
+  storage: StorageAdapter<Ref>
   units: Definitions
 }): EducationalUnitStorage<Ref, Definitions> =>
   new EducationalUnitStorage(options.storage, options.units)
@@ -422,8 +401,6 @@ type FlatReference = string & { readonly __flatReference: unique symbol }
 
 export class FlatStorageAdapter implements StorageAdapter<FlatReference> {
   private readonly nodes = new Map<FlatReference, StorageNode<FlatReference>>()
-
-  attach(_reference: FlatReference): void {}
 
   create(node: StorageNode<FlatReference>): FlatReference {
     const reference = `node:${this.nodes.size}` as FlatReference
@@ -441,8 +418,6 @@ export class FlatStorageAdapter implements StorageAdapter<FlatReference> {
 type ObjectReference = { readonly node: StorageNode<ObjectReference> }
 
 export class ObjectStorageAdapter implements StorageAdapter<ObjectReference> {
-  attach(_reference: ObjectReference): void {}
-
   create(node: StorageNode<ObjectReference>): ObjectReference {
     return { node }
   }
@@ -492,9 +467,9 @@ const exerciseJSON = {
   answer: { id: "image-1", type: "image" as const, url: "triangle.svg" },
 }
 
-const runExample = <Ref>(adapter: StorageAdapter<Ref>) => {
+const runExample = <Ref>(storage: StorageAdapter<Ref>) => {
   const units = createEducationalUnitStorage({
-    storage: new Storage(adapter),
+    storage,
     units: [text, image, exercise],
   })
   const reference = units.save(exerciseJSON)
