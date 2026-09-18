@@ -26,24 +26,26 @@ export const worksheet = educationalUnit({
       <article className="worksheet">
         <div className="worksheet-title">
           <h1>{unit.value.title.get()}</h1>
-          <button type="button" onClick={() => context.edit("worksheet")}>
+          <button type="button" onClick={() => context.edit(unit.id)}>
             Edit
           </button>
         </div>
         <div className="units">
-          <AddUnitButton onClick={() => context.add(0)} />
+          <AddUnitButton onClick={() => context.add(unit.id, 0)} />
           {unit.value.units.map((childUnit, index) => (
             <div className="unit-slot" key={childUnit.id}>
               {childUnit.render()}
-              <AddUnitButton onClick={() => context.add(index + 1)} />
+              <AddUnitButton onClick={() => context.add(unit.id, index + 1)} />
             </div>
           ))}
         </div>
-        <div className="check-actions">
-          <button type="button" className="primary" onClick={context.check}>
-            Check answers
-          </button>
-        </div>
+        {!context.journey && (
+          <div className="check-actions">
+            <button type="button" className="primary" onClick={context.check}>
+              Check answers
+            </button>
+          </div>
+        )}
       </article>
     )
   },

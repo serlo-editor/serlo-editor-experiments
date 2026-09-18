@@ -1,178 +1,43 @@
 import { useState } from "react"
 
-import type { Answers } from "./educational-units/context.ts"
-import { FreeTextEditor, freeText } from "./educational-units/free-text.tsx"
-import { MultipleChoiceEditor, multipleChoice } from "./educational-units/multiple-choice.tsx"
-import { TextEditor, text } from "./educational-units/text.tsx"
-import {
-  initialWorksheet,
-  type WorksheetChild,
-  WorksheetEditor,
-  worksheet,
-} from "./educational-units/worksheet.tsx"
-import { createEducationalUnitStorage, FlatStorageAdapter, Storage } from "./schema/index.ts"
+import { LearningJourneyBuilder } from "./screens/learning-journey-builder.tsx"
+import { WorksheetBuilder } from "./screens/worksheet-builder.tsx"
 
 import "./app.css"
 
-type Focus = "worksheet" | string | null
+type Story = "worksheet" | "learning-journey"
 
 export default function App() {
-  const [storage] = useState(() =>
-    createEducationalUnitStorage({
-      storage: new Storage(new FlatStorageAdapter()),
-      units: [text, multipleChoice, freeText, worksheet],
-    }),
-  )
-  const [reference] = useState(() => storage.save(initialWorksheet))
-  const [focus, setFocus] = useState<Focus>(null)
-  const [addMenuOpen, setAddMenuOpen] = useState(false)
-  const [insertAt, setInsertAt] = useState(0)
-  const [answers, setAnswers] = useState<Answers>({})
-  const [checked, setChecked] = useState(false)
-  const [revision, setRevision] = useState(0)
-
-  const changed = () => {
-    setChecked(false)
-    setRevision((value) => value + 1)
-  }
-  const choose = (id: string, choice: number, selected: boolean) => {
-    setChecked(false)
-    setAnswers((current) => {
-      const existing = current[id]
-      const choices = Array.isArray(existing) ? existing : []
-      const next = selected ? [...choices, choice] : choices.filter((value) => value !== choice)
-      return { ...current, [id]: next }
-    })
-  }
-  const write = (id: string, answer: string) => {
-    setChecked(false)
-    setAnswers((current) => ({ ...current, [id]: answer }))
-  }
-  const openAddMenu = (index: number) => {
-    setInsertAt(index)
-    setAddMenuOpen(true)
-  }
-  const boundWorksheet = storage.bind(reference, {
-    answers,
-    checked,
-    add: openAddMenu,
-    check: () => setChecked(true),
-    delete: deleteUnit,
-    edit: setFocus,
-    choose,
-    write,
-  })
-  const units = boundWorksheet.value.units.map((unit) => unit)
-  const focusedUnit =
-    typeof focus === "string" ? units.find((unit) => unit.id === focus) : undefined
-
-  const addUnit = (type: WorksheetChild["type"]) => {
-    const id = `${type}-${crypto.randomUUID()}`
-    const unit =
-      type === "text"
-        ? { id, type, text: "New text" }
-        : type === "multiple-choice"
-          ? {
-              id,
-              type,
-              question: "New question",
-              choices: [
-                { text: "Option 1", correct: false },
-                { text: "Option 2", correct: false },
-              ],
-            }
-          : { id, type, question: "New question", answer: "Answer" }
-
-    boundWorksheet.value.units.insert(insertAt, unit)
-    setAddMenuOpen(false)
-    setFocus(id)
-    changed()
-  }
-  function deleteUnit(id: string) {
-    const index = units.findIndex((unit) => unit.id === id)
-    if (index < 0) return
-
-    boundWorksheet.value.units.remove(index)
-    if (focus === id) setFocus(null)
-    changed()
-  }
+  const [story, setStory] = useState<Story>("worksheet")
 
   return (
-    <main className="editor-shell" data-revision={revision}>
-      <header className="topbar">
-        <div>
-          <p className="eyebrow">Educational unit editor</p>
-          <h1>Worksheet builder</h1>
+    <main className="storybook-shell">
+      <nav className="storybook-nav" aria-label="Stories">
+        <p className="eyebrow">Educational units</p>
+        <h1>Storybook</h1>
+        <button
+          type="button"
+          className={story === "worksheet" ? "active" : ""}
+          onClick={() => setStory("worksheet")}
+        >
+          Worksheet
+        </button>
+        <button
+          type="button"
+          className={story === "learning-journey" ? "active" : ""}
+          onClick={() => setStory("learning-journey")}
+        >
+          Learning journey
+        </button>
+      </nav>
+      <div className="storybook-content">
+        <div hidden={story !== "worksheet"}>
+          <WorksheetBuilder />
         </div>
-      </header>
-
-      <section className={`workspace ${focus ? "editing" : ""}`}>
-        {focus && (
-          <aside className="editor-panel">
-            <div className="panel-head">
-              <h2>{focus === "worksheet" ? "Worksheet" : "Edit unit"}</h2>
-              <button type="button" onClick={() => setFocus(null)}>
-                Done editing
-              </button>
-            </div>
-            {focus === "worksheet" ? (
-              <WorksheetEditor unit={boundWorksheet} onChange={changed} />
-            ) : focusedUnit?.type === "text" ? (
-              <TextEditor
-                unit={focusedUnit}
-                onChange={changed}
-                onDelete={() => deleteUnit(focusedUnit.id)}
-              />
-            ) : focusedUnit?.type === "multiple-choice" ? (
-              <MultipleChoiceEditor
-                unit={focusedUnit}
-                onChange={changed}
-                onDelete={() => deleteUnit(focusedUnit.id)}
-              />
-            ) : focusedUnit?.type === "free-text" ? (
-              <FreeTextEditor
-                unit={focusedUnit}
-                onChange={changed}
-                onDelete={() => deleteUnit(focusedUnit.id)}
-              />
-            ) : null}
-          </aside>
-        )}
-        <section className="preview-panel">
-          <div className="panel-head">
-            <h2>View mode</h2>
-          </div>
-          {boundWorksheet.render()}
-        </section>
-      </section>
-
-      {addMenuOpen && (
-        <div className="overlay" role="presentation" onMouseDown={() => setAddMenuOpen(false)}>
-          <section
-            aria-labelledby="add-unit-title"
-            aria-modal="true"
-            className="add-menu"
-            role="dialog"
-            onMouseDown={(event) => event.stopPropagation()}
-          >
-            <div className="panel-head">
-              <h2 id="add-unit-title">Add educational unit</h2>
-              <button type="button" onClick={() => setAddMenuOpen(false)}>
-                Close
-              </button>
-            </div>
-            <button type="button" onClick={() => addUnit("text")}>
-              Text
-            </button>
-            <button type="button" onClick={() => addUnit("multiple-choice")}>
-              Multiple choice
-            </button>
-            <button type="button" onClick={() => addUnit("free-text")}>
-              Free text
-            </button>
-          </section>
+        <div hidden={story !== "learning-journey"}>
+          <LearningJourneyBuilder />
         </div>
-      )}
+      </div>
     </main>
   )
 }

@@ -30,11 +30,20 @@ export function AddUnitButton({ onClick }: { onClick(): void }) {
   )
 }
 
-export function Feedback({ checked, correct }: { checked: boolean; correct: boolean }) {
+export function Feedback({
+  checked,
+  correct,
+  answer,
+}: {
+  checked: boolean
+  correct: boolean
+  answer?: string
+}) {
   return checked ? (
-    <p className={`feedback ${correct ? "success" : "error"}`}>
-      {correct ? "Correct" : "Try again"}
-    </p>
+    <div className="feedback">
+      <p className={correct ? "success" : "error"}>{correct ? "Correct" : "Try again"}</p>
+      {answer && <p>Answer: {answer}</p>}
+    </div>
   ) : null
 }
 

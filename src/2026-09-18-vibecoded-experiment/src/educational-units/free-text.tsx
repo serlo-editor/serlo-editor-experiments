@@ -28,7 +28,7 @@ export const freeText = educationalUnit({
           value={answer}
           onChange={(event) => context.write(unit.id, event.target.value)}
         />
-        <Feedback checked={context.checked} correct={correct} />
+        <Feedback checked={context.checked} correct={correct} answer={unit.value.answer.get()} />
       </section>
     )
   },

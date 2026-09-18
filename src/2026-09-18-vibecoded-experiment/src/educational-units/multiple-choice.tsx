@@ -45,7 +45,14 @@ export const multipleChoice = educationalUnit({
             </label>
           ))}
         </div>
-        <Feedback checked={context.checked} correct={matches} />
+        <Feedback
+          checked={context.checked}
+          correct={matches}
+          answer={choices
+            .filter((choice) => choice.correct.get())
+            .map((choice) => choice.text.get())
+            .join(", ")}
+        />
       </section>
     )
   },
