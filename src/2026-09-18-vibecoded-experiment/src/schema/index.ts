@@ -12,10 +12,13 @@ export interface StringValue {
   set(value: string): void
 }
 
-export interface ArrayValue<T> {
+export interface ArrayValue<T, JSONValue = unknown> {
   readonly length: number
   at(index: number): T
   map<R>(fn: (value: T, index: number) => R): R[]
+  insert(index: number, value: JSONValue): void
+  push(value: JSONValue): void
+  remove(index: number): void
 }
 
 export type SchemaProperties = { readonly [key: string]: Schema<unknown> }

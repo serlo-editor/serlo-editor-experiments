@@ -36,6 +36,7 @@ type StringStorageAdapter<Ref extends StorageRef> = {
 type ArrayStorageAdapter<Ref extends StorageRef> = {
   create(children: Ref[]): Ref
   getElementReferences(reference: Ref): Ref[]
+  setElementReferences(reference: Ref, children: Ref[]): void
 }
 
 type ObjectStorageAdapter<Ref extends StorageRef> = {
@@ -76,17 +77,38 @@ export class Storage<Ref extends StorageRef = StorageRef> {
       array: (schema: ArraySchema<Schema<unknown>>, ref) => {
         const adapter = this.adapter.array()
         const bind = (elementRef: Ref) => this.bind(schema.element, elementRef, extension)
+        const references = () => adapter.getElementReferences(ref)
+        const insert = (index: number, value: JSONValueOf<typeof schema.element>) => {
+          const elementReferences = references()
+          if (index < 0 || index > elementReferences.length) {
+            throw new RangeError(`Array index ${index} is outside insertion range`)
+          }
+
+          const elementReference = this.saveInternal(schema.element, value, extension)
+          this.adapter.attach(elementReference)
+          elementReferences.splice(index, 0, elementReference)
+          adapter.setElementReferences(ref, elementReferences)
+        }
 
         return {
           get length() {
-            return adapter.getElementReferences(ref).length
+            return references().length
           },
-          at: (index: number) => bind(adapter.getElementReferences(ref)[index]!),
+          at: (index: number) => bind(references()[index]!),
           map: <R>(fn: (value: ValueOf<typeof schema.element>, index: number) => R) =>
-            adapter
-              .getElementReferences(ref)
-              .map((elementRef, index) => fn(bind(elementRef), index)),
-        } satisfies ArrayValue<ValueOf<typeof schema.element>>
+            references().map((elementRef, index) => fn(bind(elementRef), index)),
+          insert,
+          push: (value) => insert(references().length, value),
+          remove: (index) => {
+            const elementReferences = references()
+            if (index < 0 || index >= elementReferences.length) {
+              throw new RangeError(`Array index ${index} is outside removal range`)
+            }
+
+            elementReferences.splice(index, 1)
+            adapter.setElementReferences(ref, elementReferences)
+          },
+        } satisfies ArrayValue<ValueOf<typeof schema.element>, JSONValueOf<typeof schema.element>>
       },
       object: (schema: ObjectSchema<SchemaProperties>, ref) => {
         const propertyReferences = this.adapter.object().getPropertyReferences(ref)
@@ -232,8 +254,9 @@ export class FlatStorageAdapter implements StorageAdapter<FlatStorageRef> {
       getElementReferences: (reference) => {
         const value = this.storage.get(reference)
         if (!Array.isArray(value)) throw new TypeError("Expected array value")
-        return value
+        return [...value]
       },
+      setElementReferences: (reference, children) => this.storage.set(reference, children),
     }
   }
 
