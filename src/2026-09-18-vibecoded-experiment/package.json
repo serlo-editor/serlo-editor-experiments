@@ -13,7 +13,8 @@
     "fix": "pnpm run fix:format && pnpm run fix:lint && pnpm run check:tsc",
     "fix:format": "oxfmt",
     "fix:lint": "oxlint --fix",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --test --experimental-strip-types src/schema.test.ts"
   },
   "dependencies": {
     "react": "^19.2.8",
