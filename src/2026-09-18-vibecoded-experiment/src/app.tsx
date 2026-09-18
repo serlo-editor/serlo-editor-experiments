@@ -22,6 +22,9 @@ type Focus = "worksheet" | string | null
 type ViewContext = {
   readonly answers: Answers
   readonly checked: boolean
+  add(index: number): void
+  check(): void
+  delete(id: string): void
   edit(id: string): void
   choose(id: string, choice: number, selected: boolean): void
   write(id: string, answer: string): void
@@ -33,7 +36,11 @@ const text = educationalUnit({
   render(unit, context: ViewContext): ReactNode {
     return (
       <section className="unit">
-        <UnitHead name="Text" onEdit={() => context.edit(unit.id)} />
+        <UnitHead
+          name="Text"
+          onDelete={() => context.delete(unit.id)}
+          onEdit={() => context.edit(unit.id)}
+        />
         <textarea aria-label="Worksheet text" readOnly rows={3} value={unit.value.text.get()} />
       </section>
     )
@@ -56,7 +63,11 @@ const multipleChoice = educationalUnit({
 
     return (
       <section className="unit">
-        <UnitHead name="Multiple choice" onEdit={() => context.edit(unit.id)} />
+        <UnitHead
+          name="Multiple choice"
+          onDelete={() => context.delete(unit.id)}
+          onEdit={() => context.edit(unit.id)}
+        />
         <p className="question">{unit.value.question.get()}</p>
         <div className="answers">
           {choices.map((choice, index) => (
@@ -87,7 +98,11 @@ const freeText = educationalUnit({
 
     return (
       <section className="unit">
-        <UnitHead name="Free text" onEdit={() => context.edit(unit.id)} />
+        <UnitHead
+          name="Free text"
+          onDelete={() => context.delete(unit.id)}
+          onEdit={() => context.edit(unit.id)}
+        />
         <p className="question">{unit.value.question.get()}</p>
         <textarea
           aria-label="Your answer"
@@ -108,11 +123,29 @@ const worksheet = educationalUnit({
     title: string(),
     units: array(child(text, multipleChoice, freeText)),
   }),
-  render(unit, _context: ViewContext): ReactNode {
+  render(unit, context: ViewContext): ReactNode {
     return (
       <article className="worksheet">
-        <h1>{unit.value.title.get()}</h1>
-        <div className="units">{unit.value.units.map((childUnit) => childUnit.render())}</div>
+        <div className="worksheet-title">
+          <h1>{unit.value.title.get()}</h1>
+          <button type="button" onClick={() => context.edit("worksheet")}>
+            Edit
+          </button>
+        </div>
+        <div className="units">
+          <AddUnitButton onClick={() => context.add(0)} />
+          {unit.value.units.map((childUnit, index) => (
+            <div className="unit-slot" key={childUnit.id}>
+              {childUnit.render()}
+              <AddUnitButton onClick={() => context.add(index + 1)} />
+            </div>
+          ))}
+        </div>
+        <div className="check-actions">
+          <button type="button" className="primary" onClick={context.check}>
+            Check answers
+          </button>
+        </div>
       </article>
     )
   },
@@ -161,6 +194,7 @@ export default function App() {
   const [reference] = useState(() => storage.save(initialWorksheet))
   const [focus, setFocus] = useState<Focus>(null)
   const [addMenuOpen, setAddMenuOpen] = useState(false)
+  const [insertAt, setInsertAt] = useState(0)
   const [answers, setAnswers] = useState<Answers>({})
   const [checked, setChecked] = useState(false)
   const [revision, setRevision] = useState(0)
@@ -183,9 +217,16 @@ export default function App() {
     setAnswers((current) => ({ ...current, [id]: answer }))
   }
 
+  const openAddMenu = (index: number) => {
+    setInsertAt(index)
+    setAddMenuOpen(true)
+  }
   const boundWorksheet = storage.bind(reference, {
     answers,
     checked,
+    add: openAddMenu,
+    check: () => setChecked(true),
+    delete: deleteUnit,
     edit: setFocus,
     choose,
     write,
@@ -211,15 +252,17 @@ export default function App() {
             }
           : { id, type, question: "New question", answer: "Answer" }
 
-    boundWorksheet.value.units.push(unit)
+    boundWorksheet.value.units.insert(insertAt, unit)
     setAddMenuOpen(false)
     setFocus(id)
     changed()
   }
-  const deleteUnit = () => {
-    if (!focusedUnit) return
-    boundWorksheet.value.units.remove(units.findIndex((unit) => unit.id === focusedUnit.id))
-    setFocus(null)
+  function deleteUnit(id: string) {
+    const index = units.findIndex((unit) => unit.id === id)
+    if (index < 0) return
+
+    boundWorksheet.value.units.remove(index)
+    if (focus === id) setFocus(null)
     changed()
   }
 
@@ -229,14 +272,6 @@ export default function App() {
         <div>
           <p className="eyebrow">Educational unit editor</p>
           <h1>Worksheet builder</h1>
-        </div>
-        <div className="actions">
-          <button type="button" onClick={() => setFocus("worksheet")}>
-            Edit worksheet
-          </button>
-          <button type="button" className="primary" onClick={() => setAddMenuOpen(true)}>
-            Add unit
-          </button>
         </div>
       </header>
 
@@ -252,16 +287,17 @@ export default function App() {
             {focus === "worksheet" ? (
               <WorksheetEditor unit={boundWorksheet} onChange={changed} />
             ) : focusedUnit ? (
-              <UnitEditor unit={focusedUnit} onChange={changed} onDelete={deleteUnit} />
+              <UnitEditor
+                unit={focusedUnit}
+                onChange={changed}
+                onDelete={() => deleteUnit(focusedUnit.id)}
+              />
             ) : null}
           </aside>
         )}
         <section className="preview-panel">
           <div className="panel-head">
             <h2>View mode</h2>
-            <button type="button" className="primary" onClick={() => setChecked(true)}>
-              Check answers
-            </button>
           </div>
           {boundWorksheet.render()}
         </section>
@@ -298,14 +334,27 @@ export default function App() {
   )
 }
 
-function UnitHead({ name, onEdit }: { name: string; onEdit(): void }) {
+function UnitHead({ name, onDelete, onEdit }: { name: string; onDelete(): void; onEdit(): void }) {
   return (
     <div className="unit-head">
       <span>{name}</span>
-      <button type="button" onClick={onEdit}>
-        Edit
-      </button>
+      <div className="unit-actions">
+        <button type="button" onClick={onEdit}>
+          Edit
+        </button>
+        <button type="button" className="delete" onClick={onDelete}>
+          Delete
+        </button>
+      </div>
     </div>
+  )
+}
+
+function AddUnitButton({ onClick }: { onClick(): void }) {
+  return (
+    <button type="button" className="add-unit" onClick={onClick}>
+      + Add unit
+    </button>
   )
 }
 

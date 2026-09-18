@@ -80,6 +80,8 @@ h3 {
 .topbar,
 .panel-head,
 .unit-head,
+.worksheet-title,
+.unit-actions,
 .actions {
   display: flex;
   align-items: center;
@@ -140,7 +142,7 @@ h3 {
   margin: 0 auto;
 }
 
-.worksheet > h1 {
+.worksheet-title {
   margin-bottom: 1.5rem;
 }
 
@@ -149,6 +151,32 @@ h3 {
 .choice-editor {
   display: grid;
   gap: 0.85rem;
+}
+
+.unit-slot {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.add-unit {
+  justify-self: center;
+  padding: 0.45rem 0.7rem;
+  color: #1d4ed8;
+  background: #dbeafe;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+}
+
+.add-unit:hover {
+  background: #bfdbfe;
+  transform: translateY(-1px);
+}
+
+.check-actions {
+  display: flex;
+  justify-content: end;
+  margin-top: 1.25rem;
 }
 
 .unit {
@@ -171,6 +199,15 @@ h3 {
   font-size: 0.78rem;
   letter-spacing: normal;
   text-transform: none;
+}
+
+.unit-actions {
+  gap: 0.35rem;
+}
+
+.unit-head button.delete {
+  color: #b91c1c;
+  background: #fee2e2;
 }
 
 .unit > textarea[readonly] {
