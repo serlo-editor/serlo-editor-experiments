@@ -14,7 +14,7 @@
     "fix:format": "oxfmt",
     "fix:lint": "oxlint --fix",
     "preview": "vite preview",
-    "test": "node --test --experimental-strip-types src/schema.test.ts"
+    "test": "node --test --experimental-strip-types src/*.test.ts"
   },
   "dependencies": {
     "react": "^19.2.8",
