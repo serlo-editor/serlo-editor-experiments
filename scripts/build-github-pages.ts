@@ -56,8 +56,12 @@ async function findReactExperiments() {
 
 async function buildExperiment(experiment: Experiment, basePath: string) {
   console.log(`Building ${experiment.name}`)
-  await run(pnpmCommand, ["install", "--frozen-lockfile"], experiment.dir)
-  await run(pnpmCommand, ["build", "--base", `${basePath}${experiment.name}/`], experiment.dir)
+  await run(pnpmCommand, ["--ignore-workspace", "install", "--frozen-lockfile"], experiment.dir)
+  await run(
+    pnpmCommand,
+    ["--ignore-workspace", "build", "--base", `${basePath}${experiment.name}/`],
+    experiment.dir,
+  )
   await cp(join(experiment.dir, "dist"), join(outputDir, experiment.name), { recursive: true })
 }
 
