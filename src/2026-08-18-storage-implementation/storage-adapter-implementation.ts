@@ -67,7 +67,7 @@ export function array<C extends Schema>(element: C): ArraySchema<C> {
 
 // Storage
 
-type StorageRef = unknown & {__storageRef: true}
+type StorageRef = unknown & { __storageRef: true }
 
 interface StringStorageAdapter<Ref extends StorageRef> {
   create(value: string): Ref
@@ -159,7 +159,7 @@ export class Storage<Ref extends StorageRef = StorageRef> {
 
 // FlatStorage
 
-type FlatStorageRef = string & {__storageRef: true}
+type FlatStorageRef = string & { __storageRef: true }
 
 class FlatStorageAdapter implements StorageAdapter<FlatStorageRef, FlatStorageRef> {
   private storage = new Map<string, string | FlatStorageRef[]>()
@@ -200,8 +200,8 @@ class FlatStorageAdapter implements StorageAdapter<FlatStorageRef, FlatStorageRe
 
 // Yjs storage
 
-type YjsStringRef = Y.Text & {__storageRef: true}
-type YjsArrayRef = Y.Array<YjsStorageRef> & {__storageRef: true}
+type YjsStringRef = Y.Text & { __storageRef: true }
+type YjsArrayRef = Y.Array<YjsStorageRef> & { __storageRef: true }
 type YjsStorageRef = YjsStringRef | YjsArrayRef
 
 class YjsAdapter implements StorageAdapter<YjsStringRef, YjsArrayRef> {

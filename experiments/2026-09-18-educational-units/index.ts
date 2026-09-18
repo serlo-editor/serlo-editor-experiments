@@ -40,27 +40,27 @@ export interface ArraySchema<Element extends Schema> extends Schema<
 
 export interface ObjectSchema<Fields extends SchemaFields> extends Schema<
   ObjectValue<Fields>,
-  {[Key in keyof Fields]: JSONValueOf<Fields[Key]>}
+  { [Key in keyof Fields]: JSONValueOf<Fields[Key]> }
 > {
   readonly kind: "object"
   readonly fields: Fields
 }
 
-export const string = (): StringSchema => ({kind: "string"})
+export const string = (): StringSchema => ({ kind: "string" })
 export const array = <Element extends Schema>(element: Element): ArraySchema<Element> => ({
   kind: "array",
   element,
 })
 export const object = <const Fields extends SchemaFields>(
   fields: Fields,
-): ObjectSchema<Fields> => ({kind: "object", fields})
+): ObjectSchema<Fields> => ({ kind: "object", fields })
 
 // Storage
 
 export type StorageNode<Ref> =
-  | {kind: "string"; value: string}
-  | {kind: "array"; children: Ref[]}
-  | {kind: "object"; fields: Record<string, Ref>}
+  | { kind: "string"; value: string }
+  | { kind: "array"; children: Ref[] }
+  | { kind: "object"; fields: Record<string, Ref> }
 
 export interface StorageAdapter<Ref> {
   create(node: StorageNode<Ref>): Ref
@@ -115,7 +115,7 @@ function walk<Ref>(
   if (schema.kind === "string") {
     if (operation === "create") {
       if (typeof input !== "string") throw new TypeError("Expected string value")
-      return storage.create({kind: "string", value: input})
+      return storage.create({ kind: "string", value: input })
     }
 
     const reference = input as Ref
@@ -176,10 +176,10 @@ function getNode<Ref, Kind extends StorageNode<Ref>["kind"]>(
   storage: StorageAdapter<Ref>,
   reference: Ref,
   kind: Kind,
-): Extract<StorageNode<Ref>, {kind: Kind}> {
+): Extract<StorageNode<Ref>, { kind: Kind }> {
   const node = storage.get(reference)
   if (node.kind !== kind) throw new TypeError(`Reference is not ${kind}`)
-  return node as Extract<StorageNode<Ref>, {kind: Kind}>
+  return node as Extract<StorageNode<Ref>, { kind: Kind }>
 }
 
 const mapFields = <Input, Output>(
@@ -266,7 +266,7 @@ export const educationalUnit = <
   }
   return {
     ...definition,
-    storageSchema: object({id: string(), type: string(), ...definition.schema.fields}),
+    storageSchema: object({ id: string(), type: string(), ...definition.schema.fields }),
   }
 }
 
@@ -274,10 +274,10 @@ export const child = <const Definitions extends readonly AnyUnitDefinition[]>(
   ...units: Definitions
 ): ChildSchema<Definitions> => {
   if (units.length === 0) throw new TypeError("child() needs at least one unit definition")
-  return {kind: "child", units}
+  return { kind: "child", units }
 }
 
-const unitHeader = object({id: string(), type: string()})
+const unitHeader = object({ id: string(), type: string() })
 
 export class EducationalUnitStorage<Ref, Definitions extends readonly AnyUnitDefinition[]> {
   private readonly storage: StorageAdapter<Ref>
@@ -315,7 +315,7 @@ export class EducationalUnitStorage<Ref, Definitions extends readonly AnyUnitDef
   }
 
   private bindUnit(reference: Ref, context: unknown): EducationalUnitValue<AnyUnitDefinition> {
-    const {id, type, definition} = this.metadata(reference)
+    const { id, type, definition } = this.metadata(reference)
     const value = bind(definition.schema, this.storage, reference, this.extension(context))
     const unit = {
       id,
@@ -344,9 +344,9 @@ export class EducationalUnitStorage<Ref, Definitions extends readonly AnyUnitDef
   }
 
   private loadUnit(reference: Ref): UnitJSON<AnyUnitDefinition> {
-    const {id, type, definition} = this.metadata(reference)
+    const { id, type, definition } = this.metadata(reference)
     const fields = load(definition.schema, this.storage, reference, this.extension(undefined))
-    return {id, type, ...fields}
+    return { id, type, ...fields }
   }
 
   private loadChild(schema: Schema, reference: Ref): UnitJSON<AnyUnitDefinition> {
@@ -360,8 +360,8 @@ export class EducationalUnitStorage<Ref, Definitions extends readonly AnyUnitDef
     type: string
     definition: AnyUnitDefinition
   } {
-    const {id, type} = load(unitHeader, this.storage, reference)
-    return {id, type, definition: this.definition(type)}
+    const { id, type } = load(unitHeader, this.storage, reference)
+    return { id, type, definition: this.definition(type) }
   }
 
   private definitionForJSON(value: unknown): AnyUnitDefinition {
@@ -397,7 +397,7 @@ export const createEducationalUnitStorage = <
 
 // Example adapters
 
-type FlatReference = string & {readonly __flatReference: unique symbol}
+type FlatReference = string & { readonly __flatReference: unique symbol }
 
 export class FlatStorageAdapter implements StorageAdapter<FlatReference> {
   private readonly nodes = new Map<FlatReference, StorageNode<FlatReference>>()
@@ -415,11 +415,11 @@ export class FlatStorageAdapter implements StorageAdapter<FlatReference> {
   }
 }
 
-type ObjectReference = {readonly node: StorageNode<ObjectReference>}
+type ObjectReference = { readonly node: StorageNode<ObjectReference> }
 
 export class ObjectStorageAdapter implements StorageAdapter<ObjectReference> {
   create(node: StorageNode<ObjectReference>): ObjectReference {
-    return {node}
+    return { node }
   }
 
   get(reference: ObjectReference): StorageNode<ObjectReference> {
@@ -429,11 +429,11 @@ export class ObjectStorageAdapter implements StorageAdapter<ObjectReference> {
 
 // Executable examples
 
-type DemoContext = {readonly prefix: string}
+type DemoContext = { readonly prefix: string }
 
 const text = educationalUnit({
   type: "text",
-  schema: object({text: string()}),
+  schema: object({ text: string() }),
   render(unit, context: DemoContext) {
     return `${context.prefix}text:${unit.value.text.get()}`
   },
@@ -441,7 +441,7 @@ const text = educationalUnit({
 
 const image = educationalUnit({
   type: "image",
-  schema: object({url: string()}),
+  schema: object({ url: string() }),
   render(unit, context: DemoContext) {
     return `${context.prefix}image:${unit.value.url.get()}`
   },
@@ -463,8 +463,8 @@ const exerciseJSON = {
   id: "exercise-1",
   type: "exercise" as const,
   title: "Pythagoras",
-  question: {id: "text-1", type: "text" as const, text: "What is c?"},
-  answer: {id: "image-1", type: "image" as const, url: "triangle.svg"},
+  question: { id: "text-1", type: "text" as const, text: "What is c?" },
+  answer: { id: "image-1", type: "image" as const, url: "triangle.svg" },
 }
 
 const runExample = <Ref>(storage: StorageAdapter<Ref>) => {
@@ -473,7 +473,7 @@ const runExample = <Ref>(storage: StorageAdapter<Ref>) => {
     units: [text, image, exercise],
   })
   const reference = units.save(exerciseJSON)
-  const rendered = units.bind(reference, {prefix: "render "}).render()
+  const rendered = units.bind(reference, { prefix: "render " }).render()
   const loaded = units.load(reference)
 
   assert(
@@ -481,7 +481,7 @@ const runExample = <Ref>(storage: StorageAdapter<Ref>) => {
     "child render failed",
   )
   assert(JSON.stringify(loaded) === JSON.stringify(exerciseJSON), "save/load changed unit JSON")
-  return {rendered, loaded}
+  return { rendered, loaded }
 }
 
 const flatExample = runExample(new FlatStorageAdapter())
