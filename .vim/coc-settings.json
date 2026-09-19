@@ -1,7 +1,5 @@
 {
   "biome.enable": false,
   "eslint.validate": [],
-  "oxc.oxfmt.enable": true,
-  "oxc.oxlint.codeActionsOnSave": ["source.fixAll.oxc"],
   "prettier.enable": false
 }

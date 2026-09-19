@@ -1,18 +1,4 @@
-interface FlatNodeValues {
-  string: string
-  number: number
-  boolean: boolean
-  array: FlatNodeReference[]
-  object: Record<string, FlatNodeReference | undefined>
-}
-
-type FlatNodeKind = keyof FlatNodeValues
-type FlatNodeValue<Kind extends FlatNodeKind> = FlatNodeValues[Kind]
-
-interface FlatNodeReference<Kind extends FlatNodeKind = FlatNodeKind> {
-  kind: Kind
-  key: string
-}
+// buckets.ts
 
 type BucketMap<Values extends object> = {
   [Kind in keyof Values]: Map<string, Values[Kind]>
@@ -45,13 +31,31 @@ class Buckets<Values extends object> {
   }
 }
 
+// flat-storage.ts
+
+interface FlatNodeReference<Kind extends FlatNodeKind = FlatNodeKind> {
+  kind: Kind
+  key: string
+}
+
+interface FlatNodeValues {
+  string: string
+  number: number
+  boolean: boolean
+  array: FlatNodeReference[]
+  object: Record<string, FlatNodeReference | undefined>
+}
+
+type FlatNodeKind = keyof FlatNodeValues
+type FlatNodeValue<Kind extends FlatNodeKind> = FlatNodeValues[Kind]
+
 class FlatStorage {
   private readonly buckets = new Buckets<FlatNodeValues>()
 
   save<Kind extends FlatNodeKind>(kind: Kind, value: FlatNodeValue<Kind>): FlatNodeReference<Kind> {
     const reference = { kind, key: this.createKey(kind) }
 
-    this.set(reference, value)
+    this.buckets.write(reference.kind, reference.key, value)
 
     return reference
   }
@@ -72,14 +76,7 @@ class FlatStorage {
   ): void {
     const nextValue = typeof value === "function" ? value(this.get(reference)) : value
 
-    this.set(reference, nextValue)
-  }
-
-  private set<Kind extends FlatNodeKind>(
-    reference: FlatNodeReference<Kind>,
-    value: FlatNodeValue<Kind>,
-  ): void {
-    this.buckets.write(reference.kind, reference.key, value)
+    this.buckets.write(reference.kind, reference.key, nextValue)
   }
 
   private createKey<Kind extends FlatNodeKind>(kind: Kind): string {
