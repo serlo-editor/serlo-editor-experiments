@@ -52,7 +52,10 @@ type FlatNodeValue<Kind extends FlatNodeKind> = FlatNodeValues[Kind]
 class FlatStorage {
   private readonly buckets = new Buckets<FlatNodeValues>()
 
-  save<Kind extends FlatNodeKind>(kind: Kind, value: FlatNodeValue<Kind>): FlatNodeReference<Kind> {
+  create<Kind extends FlatNodeKind>(
+    kind: Kind,
+    value: FlatNodeValue<Kind>,
+  ): FlatNodeReference<Kind> {
     const reference = { kind, key: this.createKey(kind) }
 
     this.buckets.write(reference.kind, reference.key, value)
