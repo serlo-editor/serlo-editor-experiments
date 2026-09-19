@@ -32,17 +32,7 @@ class FlatNodeStorage {
 
     this.buckets[kind].set(key, value)
 
-    return { kind, key }
-  }
-
-  private createKey<Kind extends FlatNodeKind>(kind: Kind): string {
-    let key: string
-
-    do {
-      key = `${kind}-${Math.random().toString(36).slice(2)}`
-    } while (this.buckets[kind].has(key))
-
-    return key
+    return {kind, key}
   }
 
   get<Kind extends FlatNodeKind>(
@@ -67,5 +57,15 @@ class FlatNodeStorage {
     }
 
     this.buckets[reference.kind].set(reference.key, value(currentValue))
+  }
+
+  private createKey<Kind extends FlatNodeKind>(kind: Kind): string {
+    let key: string
+
+    do {
+      key = `${kind}-${Math.random().toString(36).slice(2)}`
+    } while (this.buckets[kind].has(key))
+
+    return key
   }
 }
