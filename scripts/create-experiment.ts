@@ -1,7 +1,7 @@
-import {spawn} from "node:child_process"
-import {access, cp, mkdir, readFile, rm, writeFile} from "node:fs/promises"
-import {dirname, join, relative, resolve, sep} from "node:path"
-import {fileURLToPath} from "node:url"
+import { spawn } from "node:child_process"
+import { access, cp, mkdir, readFile, rm, writeFile } from "node:fs/promises"
+import { dirname, join, relative, resolve, sep } from "node:path"
+import { fileURLToPath } from "node:url"
 
 const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm"
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
@@ -34,7 +34,7 @@ async function main() {
       throw new UserError(`Experiment already exists: ${finalDirRelative}`)
     }
 
-    await mkdir(dirname(finalDir), {recursive: true})
+    await mkdir(dirname(finalDir), { recursive: true })
     shouldCleanupFinalDir = true
 
     await copyTemplate(templateDir, finalDir)
@@ -56,7 +56,7 @@ async function main() {
 
     if (shouldCleanupFinalDir && finalDir) {
       try {
-        await rm(finalDir, {recursive: true, force: true})
+        await rm(finalDir, { recursive: true, force: true })
       } catch {
         console.error(`Warning: Error while cleaning up ${finalDir}`)
       }
@@ -77,7 +77,7 @@ async function copyTemplate(templateDir: string, destinationDir: string) {
 
 async function updatePackageName(experimentDir: string, name: string) {
   const packageJsonPath = join(experimentDir, "package.json")
-  const packageJson = JSON.parse(await readFile(packageJsonPath, "utf8")) as {name?: string}
+  const packageJson = JSON.parse(await readFile(packageJsonPath, "utf8")) as { name?: string }
 
   packageJson.name = name
 
@@ -113,7 +113,7 @@ function validateName(nameArg: string | undefined) {
   return nameArg
 }
 
-async function runPnpm({args, cwd, label}: {args: string[]; cwd: string; label: string}) {
+async function runPnpm({ args, cwd, label }: { args: string[]; cwd: string; label: string }) {
   const child = spawn(pnpmCommand, args, {
     cwd,
     env: {
@@ -126,10 +126,10 @@ async function runPnpm({args, cwd, label}: {args: string[]; cwd: string; label: 
   let stdout = ""
   let stderr = ""
 
-  child.stdout?.on("data", (chunk: {toString(): string}) => {
+  child.stdout?.on("data", (chunk: { toString(): string }) => {
     stdout += chunk.toString()
   })
-  child.stderr?.on("data", (chunk: {toString(): string}) => {
+  child.stderr?.on("data", (chunk: { toString(): string }) => {
     stderr += chunk.toString()
   })
 
