@@ -14,6 +14,31 @@ interface FlatNodeReference<Kind extends FlatNodeKind = FlatNodeKind> {
   key: string
 }
 
+class Buckets<B extends Record<string,>> {
+  private readonly buckets: B
+
+  constructor(buckets: B) {
+    this.buckets = {}
+  }
+
+  write<K extends keyof B>(kind: K, key: string, value: B[K]): void {
+    this.getBucket(kind).set(key, value)
+  }
+
+  read<K extends keyof B>(kind: K, key: string): B[K] | undefined {
+    this.getBucket(kind).get(key)
+  }
+
+  private getBucket<K extends keyof B>(kind: K): B[K] {
+    if (!this.buckets[kind]) {
+      this.buckets[kind] = new Map() as B[K]
+    }
+
+    return this.buckets[kind]
+  }
+
+}
+
 type FlatNodeBuckets = {
   [Kind in FlatNodeKind]: Map<string, FlatNodeValue<Kind>>
 }
@@ -28,7 +53,7 @@ class FlatNodeStorage {
   }
 
   save<Kind extends FlatNodeKind>(kind: Kind, value: FlatNodeValue<Kind>): FlatNodeReference<Kind> {
-    const reference = { kind, key: this.createKey(kind) }
+    const reference = {kind, key: this.createKey(kind)}
 
     this.set(reference, value)
 
