@@ -34,14 +34,12 @@ class Buckets<Values extends object> {
   }
 
   private getBucket<Kind extends keyof Values>(kind: Kind): Map<string, Values[Kind]> {
-    const bucket = this.buckets[kind] as Map<string, Values[Kind]> | undefined
+    const bucket = this.buckets[kind]
 
-    if (bucket) {
-      return bucket
-    }
+    if (bucket) return bucket
 
     const newBucket = new Map<string, Values[Kind]>()
-    this.buckets[kind] = newBucket as BucketMap<Values>[Kind]
+    this.buckets[kind] = newBucket
 
     return newBucket
   }
