@@ -1,24 +1,29 @@
-interface FlatNodes {
+interface FlatNodeValues {
   string: string
   number: number
   boolean: boolean
-  array: Ref[]
-  object: Record<string, Ref | undefined>
+  array: FlatNodeReference[]
+  object: Record<string, FlatNodeReference | undefined>
 }
 
-type FlatNodeType = keyof FlatNodes
-type ValueOf<Kind extends FlatNodeType> = FlatNodes[Kind]
+type FlatNodeKind = keyof FlatNodeValues
+type FlatNodeValue<Kind extends FlatNodeKind> = FlatNodeValues[Kind]
 
-interface Ref<Kind extends FlatNodeType = FlatNodeType> {
+interface FlatNodeReference<Kind extends FlatNodeKind = FlatNodeKind> {
   kind: Kind
   key: string
 }
 
-interface FlatStorage {
-  set<K extends FlatNodeType>(ref: Ref<K>, value: ValueOf<K>): void
-  get<K extends FlatNodeType>(ref: Ref<K>): ValueOf<K> | undefined
-  update<K extends FlatNodeType>(
-    ref: Ref<K>,
-    value: ValueOf<K> | ((current: ValueOf<K>) => ValueOf<K>),
+interface FlatNodeStorage {
+  set<Kind extends FlatNodeKind>(
+    reference: FlatNodeReference<Kind>,
+    value: FlatNodeValue<Kind>,
+  ): void
+  get<Kind extends FlatNodeKind>(
+    reference: FlatNodeReference<Kind>,
+  ): FlatNodeValue<Kind> | undefined
+  update<Kind extends FlatNodeKind>(
+    reference: FlatNodeReference<Kind>,
+    value: FlatNodeValue<Kind> | ((currentValue: FlatNodeValue<Kind>) => FlatNodeValue<Kind>),
   ): void
 }
