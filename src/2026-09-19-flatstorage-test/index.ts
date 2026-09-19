@@ -30,34 +30,29 @@ class FlatNodeStorage {
   save<Kind extends FlatNodeKind>(kind: Kind, value: FlatNodeValue<Kind>): FlatNodeReference<Kind> {
     const key = this.createKey(kind)
 
-    const reference = {kind, key}
+    const reference = { kind, key }
     this.set(reference, value)
 
     return reference
   }
 
-  get<Kind extends FlatNodeKind>(
-    reference: FlatNodeReference<Kind>,
-  ): FlatNodeValue<Kind> | undefined {
-    return this.buckets[reference.kind].get(reference.key)
+  get<Kind extends FlatNodeKind>(reference: FlatNodeReference<Kind>): FlatNodeValue<Kind> {
+    const value = this.buckets[reference.kind].get(reference.key)
+
+    if (value === undefined) {
+      throw new Error(`Cannot find node: ${reference.kind}:${reference.key}`)
+    }
+
+    return value
   }
 
   update<Kind extends FlatNodeKind>(
     reference: FlatNodeReference<Kind>,
     value: FlatNodeValue<Kind> | ((currentValue: FlatNodeValue<Kind>) => FlatNodeValue<Kind>),
   ): void {
-    if (typeof value !== "function") {
-      this.set(reference, value)
-      return
-    }
+    const nextValue = typeof value === "function" ? value(this.get(reference)) : value
 
-    const currentValue = this.get(reference)
-
-    if (currentValue === undefined) {
-      throw new Error(`Cannot update missing node: ${reference.kind}:${reference.key}`)
-    }
-
-    this.set(reference, value(currentValue))
+    this.set(reference, nextValue)
   }
 
   private set<Kind extends FlatNodeKind>(
