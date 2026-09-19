@@ -28,9 +28,8 @@ class FlatNodeStorage {
   }
 
   save<Kind extends FlatNodeKind>(kind: Kind, value: FlatNodeValue<Kind>): FlatNodeReference<Kind> {
-    const key = this.createKey(kind)
+    const reference = { kind, key: this.createKey(kind) }
 
-    const reference = { kind, key }
     this.set(reference, value)
 
     return reference
@@ -40,7 +39,7 @@ class FlatNodeStorage {
     const value = this.buckets[reference.kind].get(reference.key)
 
     if (value === undefined) {
-      throw new Error(`Cannot find node: ${reference.kind}:${reference.key}`)
+      throw new Error(`Cannot find node: ${reference.key}`)
     }
 
     return value
