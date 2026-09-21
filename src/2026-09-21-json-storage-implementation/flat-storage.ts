@@ -1,69 +1,62 @@
-// buckets.ts
-
-type BucketMap<Values extends object> = {
-  [Kind in keyof Values]: Map<string, Values[Kind]>
+type BucketsByKind<ValueByKind extends object> = {
+  [Kind in keyof ValueByKind]: Map<string, ValueByKind[Kind]>
 }
 
-class Buckets<Values extends object> {
-  private readonly buckets: Partial<BucketMap<Values>> = {}
+class ValueBuckets<ValueByKind extends object> {
+  private readonly buckets: Partial<BucketsByKind<ValueByKind>> = {}
 
-  write<Kind extends keyof Values>(kind: Kind, key: string, value: Values[Kind]): void {
+  write<Kind extends keyof ValueByKind>(kind: Kind, key: string, value: ValueByKind[Kind]): void {
     this.getBucket(kind).set(key, value)
   }
 
-  read<Kind extends keyof Values>(kind: Kind, key: string): Values[Kind] | undefined {
+  read<Kind extends keyof ValueByKind>(kind: Kind, key: string): ValueByKind[Kind] | undefined {
     return this.getBucket(kind).get(key)
   }
 
-  has<Kind extends keyof Values>(kind: Kind, key: string): boolean {
+  has<Kind extends keyof ValueByKind>(kind: Kind, key: string): boolean {
     return this.getBucket(kind).has(key)
   }
 
-  private getBucket<Kind extends keyof Values>(kind: Kind): Map<string, Values[Kind]> {
+  private getBucket<Kind extends keyof ValueByKind>(kind: Kind): Map<string, ValueByKind[Kind]> {
     const bucket = this.buckets[kind]
 
     if (bucket) return bucket
 
-    const newBucket = new Map<string, Values[Kind]>()
+    const newBucket = new Map<string, ValueByKind[Kind]>()
     this.buckets[kind] = newBucket
 
     return newBucket
   }
 }
 
-// flat-storage.ts
-
-interface FlatNodeValues {
+interface NodeValueByKind {
   string: string
   number: number
   boolean: boolean
-  array: FlatNodeReference[]
-  object: Record<string, FlatNodeReference | undefined>
+  array: NodeReference[]
+  object: Record<string, NodeReference | undefined>
 }
 
-type FlatNodeKind = keyof FlatNodeValues
-type FlatNodeValue<Kind extends FlatNodeKind> = FlatNodeValues[Kind]
+type NodeKind = keyof NodeValueByKind
+type NodeValue<Kind extends NodeKind> = NodeValueByKind[Kind]
 
-interface FlatNodeReference<Kind extends FlatNodeKind = FlatNodeKind> {
+interface NodeReference<Kind extends NodeKind = NodeKind> {
   kind: Kind
   key: string
 }
 
-export class FlatStorage {
-  private readonly buckets = new Buckets<FlatNodeValues>()
+export class FlatNodeStore {
+  private readonly buckets = new ValueBuckets<NodeValueByKind>()
 
-  create<Kind extends FlatNodeKind>(
-    kind: Kind,
-    value: FlatNodeValue<Kind>,
-  ): FlatNodeReference<Kind> {
-    const reference = {kind, key: this.createKey(kind)}
+  create<Kind extends NodeKind>(kind: Kind, value: NodeValue<Kind>): NodeReference<Kind> {
+    const reference = { kind, key: this.createKey(kind) }
 
     this.buckets.write(reference.kind, reference.key, value)
 
     return reference
   }
 
-  get<Kind extends FlatNodeKind>(reference: FlatNodeReference<Kind>): FlatNodeValue<Kind> {
+  get<Kind extends NodeKind>(reference: NodeReference<Kind>): NodeValue<Kind> {
     const value = this.buckets.read(reference.kind, reference.key)
 
     if (value === undefined) {
@@ -73,16 +66,16 @@ export class FlatStorage {
     return value
   }
 
-  update<Kind extends FlatNodeKind>(
-    reference: FlatNodeReference<Kind>,
-    value: FlatNodeValue<Kind> | ((currentValue: FlatNodeValue<Kind>) => FlatNodeValue<Kind>),
+  update<Kind extends NodeKind>(
+    reference: NodeReference<Kind>,
+    value: NodeValue<Kind> | ((currentValue: NodeValue<Kind>) => NodeValue<Kind>),
   ): void {
     const nextValue = typeof value === "function" ? value(this.get(reference)) : value
 
     this.buckets.write(reference.kind, reference.key, nextValue)
   }
 
-  private createKey<Kind extends FlatNodeKind>(kind: Kind): string {
+  private createKey<Kind extends NodeKind>(kind: Kind): string {
     let key: string
 
     do {
