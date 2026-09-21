@@ -1,35 +1,35 @@
-type BucketsByKind<ValueByKind extends object> = {
-  [Kind in keyof ValueByKind]: Map<string, ValueByKind[Kind]>
+type MapsByType<ValueByType extends object> = {
+  [Type in keyof ValueByType]: Map<string, ValueByType[Type]>
 }
 
-class ValueBuckets<ValueByKind extends object> {
-  private readonly buckets: Partial<BucketsByKind<ValueByKind>> = {}
+class ValuesByType<ValueByType extends object> {
+  private readonly maps: Partial<MapsByType<ValueByType>> = {}
 
-  write<Kind extends keyof ValueByKind>(kind: Kind, key: string, value: ValueByKind[Kind]): void {
-    this.getBucket(kind).set(key, value)
+  set<Type extends keyof ValueByType>(type: Type, id: string, value: ValueByType[Type]): void {
+    this.getMap(type).set(id, value)
   }
 
-  read<Kind extends keyof ValueByKind>(kind: Kind, key: string): ValueByKind[Kind] | undefined {
-    return this.getBucket(kind).get(key)
+  get<Type extends keyof ValueByType>(type: Type, id: string): ValueByType[Type] | undefined {
+    return this.getMap(type).get(id)
   }
 
-  has<Kind extends keyof ValueByKind>(kind: Kind, key: string): boolean {
-    return this.getBucket(kind).has(key)
+  has<Type extends keyof ValueByType>(type: Type, id: string): boolean {
+    return this.getMap(type).has(id)
   }
 
-  private getBucket<Kind extends keyof ValueByKind>(kind: Kind): Map<string, ValueByKind[Kind]> {
-    const bucket = this.buckets[kind]
+  private getMap<Type extends keyof ValueByType>(type: Type): Map<string, ValueByType[Type]> {
+    const map = this.maps[type]
 
-    if (bucket) return bucket
+    if (map) return map
 
-    const newBucket = new Map<string, ValueByKind[Kind]>()
-    this.buckets[kind] = newBucket
+    const newMap = new Map<string, ValueByType[Type]>()
+    this.maps[type] = newMap
 
-    return newBucket
+    return newMap
   }
 }
 
-interface NodeValueByKind {
+interface NodeValueByType {
   string: string
   number: number
   boolean: boolean
@@ -37,51 +37,51 @@ interface NodeValueByKind {
   object: Record<string, NodeReference | undefined>
 }
 
-type NodeKind = keyof NodeValueByKind
-type NodeValue<Kind extends NodeKind> = NodeValueByKind[Kind]
+type NodeType = keyof NodeValueByType
+type NodeValue<Type extends NodeType> = NodeValueByType[Type]
 
-interface NodeReference<Kind extends NodeKind = NodeKind> {
-  kind: Kind
-  key: string
+interface NodeReference<Type extends NodeType = NodeType> {
+  type: Type
+  id: string
 }
 
 export class FlatNodeStore {
-  private readonly buckets = new ValueBuckets<NodeValueByKind>()
+  private readonly values = new ValuesByType<NodeValueByType>()
 
-  create<Kind extends NodeKind>(kind: Kind, value: NodeValue<Kind>): NodeReference<Kind> {
-    const reference = { kind, key: this.createKey(kind) }
+  create<Type extends NodeType>(type: Type, value: NodeValue<Type>): NodeReference<Type> {
+    const reference = { type, id: this.createId(type) }
 
-    this.buckets.write(reference.kind, reference.key, value)
+    this.values.set(reference.type, reference.id, value)
 
     return reference
   }
 
-  get<Kind extends NodeKind>(reference: NodeReference<Kind>): NodeValue<Kind> {
-    const value = this.buckets.read(reference.kind, reference.key)
+  get<Type extends NodeType>(reference: NodeReference<Type>): NodeValue<Type> {
+    const value = this.values.get(reference.type, reference.id)
 
     if (value === undefined) {
-      throw new Error(`Cannot find node: ${reference.key}`)
+      throw new Error(`Cannot find node: ${reference.id}`)
     }
 
     return value
   }
 
-  update<Kind extends NodeKind>(
-    reference: NodeReference<Kind>,
-    value: NodeValue<Kind> | ((currentValue: NodeValue<Kind>) => NodeValue<Kind>),
+  update<Type extends NodeType>(
+    reference: NodeReference<Type>,
+    value: NodeValue<Type> | ((currentValue: NodeValue<Type>) => NodeValue<Type>),
   ): void {
     const nextValue = typeof value === "function" ? value(this.get(reference)) : value
 
-    this.buckets.write(reference.kind, reference.key, nextValue)
+    this.values.set(reference.type, reference.id, nextValue)
   }
 
-  private createKey<Kind extends NodeKind>(kind: Kind): string {
-    let key: string
+  private createId<Type extends NodeType>(type: Type): string {
+    let id: string
 
     do {
-      key = `${kind}-${Math.random().toString(36).slice(2)}`
-    } while (this.buckets.has(kind, key))
+      id = `${type}-${Math.random().toString(36).slice(2)}`
+    } while (this.values.has(type, id))
 
-    return key
+    return id
   }
 }
