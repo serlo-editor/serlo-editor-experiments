@@ -33,11 +33,6 @@ class Buckets<Values extends object> {
 
 // flat-storage.ts
 
-interface FlatNodeReference<Kind extends FlatNodeKind = FlatNodeKind> {
-  kind: Kind
-  key: string
-}
-
 interface FlatNodeValues {
   string: string
   number: number
@@ -48,6 +43,11 @@ interface FlatNodeValues {
 
 type FlatNodeKind = keyof FlatNodeValues
 type FlatNodeValue<Kind extends FlatNodeKind> = FlatNodeValues[Kind]
+
+interface FlatNodeReference<Kind extends FlatNodeKind = FlatNodeKind> {
+  kind: Kind
+  key: string
+}
 
 export class FlatStorage {
   private readonly buckets = new Buckets<FlatNodeValues>()
