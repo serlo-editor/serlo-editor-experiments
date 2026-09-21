@@ -2,6 +2,10 @@
 
 Small Vite/React/TypeScript experiments in one pnpm workspace for creating the Serlo Editor.
 
+## Learnings
+
+Design notes and learnings from experiments live in [`learnings/`](./learnings/).
+
 ## Create
 
 ```bash
