@@ -125,7 +125,20 @@ function bindFlatValue(store: FlatNodeStore, reference: AnyNodeReference): AnyVa
 // YJS implementation
 
 type YStoredValue = boolean | string | Y.Array<YStoredValue> | Y.Map<YStoredValue>
-type YValueContainer = Y.Array<YStoredValue> | Y.Map<YStoredValue>
+
+interface YArrayRef {
+  type: "array"
+  array: Y.Array<YStoredValue>
+  index: number
+}
+
+interface YObjectRef {
+  type: "object"
+  object: Y.Map<YStoredValue>
+  key: string
+}
+
+type YRef = YArrayRef | YObjectRef
 
 export class YjsJSONStorage implements JSONStorage {
   private readonly doc: Y.Doc
@@ -139,7 +152,11 @@ export class YjsJSONStorage implements JSONStorage {
   save<Serialized extends JSONValue>(value: Serialized): ValueOf<Serialized> {
     this.contentMap.set("content", createYValue(value))
 
-    return bindYValue(this.contentMap, "content") as ValueOf<Serialized>
+    return bindYValue({
+      type: "object",
+      object: this.contentMap,
+      key: "content",
+    }) as ValueOf<Serialized>
   }
 }
 
@@ -157,22 +174,22 @@ function createYValue(value: JSONValue): YStoredValue {
   return object
 }
 
-function bindYValue(container: YValueContainer, key: string | number): AnyValue {
-  const value = getYValue(container, key)
+function bindYValue(ref: YRef): AnyValue {
+  const value = getYValue(ref)
 
   if (typeof value === "boolean") {
     return {
       type: "boolean",
-      get: () => getYValue(container, key) as boolean,
-      set: (nextValue) => setYValue(container, key, nextValue),
+      get: () => getYValue(ref) as boolean,
+      set: (nextValue) => setYValue(ref, nextValue),
     }
   }
 
   if (typeof value === "string") {
     return {
       type: "string",
-      get: () => getYValue(container, key) as string,
-      set: (nextValue) => setYValue(container, key, nextValue),
+      get: () => getYValue(ref) as string,
+      set: (nextValue) => setYValue(ref, nextValue),
     }
   }
 
@@ -183,7 +200,9 @@ function bindYValue(container: YValueContainer, key: string | number): AnyValue 
         return this.map((item) => item.get())
       },
       map(fn) {
-        return value.toArray().map((_, index) => fn(bindYValue(value, index), index))
+        return value
+          .toArray()
+          .map((_, index) => fn(bindYValue({ type: "array", array: value, index }), index))
       },
     }
   }
@@ -196,33 +215,23 @@ function bindYValue(container: YValueContainer, key: string | number): AnyValue 
       return result
     },
     field(key) {
-      return bindYValue(value, String(key))
+      return bindYValue({ type: "object", object: value, key: String(key) })
     },
   }
 }
 
-function getYValue(container: YValueContainer, key: string | number): YStoredValue {
-  const value =
-    container instanceof Y.Array
-      ? typeof key === "number"
-        ? container.get(key)
-        : undefined
-      : typeof key === "string"
-        ? container.get(key)
-        : undefined
-
-  if (value === undefined) throw new Error(`Cannot find value: ${key}`)
+function getYValue(ref: YRef): YStoredValue {
+  const value = ref.type === "array" ? ref.array.get(ref.index) : ref.object.get(ref.key)
+  if (value === undefined) throw new Error("Cannot find value")
   return value
 }
 
-function setYValue(container: YValueContainer, key: string | number, value: YStoredValue): void {
-  if (container instanceof Y.Array) {
-    if (typeof key !== "number") throw new TypeError("Array key must be a number")
-    container.delete(key, 1)
-    container.insert(key, [value])
+function setYValue(ref: YRef, value: YStoredValue): void {
+  if (ref.type === "array") {
+    ref.array.delete(ref.index, 1)
+    ref.array.insert(ref.index, [value])
     return
   }
 
-  if (typeof key !== "string") throw new TypeError("Object key must be a string")
-  container.set(key, value)
+  ref.object.set(ref.key, value)
 }
