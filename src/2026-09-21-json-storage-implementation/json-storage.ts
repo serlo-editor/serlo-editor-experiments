@@ -1,6 +1,4 @@
-import * as Y from "yjs"
-
-import { FlatNodeStore, NodeReference } from "./flat-storage.ts"
+import { FlatNodeStore, NodeReference, AnyNodeReference } from "./flat-storage.ts"
 
 // Values
 
@@ -38,6 +36,12 @@ type ValueOf<Serialized extends JSONValue> = Serialized extends boolean
         ? ObjectValue<Serialized>
         : never
 
+type AnyValue =
+  | BooleanValue
+  | StringValue
+  | ArrayValue<JSONValue>
+  | ObjectValue<Record<string, JSONValue>>
+
 // Storage
 
 interface JSONStorage {
@@ -45,17 +49,6 @@ interface JSONStorage {
 }
 
 // Flat storage
-
-type AnyNodeReference =
-  | NodeReference<"boolean">
-  | NodeReference<"string">
-  | NodeReference<"array">
-  | NodeReference<"object">
-type AnyValue =
-  | BooleanValue
-  | StringValue
-  | ArrayValue<JSONValue>
-  | ObjectValue<Record<string, JSONValue>>
 
 export class FlatJSONStorage implements JSONStorage {
   readonly store = new FlatNodeStore()

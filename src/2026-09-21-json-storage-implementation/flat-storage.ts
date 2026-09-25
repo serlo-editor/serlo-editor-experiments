@@ -16,6 +16,12 @@ export interface NodeReference<Type extends NodeType = NodeType> {
   id: string
 }
 
+export type AnyNodeReference =
+  | NodeReference<"boolean">
+  | NodeReference<"string">
+  | NodeReference<"array">
+  | NodeReference<"object">
+
 export class FlatNodeStore {
   private readonly values = new ValuesByType<NodeValueByType>()
 
