@@ -8,10 +8,10 @@ interface NodeValueByType {
   object: Record<string, NodeReference | undefined>
 }
 
-type NodeType = keyof NodeValueByType
-type NodeValue<Type extends NodeType> = NodeValueByType[Type]
+export type NodeType = keyof NodeValueByType
+export type NodeValue<Type extends NodeType> = NodeValueByType[Type]
 
-interface NodeReference<Type extends NodeType = NodeType> {
+export interface NodeReference<Type extends NodeType = NodeType> {
   type: Type
   id: string
 }
