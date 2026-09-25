@@ -2,7 +2,6 @@ import { ValuesByType } from "./buckets.ts"
 
 interface NodeValueByType {
   string: string
-  number: number
   boolean: boolean
   array: NodeReference[]
   object: Record<string, NodeReference | undefined>

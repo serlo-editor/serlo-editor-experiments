@@ -58,7 +58,7 @@ export class FlatJSONStorage implements JSONStorage {
   }
 }
 
-function createFlatValue(store: FlatNodeStore, value: JSONValue): AnyNodeReference {
+function createFlatValue(store: FlatNodeStore, value: JSONValue): NodeReference {
   if (typeof value === "boolean") return store.create("boolean", value)
   if (typeof value === "string") return store.create("string", value)
   if (Array.isArray(value)) {
@@ -93,34 +93,24 @@ function bindFlatValue(store: FlatNodeStore, reference: AnyNodeReference): AnyVa
     case "array":
       return {
         type: "array",
-        get: () =>
-          (store.get(reference) as AnyNodeReference[]).map((item) =>
-            bindFlatValue(store, item).get(),
-          ),
+        get: () => store.get(reference).map((item) => bindFlatValue(store, item).get()),
         map: (fn) =>
-          (store.get(reference) as AnyNodeReference[]).map((item, index) =>
-            fn(bindFlatValue(store, item), index),
-          ),
+          store.get(reference).map((item, index) => fn(bindFlatValue(store, item), index)),
       }
     case "object":
       return {
         type: "object",
         get: () => {
           const value: Record<string, JSONValue> = {}
-          for (const [key, item] of Object.entries(
-            store.get(reference) as Record<string, NodeReference | undefined>,
-          )) {
-            if (item !== undefined)
-              value[key] = bindFlatValue(store, item as AnyNodeReference).get()
+          for (const [key, item] of Object.entries(store.get(reference))) {
+            if (item !== undefined) value[key] = bindFlatValue(store, item).get()
           }
           return value
         },
         field: (key) => {
-          const item = (store.get(reference) as Record<string, NodeReference | undefined>)[
-            String(key)
-          ]
+          const item = store.get(reference)[String(key)]
           if (item === undefined) throw new Error(`Cannot find field: ${String(key)}`)
-          return bindFlatValue(store, item as AnyNodeReference)
+          return bindFlatValue(store, item)
         },
       }
   }
