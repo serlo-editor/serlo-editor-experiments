@@ -7,6 +7,9 @@
     "build": "node --experimental-strip-types index.ts",
     "dev": "node --watch --experimental-strip-types index.ts"
   },
+  "dependencies": {
+    "yjs": "^13.6.33"
+  },
   "devDependencies": {
     "typescript": "^7.0.2"
   }
