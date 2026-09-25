@@ -96,20 +96,21 @@ function bindFlatValue(store: FlatNodeStore, reference: AnyNodeReference): AnyVa
         get() {
           return this.map((item) => item.get())
         },
-        map: (fn) =>
-          store.get(reference).map((item, index) => fn(bindFlatValue(store, item), index)),
+        map(fn) {
+          return store.get(reference).map((item, index) => fn(bindFlatValue(store, item), index))
+        },
       }
     case "object":
       return {
         type: "object",
-        get: () => {
+        get() {
           const value: Record<string, JSONValue> = {}
           for (const [key, item] of Object.entries(store.get(reference))) {
-            if (item !== undefined) value[key] = bindFlatValue(store, item).get()
+            if (item !== undefined) value[key] = this.field(key).get()
           }
           return value
         },
-        field: (key) => {
+        field(key) {
           const item = store.get(reference)[String(key)]
           if (item === undefined) throw new Error(`Cannot find field: ${String(key)}`)
           return bindFlatValue(store, item)
