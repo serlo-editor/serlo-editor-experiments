@@ -128,18 +128,18 @@ type YStoredValue = boolean | string | Y.Array<YStoredValue> | Y.Map<YStoredValu
 type YValueContainer = Y.Array<YStoredValue> | Y.Map<YStoredValue>
 
 export class YjsJSONStorage implements JSONStorage {
-  readonly doc: Y.Doc
-  private readonly roots: Y.Array<YStoredValue>
+  private readonly doc: Y.Doc
+  private readonly contentMap: Y.Map<YStoredValue>
 
   constructor(doc = new Y.Doc()) {
     this.doc = doc
-    this.roots = doc.getArray<YStoredValue>("json-storage")
+    this.contentMap = this.doc.getMap("content")
   }
 
   save<Serialized extends JSONValue>(value: Serialized): ValueOf<Serialized> {
-    const index = this.roots.length
-    this.roots.push([createYValue(value)])
-    return bindYValue(this.roots, index) as ValueOf<Serialized>
+    this.contentMap.set("content", createYValue(value))
+
+    return bindYValue(this.contentMap, "content") as ValueOf<Serialized>
   }
 }
 
