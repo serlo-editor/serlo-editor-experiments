@@ -14,9 +14,12 @@ interface StringValue extends PrimitiveValue<string> {
   readonly type: "string"
 }
 
-interface ArrayValue<T extends Value = Value> extends Value {
+interface ArrayValue<T extends Value = Value> extends Value<ValueOf<T>[]> {
   readonly type: "array"
   readonly length: number
   at(index: number): T
   map<R>(fn: (value: T, index: number) => R): R[]
+  insert(index: number, value: ValueOf<T>): void
 }
+
+type ValueOf<V extends Value> = V extends Value<infer JSONValue> ? JSONValue : never
