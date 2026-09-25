@@ -1,25 +1,27 @@
 // Values
 
-interface Value<JSONValue = unknown> {
-  readonly type: string
-  load(): JSONValue
+type JSONValue = string | JSONValue[]
+type ValueType = "string" | "array"
+
+interface BaseValue<Serialized extends JSONValue = JSONValue> {
+  readonly type: ValueType
+  load(): Serialized
 }
 
-interface PrimitiveValue<JSONValue extends string | number | boolean> extends Value<JSONValue> {
-  get(): JSONValue
-  set(value: JSONValue): void
-}
-
-interface StringValue extends PrimitiveValue<string> {
+interface StringValue extends BaseValue<string> {
   readonly type: "string"
+  get(): string
+  set(value: string): void
 }
 
-interface ArrayValue<T extends Value = Value> extends Value<ValueOf<T>[]> {
+interface ArrayValue<T extends Value = Value> extends BaseValue<ValueOf<T>[]> {
   readonly type: "array"
   readonly length: number
-  at(index: number): T
+  at(index: number): T | undefined
   map<R>(fn: (value: T, index: number) => R): R[]
   insert(index: number, value: ValueOf<T>): void
 }
 
-type ValueOf<V extends Value> = V extends Value<infer JSONValue> ? JSONValue : never
+type Value = StringValue | ArrayValue
+
+type ValueOf<V extends Value> = V extends BaseValue<infer Serialized> ? Serialized : never
