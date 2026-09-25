@@ -93,7 +93,9 @@ function bindFlatValue(store: FlatNodeStore, reference: AnyNodeReference): AnyVa
     case "array":
       return {
         type: "array",
-        get: () => store.get(reference).map((item) => bindFlatValue(store, item).get()),
+        get() {
+          return this.map((item) => item.get())
+        },
         map: (fn) =>
           store.get(reference).map((item, index) => fn(bindFlatValue(store, item), index)),
       }
