@@ -58,7 +58,7 @@ export class FlatJSONStorage implements JSONStorage {
   }
 }
 
-function createFlatValue(store: FlatNodeStore, value: JSONValue): NodeReference {
+function createFlatValue(store: FlatNodeStore, value: JSONValue): AnyNodeReference {
   if (typeof value === "boolean") return store.create("boolean", value)
   if (typeof value === "string") return store.create("string", value)
   if (Array.isArray(value)) {
