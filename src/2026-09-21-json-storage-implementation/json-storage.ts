@@ -2,44 +2,36 @@
 
 type JSONValue = boolean | string | JSONValue[] | { [key: string]: JSONValue }
 type ValueType = "boolean" | "string" | "array" | "object"
-type JSONValueOf<V extends BaseValue> = V extends BaseValue<infer Serialized> ? Serialized : never
+interface BaseValue<Serialized extends JSONValue, Kind extends ValueType> {
+  readonly type: Kind
+  get(): Serialized
+}
+
+interface BooleanValue extends BaseValue<boolean, "boolean"> {
+  set(value: boolean): void
+}
+
+interface StringValue extends BaseValue<string, "string"> {
+  set(value: string): void
+}
+
+interface ArrayValue<Item extends JSONValue> extends BaseValue<Item[], "array"> {
+  map<R>(fn: (value: ValueOf<Item>, index: number) => R): R[]
+}
+
+interface ObjectValue<Shape extends Record<string, JSONValue>> extends BaseValue<Shape, "object"> {
+  field<Key extends keyof Shape>(key: Key): ValueOf<Shape[Key]>
+}
+
 type ValueOf<Serialized extends JSONValue> = Serialized extends boolean
   ? BooleanValue
   : Serialized extends string
     ? StringValue
     : Serialized extends JSONValue[]
-      ? ArrayValue<ValueOf<Serialized[number]>>
-      : Serialized extends { [key: string]: JSONValue }
-        ? ObjectValue<{ [Key in keyof Serialized]: ValueOf<Serialized[Key]> }>
+      ? ArrayValue<Serialized[number]>
+      : Serialized extends Record<string, JSONValue>
+        ? ObjectValue<Serialized>
         : never
-
-interface BaseValue<Serialized extends JSONValue = JSONValue> {
-  readonly type: ValueType
-  get(): Serialized
-}
-
-interface BooleanValue extends BaseValue<boolean> {
-  readonly type: "boolean"
-  set(value: boolean): void
-}
-
-interface StringValue extends BaseValue<string> {
-  readonly type: "string"
-  set(value: string): void
-}
-
-interface ArrayValue<T extends Value = Value> extends BaseValue<JSONValueOf<T>[]> {
-  readonly type: "array"
-  map<R>(fn: (value: T, index: number) => R): R[]
-}
-
-type ObjectValue<Properties extends { [key: string]: Value } = {}> = BaseValue<{
-  [Key in keyof Properties]: JSONValueOf<Properties[Key]>
-}> & {
-  readonly type: "object"
-} & Properties
-
-type Value = BooleanValue | StringValue | ArrayValue | ObjectValue
 
 // Storage
 
