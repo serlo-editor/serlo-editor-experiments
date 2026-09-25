@@ -2,6 +2,7 @@
 
 type JSONValue = boolean | string | JSONValue[] | { [key: string]: JSONValue }
 type ValueType = "boolean" | "string" | "array" | "object"
+type ValueOf<V extends BaseValue> = V extends BaseValue<infer Serialized> ? Serialized : never
 
 interface BaseValue<Serialized extends JSONValue = JSONValue> {
   readonly type: ValueType
@@ -30,5 +31,3 @@ type ObjectValue<Properties extends { [key: string]: Value } = {}> = BaseValue<{
 } & Properties
 
 type Value = BooleanValue | StringValue | ArrayValue | ObjectValue
-
-type ValueOf<V extends Value> = V extends BaseValue<infer Serialized> ? Serialized : never
