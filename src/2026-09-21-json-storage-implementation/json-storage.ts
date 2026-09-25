@@ -1,4 +1,7 @@
-import { FlatNodeStore, NodeReference, AnyNodeReference } from "./flat-storage.ts"
+import * as Y from "yjs"
+
+import { FlatNodeStore } from "./flat-storage.ts"
+import type { NodeReference, AnyNodeReference } from "./flat-storage.ts"
 
 // Values
 
@@ -117,4 +120,151 @@ function bindFlatValue(store: FlatNodeStore, reference: AnyNodeReference): AnyVa
         },
       }
   }
+}
+
+// YJS implementation
+
+type YStoredValue = boolean | string | Y.Array<YStoredValue> | Y.Map<YStoredValue>
+
+interface YValueAccessor {
+  get(): YStoredValue
+  set(value: YStoredValue): void
+}
+
+export class YjsJSONStorage implements JSONStorage {
+  readonly doc: Y.Doc
+  private readonly roots: Y.Array<YStoredValue>
+
+  constructor(doc = new Y.Doc()) {
+    this.doc = doc
+    this.roots = doc.getArray<YStoredValue>("json-storage")
+  }
+
+  save<Serialized extends JSONValue>(value: Serialized): ValueOf<Serialized> {
+    const index = this.roots.length
+    this.roots.push([createYValue(value)])
+
+    return bindYValue({
+      get: () => {
+        const storedValue = this.roots.get(index)
+        if (storedValue === undefined) throw new Error(`Cannot find value: ${index}`)
+        return storedValue
+      },
+      set: (nextValue) => {
+        this.roots.delete(index, 1)
+        this.roots.insert(index, [nextValue])
+      },
+    }) as ValueOf<Serialized>
+  }
+}
+
+function createYValue(value: JSONValue): YStoredValue {
+  if (typeof value === "boolean" || typeof value === "string") return value
+
+  if (Array.isArray(value)) {
+    const array = new Y.Array<YStoredValue>()
+    array.push(value.map(createYValue))
+    return array
+  }
+
+  const object = new Y.Map<YStoredValue>()
+  for (const [key, item] of Object.entries(value)) object.set(key, createYValue(item))
+  return object
+}
+
+function bindYValue(accessor: YValueAccessor): AnyValue {
+  const value = accessor.get()
+
+  if (typeof value === "boolean") {
+    return {
+      type: "boolean",
+      get: () => readYBoolean(accessor),
+      set: (nextValue) => accessor.set(nextValue),
+    }
+  }
+
+  if (typeof value === "string") {
+    return {
+      type: "string",
+      get: () => readYString(accessor),
+      set: (nextValue) => accessor.set(nextValue),
+    }
+  }
+
+  if (value instanceof Y.Array) {
+    return {
+      type: "array",
+      get() {
+        return this.map((item) => item.get())
+      },
+      map(fn) {
+        const array = readYArray(accessor)
+        return array.toArray().map((_, index) =>
+          fn(
+            bindYValue({
+              get: () => {
+                const item = readYArray(accessor).get(index)
+                if (item === undefined) throw new Error(`Cannot find array item: ${index}`)
+                return item
+              },
+              set: (nextValue) => {
+                const currentArray = readYArray(accessor)
+                currentArray.delete(index, 1)
+                currentArray.insert(index, [nextValue])
+              },
+            }),
+            index,
+          ),
+        )
+      },
+    }
+  }
+
+  if (value instanceof Y.Map) {
+    return {
+      type: "object",
+      get() {
+        const result: Record<string, JSONValue> = {}
+        for (const key of readYMap(accessor).keys()) result[key] = this.field(key).get()
+        return result
+      },
+      field(key) {
+        const fieldName = String(key)
+        return bindYValue({
+          get: () => {
+            const item = readYMap(accessor).get(fieldName)
+            if (item === undefined) throw new Error(`Cannot find field: ${fieldName}`)
+            return item
+          },
+          set: (nextValue) => readYMap(accessor).set(fieldName, nextValue),
+        })
+      },
+    }
+  }
+
+  throw new TypeError("Unknown Yjs value")
+}
+
+function readYBoolean(accessor: YValueAccessor): boolean {
+  const value = accessor.get()
+  if (typeof value !== "boolean") throw new TypeError("Expected boolean value")
+  return value
+}
+
+function readYString(accessor: YValueAccessor): string {
+  const value = accessor.get()
+  if (typeof value !== "string") throw new TypeError("Expected string value")
+  return value
+}
+
+function readYArray(accessor: YValueAccessor): Y.Array<YStoredValue> {
+  const value = accessor.get()
+  if (!(value instanceof Y.Array)) throw new TypeError("Expected array value")
+  return value
+}
+
+function readYMap(accessor: YValueAccessor): Y.Map<YStoredValue> {
+  const value = accessor.get()
+  if (!(value instanceof Y.Map)) throw new TypeError("Expected object value")
+  return value
 }
