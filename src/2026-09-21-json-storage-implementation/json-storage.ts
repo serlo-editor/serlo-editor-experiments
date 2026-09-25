@@ -38,9 +38,13 @@ type ValueOf<Serialized extends JSONValue> = Serialized extends boolean
         ? ObjectValue<Serialized>
         : never
 
+// Storage
+
 interface JSONStorage {
   save<Serialized extends JSONValue>(value: Serialized): ValueOf<Serialized>
 }
+
+// Flat storage
 
 type NodeType = "boolean" | "string" | "array" | "object"
 type NodeReference<Type extends NodeType = NodeType> = {
