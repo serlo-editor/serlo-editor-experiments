@@ -23,12 +23,11 @@ interface ArrayValue<T extends Value = Value> extends BaseValue<ValueOf<T>[]> {
   map<R>(fn: (value: T, index: number) => R): R[]
 }
 
-interface ObjectValue<
-  Properties extends { [key: string]: Value } = { [key: string]: Value },
-> extends BaseValue<{ [Key in keyof Properties]: ValueOf<Properties[Key]> }> {
+type ObjectValue<Properties extends { [key: string]: Value } = {}> = BaseValue<{
+  [Key in keyof Properties]: ValueOf<Properties[Key]>
+}> & {
   readonly type: "object"
-  getProperty<Key extends keyof Properties>(key: Key): Properties[Key]
-}
+} & Properties
 
 type Value = BooleanValue | StringValue | ArrayValue | ObjectValue
 
