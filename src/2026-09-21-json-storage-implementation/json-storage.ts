@@ -183,13 +183,13 @@ function bindYValue(value: YStoredValue, update: (newValue: YStoredValue) => voi
         return this.map((item) => item.get())
       },
       map(fn) {
-        return value.toArray().map((_, index) => {
-          const item = bindYValue(value, (newValue) => {
-            value.delete(index)
+        return value.toArray().map((item, index) => {
+          const boundItem = bindYValue(item, (newValue) => {
+            value.delete(index, 1)
             value.insert(index, [newValue])
           })
 
-          return fn(item, index)
+          return fn(boundItem, index)
         })
       },
     }
