@@ -125,20 +125,9 @@ function bindFlatValue(store: FlatNodeStore, reference: AnyNodeReference): AnyVa
 // YJS implementation
 
 type YStoredValue = boolean | string | Y.Array<YStoredValue> | Y.Map<YStoredValue>
-
-interface YArrayRef {
-  type: "array"
-  array: Y.Array<YStoredValue>
-  index: number
-}
-
-interface YObjectRef {
-  type: "object"
-  object: Y.Map<YStoredValue>
-  key: string
-}
-
-type YRef = YArrayRef | YObjectRef
+type YRef =
+  | { value: Y.Array<YStoredValue>; index: number }
+  | { value: Y.Map<YStoredValue>; key: string }
 
 export class YjsJSONStorage implements JSONStorage {
   private readonly doc: Y.Doc
@@ -152,11 +141,7 @@ export class YjsJSONStorage implements JSONStorage {
   save<Serialized extends JSONValue>(value: Serialized): ValueOf<Serialized> {
     this.contentMap.set("content", createYValue(value))
 
-    return bindYValue({
-      type: "object",
-      object: this.contentMap,
-      key: "content",
-    }) as ValueOf<Serialized>
+    return bindYValue({ value: this.contentMap, key: "content" }) as ValueOf<Serialized>
   }
 }
 
@@ -200,9 +185,7 @@ function bindYValue(ref: YRef): AnyValue {
         return this.map((item) => item.get())
       },
       map(fn) {
-        return value
-          .toArray()
-          .map((_, index) => fn(bindYValue({ type: "array", array: value, index }), index))
+        return value.toArray().map((_, index) => fn(bindYValue({ value, index }), index))
       },
     }
   }
@@ -215,23 +198,23 @@ function bindYValue(ref: YRef): AnyValue {
       return result
     },
     field(key) {
-      return bindYValue({ type: "object", object: value, key: String(key) })
+      return bindYValue({ value, key: String(key) })
     },
   }
 }
 
 function getYValue(ref: YRef): YStoredValue {
-  const value = ref.type === "array" ? ref.array.get(ref.index) : ref.object.get(ref.key)
+  const value = "index" in ref ? ref.value.get(ref.index) : ref.value.get(ref.key)
   if (value === undefined) throw new Error("Cannot find value")
   return value
 }
 
 function setYValue(ref: YRef, value: YStoredValue): void {
-  if (ref.type === "array") {
-    ref.array.delete(ref.index, 1)
-    ref.array.insert(ref.index, [value])
+  if ("index" in ref) {
+    ref.value.delete(ref.index, 1)
+    ref.value.insert(ref.index, [value])
     return
   }
 
-  ref.object.set(ref.key, value)
+  ref.value.set(ref.key, value)
 }
