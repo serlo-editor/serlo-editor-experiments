@@ -1,11 +1,11 @@
-export interface StoreKernel<Location> {
-  readonly boolean: ScalarKernel<boolean, Location>
-  readonly number: ScalarKernel<number, Location>
-  readonly string: ScalarKernel<string, Location>
+export interface StoreKernel<Location, Destination> {
+  readonly boolean: ScalarKernel<boolean, Location, Destination>
+  readonly number: ScalarKernel<number, Location, Destination>
+  readonly string: ScalarKernel<string, Location, Destination>
 }
 
-export interface ScalarKernel<Value extends boolean | number | string, Location> {
-  create(value: Value, location: Location): StoreRef<Value, Location>
+export interface ScalarKernel<Value extends boolean | number | string, Location, Destination> {
+  initialize(destination: Destination, value: Value): StoreRef<Value, Location>
   get(ref: StoreRef<Value, Location>): Value
   set(ref: StoreRef<Value, Location>, value: Value): void
 }
