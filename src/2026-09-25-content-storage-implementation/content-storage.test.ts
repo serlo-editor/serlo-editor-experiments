@@ -1,7 +1,27 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { FlatJSONStorage, YjsJSONStorage } from "./json-storage.ts"
+import { LocalContentStorage, YjsContentStorage } from "./content-storage.ts"
+import type { Schema } from "./schema.ts"
+
+const schema = {
+  kind: "object",
+  fields: {
+    published: { kind: "boolean" },
+    title: { kind: "string" },
+    sections: {
+      kind: "array",
+      item: {
+        kind: "object",
+        fields: {
+          heading: { kind: "string" },
+          body: { kind: "string" },
+          visible: { kind: "boolean" },
+        },
+      },
+    },
+  },
+} as const satisfies Schema
 
 const document = {
   published: false,
@@ -13,14 +33,15 @@ const document = {
 }
 
 const storageImplementations = [
-  ["flat", () => new FlatJSONStorage()],
-  ["yjs", () => new YjsJSONStorage()],
+  ["local", () => new LocalContentStorage()],
+  ["yjs", () => new YjsContentStorage()],
 ] as const
 
 for (const [name, createStorage] of storageImplementations) {
-  test(`${name} storage saves and reads nested JSON values`, () => {
+  test(`${name} storage saves and reads nested content`, (context) => {
     const storage = createStorage()
-    const value = storage.save(document)
+    context.after(() => storage.dispose())
+    const value = storage.save(schema, document)
 
     assert.equal(value.type, "object")
     assert.deepEqual(value.get(), document)
@@ -33,9 +54,10 @@ for (const [name, createStorage] of storageImplementations) {
     )
   })
 
-  test(`${name} storage updates nested JSON values`, () => {
+  test(`${name} storage updates nested content`, (context) => {
     const storage = createStorage()
-    const value = storage.save(document)
+    context.after(() => storage.dispose())
+    const value = storage.save(schema, document)
 
     value.field("published").set(true)
     value.field("title").set("Published")

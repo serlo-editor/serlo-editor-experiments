@@ -3,6 +3,7 @@ import { ValuesByType } from "./buckets.ts"
 interface NodeValueByType {
   string: string
   boolean: boolean
+  richText: null
   array: NodeReference[]
   object: Record<string, NodeReference | undefined>
 }
@@ -20,6 +21,7 @@ export type AnyNodeReference =
   | NodeReference<"string">
   | NodeReference<"array">
   | NodeReference<"object">
+  | NodeReference<"richText">
 
 export class FlatNodeStore {
   private readonly values = new ValuesByType<NodeValueByType>()
@@ -49,6 +51,10 @@ export class FlatNodeStore {
     const nextValue = typeof value === "function" ? value(this.get(reference)) : value
 
     this.values.set(reference.type, reference.id, nextValue)
+  }
+
+  clear(): void {
+    this.values.clear()
   }
 
   private createId<Type extends NodeType>(type: Type): string {

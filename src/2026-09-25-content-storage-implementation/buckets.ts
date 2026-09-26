@@ -3,7 +3,7 @@ type MapsByType<ValueByType extends object> = {
 }
 
 export class ValuesByType<ValueByType extends object> {
-  private readonly maps: Partial<MapsByType<ValueByType>> = {}
+  private maps: Partial<MapsByType<ValueByType>> = {}
 
   set<Type extends keyof ValueByType>(type: Type, id: string, value: ValueByType[Type]): void {
     this.getMap(type).set(id, value)
@@ -15,6 +15,10 @@ export class ValuesByType<ValueByType extends object> {
 
   has<Type extends keyof ValueByType>(type: Type, id: string): boolean {
     return this.getMap(type).has(id)
+  }
+
+  clear(): void {
+    this.maps = {}
   }
 
   private getMap<Type extends keyof ValueByType>(type: Type): Map<string, ValueByType[Type]> {
