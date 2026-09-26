@@ -13,8 +13,11 @@ export interface ScalarKernel<Value extends boolean | number | string, Location>
 export interface StoreRef<Value, Location> {
   readonly location: Location
   // Phantom type links this location to Value without storing a runtime value copy.
+  // `storedValue` is a unique symbol to prevent accidental access and ensure type safety.
+  //
   // Function property makes Value invariant under strictFunctionTypes, preventing
-  // widening writable references (e.g. string to string | number) and unsafe writes.
+  // widening writable references (e.g. StoreRef<string> to
+  // StoreRef<string | number>) and unsafe writes.
   readonly [storedValue]: (value: Value) => Value
 }
 
