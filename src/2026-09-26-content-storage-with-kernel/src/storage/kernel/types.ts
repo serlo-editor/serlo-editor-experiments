@@ -1,48 +1,24 @@
-export interface StoreKernel<Location> {
-  readonly cell: CellKernel<Location>
-  readonly array: ArrayKernel<Location>
-  readonly map: MapKernel<Location>
+export interface StoreKernel<Cell, ArrayRef> {
+  readonly cell: CellKernel<Cell>
+  readonly array: ArrayKernel<Cell, ArrayRef | Cell>
 }
 
-export interface CellKernel<Location> {
-  create<Value>(value: Value): CellRef<Value, Location>
-  get<Value>(ref: CellRef<Value, Location>): Value
-  update<Value>(ref: CellRef<Value, Location>, value: Update<Value>): void
+export interface CellKernel<Cell> {
+  create<Value>(value: Value): TypedCell<Cell, Value>
+  get<Value>(ref: TypedCell<Cell, Value>): Value
+  update<Value>(ref: TypedCell<Cell, Value>, value: Update<Value>): void
 }
 
-// Arrays contain references to values created by the kernel.
-export interface ArrayKernel<Location> {
-  create(items: readonly StoreRef<Location>[]): ArrayRef<Location>
-  get(ref: ArrayRef<Location>): readonly StoreRef<Location>[]
-  update(ref: ArrayRef<Location>, items: Update<readonly StoreRef<Location>[]>): void
-}
-
-export interface MapKernel<Location> {
-  create(fields: Readonly<Record<string, StoreRef<Location>>>): MapRef<Location>
-  get(ref: MapRef<Location>): Readonly<Record<string, StoreRef<Location>>>
-  update(ref: MapRef<Location>, fields: Update<Readonly<Record<string, StoreRef<Location>>>>): void
-}
-
-// A reference describes both where a value lives and what kind of value it is.
-export interface CellRef<Value, Location> {
-  readonly kind: "cell"
-  readonly location: Location
-  readonly [cellValueType]: (value: Value) => Value
-}
-
-export interface ArrayRef<Location> {
-  readonly kind: "array"
-  readonly location: Location
-}
-
-export interface MapRef<Location> {
-  readonly kind: "map"
-  readonly location: Location
-}
-
-export type StoreRef<Location> = CellRef<any, Location> | ArrayRef<Location> | MapRef<Location>
+export type TypedCell<Cell, Value> = Cell & { readonly [cellValueType]: (value: Value) => Value }
 
 declare const cellValueType: unique symbol
+
+// Arrays contain references to values created by the kernel.
+export interface ArrayKernel<ArrayRef, ElementRef> {
+  create(items: readonly ElementRef[]): ArrayRef
+  get(ref: ArrayRef): readonly ElementRef[]
+  update(ref: ArrayRef, items: Update<readonly ElementRef[]>): void
+}
 
 // utilities
 
