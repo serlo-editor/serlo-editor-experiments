@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { FlatStorage } from "./index.ts"
+import { FlatStorage } from "./index"
 
 test.describe("FlatStorage", () => {
   test("stores and reads cells", () => {

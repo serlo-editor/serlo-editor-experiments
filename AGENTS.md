@@ -10,3 +10,4 @@
 - Prefer simple implementations: be a lazy developer, follow KISS, and remember that the best code is code not added.
 - Order code from general to concrete: start with the most abstract function, then the functions it calls, and so on.
 - Use `pnpm fix` to test your code formatting and linting.
+- Do not include `.ts` endings in import paths.

@@ -1,7 +1,7 @@
-import type { Storage } from "./types.ts"
-import type { JSONValue } from "./utils/json-value.ts"
-import { applyUpdate } from "./utils/update.ts"
-import type { Update } from "./utils/update.ts"
+import type { Storage } from "./types"
+import type { JSONValue } from "./utils/json-value"
+import { applyUpdate } from "./utils/update"
+import type { Update } from "./utils/update"
 
 const transactionToken = Symbol("flatStorageTransaction")
 type TransactionToken = typeof transactionToken
