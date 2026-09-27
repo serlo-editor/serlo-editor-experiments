@@ -7,20 +7,13 @@ export interface StoreKernel<CellRef extends StorableValue, ArrayRef extends Sto
 }
 
 export interface CellKernel<CellRef> {
-  create<Value extends StorableValue>(value: Value): Cell<CellRef, Value>
-  get<Value extends StorableValue>(ref: Cell<CellRef, Value>): Value
-  update<Value extends StorableValue>(ref: Cell<CellRef, Value>, update: Update<Value>): void
+  create(value: StorableValue): CellRef
+  get(ref: CellRef): StorableValue
+  update(ref: CellRef, update: Update<StorableValue>): void
 }
 
-export type Cell<CellRef, Value extends StorableValue> = CellRef & {
-  readonly [cellValueType]: (value: Value) => Value
-}
-
-declare const cellValueType: unique symbol
-
-// Arrays contain references to values created by the kernel.
 export interface ArrayKernel<ArrayRef extends StorableValue, ItemRef> {
   create(items: readonly ItemRef[]): ArrayRef
   get(ref: ArrayRef): readonly ItemRef[]
-  update(ref: ArrayRef, update: Update<ArrayRef>): void
+  update(ref: ArrayRef, update: Update<readonly ItemRef[]>): void
 }
