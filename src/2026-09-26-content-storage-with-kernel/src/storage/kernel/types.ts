@@ -1,4 +1,4 @@
-import { Update } from "../utils"
+import { StorableValue, Update } from "../utils"
 
 export interface StoreKernel<CellRef, ArrayRef> {
   readonly cell: CellKernel<CellRef>
@@ -7,12 +7,14 @@ export interface StoreKernel<CellRef, ArrayRef> {
 }
 
 export interface CellKernel<CellRef> {
-  create<Value>(value: Value): Cell<CellRef, Value>
-  get<Value>(ref: Cell<CellRef, Value>): Value
-  update<Value>(ref: Cell<CellRef, Value>, update: Update<Value>): void
+  create<Value extends StorableValue>(value: Value): Cell<CellRef, Value>
+  get<Value extends StorableValue>(ref: Cell<CellRef, Value>): Value
+  update<Value extends StorableValue>(ref: Cell<CellRef, Value>, update: Update<Value>): void
 }
 
-export type Cell<CellRef, Value> = CellRef & { readonly [cellValueType]: (value: Value) => Value }
+export type Cell<CellRef, Value extends StorableValue> = CellRef & {
+  readonly [cellValueType]: (value: Value) => Value
+}
 
 declare const cellValueType: unique symbol
 

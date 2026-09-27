@@ -1,4 +1,4 @@
-import { applyUpdate, Update } from "../utils"
+import { applyUpdate, StorableValue, Update } from "../utils"
 import { ArrayKernel, Cell, CellKernel, StoreKernel } from "./types"
 
 export class FlatStoreKernel implements StoreKernel<FlatKey, FlatKey> {
@@ -29,20 +29,20 @@ class FlatCellKernel implements CellKernel<FlatKey> {
 
   constructor(private readonly keyGenerator: FlatKeyGenerator) {}
 
-  create<Value>(value: Value): Cell<FlatKey, Value> {
+  create<Value extends StorableValue>(value: Value): Cell<FlatKey, Value> {
     const key = this.keyGenerator.next()
     this.cells.set(key, value)
     return key as Cell<FlatKey, Value>
   }
 
-  get<Value>(ref: Cell<FlatKey, Value>): Value {
+  get<Value extends StorableValue>(ref: Cell<FlatKey, Value>): Value {
     if (!this.cells.has(ref)) {
       throw new Error(`Cell with key ${ref} does not exist.`)
     }
     return this.cells.get(ref) as Value
   }
 
-  update<Value>(ref: Cell<FlatKey, Value>, update: Update<Value>): void {
+  update<Value extends StorableValue>(ref: Cell<FlatKey, Value>, update: Update<Value>): void {
     const previousValue = this.get(ref)
     this.cells.set(ref, applyUpdate(previousValue, update))
   }

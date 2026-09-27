@@ -1,6 +1,17 @@
-export type Update<Value> = Value | ((previousValue: Value) => Value)
+export type StorableValue =
+  | readonly unknown[]
+  | { readonly [key: string]: unknown }
+  | null
+  | string
+  | number
+  | boolean
 
-export function applyUpdate<Value>(previousValue: Value, update: Update<Value>): Value {
+export type Update<Value extends StorableValue> = Value | ((previousValue: Value) => Value)
+
+export function applyUpdate<Value extends StorableValue>(
+  previousValue: Value,
+  update: Update<Value>,
+): Value {
   if (typeof update !== "function") return update
-  return (update as (previousValue: Value) => Value)(previousValue)
+  return update(previousValue)
 }
