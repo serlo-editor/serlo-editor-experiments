@@ -1,7 +1,7 @@
 import { applyUpdate, JSONValue, Update } from "../utils"
-import { StoreKernel } from "./types"
+import { Storage } from "./types"
 
-export class FlatStoreKernel implements StoreKernel<FlatKey, FlatKey> {
+export class FlatStorage implements Storage<FlatKey, FlatKey> {
   private readonly keyGenerator = new FlatKeyGenerator()
   readonly cell = new Bucket<JSONValue>(this.keyGenerator)
   readonly array = new Bucket<readonly FlatKey[]>(this.keyGenerator)
