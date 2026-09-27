@@ -5,9 +5,9 @@ export interface StoreKernel<Location, Destination> {
 }
 
 export interface CellKernel<Location, Destination> {
-  create<Value>(destination: Destination, value: Value): Cell<Value, Location>
-  get<Value>(ref: Cell<Value, Location>): Value
-  set<Value>(ref: Cell<Value, Location>, value: Value): void
+  create<Value>(destination: Destination, value: Value): CellRef<Value, Location>
+  get<Value>(ref: CellRef<Value, Location>): Value
+  set<Value>(ref: CellRef<Value, Location>, value: Value): void
 }
 
 // Arrays contain references to values created by the kernel.
@@ -27,10 +27,10 @@ export interface MapKernel<Location, Destination> {
 }
 
 // A reference describes both where a value lives and what kind of value it is.
-export interface Cell<Value, Location> {
+export interface CellRef<Value, Location> {
   readonly kind: "cell"
   readonly location: Location
-  readonly [storedValue]: (value: Value) => Value
+  readonly [cellValueType]: (value: Value) => Value
 }
 
 export interface ArrayRef<Location> {
@@ -43,6 +43,6 @@ export interface MapRef<Location> {
   readonly location: Location
 }
 
-export type StoreRef<Location> = Cell<any, Location> | ArrayRef<Location> | MapRef<Location>
+export type StoreRef<Location> = CellRef<any, Location> | ArrayRef<Location> | MapRef<Location>
 
-declare const storedValue: unique symbol
+declare const cellValueType: unique symbol
