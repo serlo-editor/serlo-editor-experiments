@@ -60,11 +60,8 @@ export class FlatStorage implements FlatStorageContract {
 
 class ReferenceTable<Value extends JSONValue> {
   private readonly table = new Map<FlatStorageRef, Value>()
-  private readonly refGenerator: StorageRefGenerator
 
-  constructor(refGenerator: StorageRefGenerator) {
-    this.refGenerator = refGenerator
-  }
+  constructor(private readonly refGenerator: StorageRefGenerator) {}
 
   create(value: Value): FlatStorageRef {
     const ref = this.refGenerator.next()
