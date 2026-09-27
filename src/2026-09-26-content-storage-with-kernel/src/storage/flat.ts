@@ -3,14 +3,6 @@ import type { JSONValue } from "./utils/json-value.ts"
 import { applyUpdate } from "./utils/update.ts"
 import type { Update } from "./utils/update.ts"
 
-type TransactionToken = symbol & { readonly [transactionTokenSymbol]: true }
-
-declare const transactionTokenSymbol: unique symbol
-
-function createTransactionToken(): TransactionToken {
-  return Symbol("transactionTransaction") as TransactionToken
-}
-
 type FlatStorageContract = Storage<FlatStorageRef, FlatStorageRef, TransactionToken>
 
 export class FlatStorage implements FlatStorageContract {
@@ -113,3 +105,11 @@ class StorageRefGenerator {
 type FlatStorageRef = string & { readonly [flatStorageRefSymbol]: true }
 
 declare const flatStorageRefSymbol: unique symbol
+
+type TransactionToken = symbol & { readonly [transactionTokenSymbol]: true }
+
+declare const transactionTokenSymbol: unique symbol
+
+function createTransactionToken(): TransactionToken {
+  return Symbol("transactionTransaction") as TransactionToken
+}
