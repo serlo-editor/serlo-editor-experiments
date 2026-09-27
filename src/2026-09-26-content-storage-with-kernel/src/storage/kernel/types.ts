@@ -21,14 +21,13 @@ export interface ArrayKernel<Location, Destination> {
   set<Value>(ref: StoreRef<Value[], Location>, items: readonly StoreRef<Value, Location>[]): void
 }
 
-export interface StoreRef<Value, Location> {
-  readonly location: Location
-  // Phantom type links this location to Value without storing a runtime value copy.
-  // `storedValue` is a unique symbol to prevent accidental access and ensure type safety.
-  //
-  // Function property makes Value invariant under strictFunctionTypes, preventing
-  // widening writable references (e.g. StoreRef<string> to
-  // StoreRef<string | number>) and unsafe writes.
+// Phantom type links this location to Value without storing a runtime value copy.
+// `storedValue` is a unique symbol to prevent accidental access and ensure type safety.
+//
+// Function property makes Value invariant under strictFunctionTypes, preventing
+// widening writable references (e.g. StoreRef<string> to
+// StoreRef<string | number>) and unsafe writes.
+export type StoreRef<Value, Location> = Location & {
   readonly [storedValue]: (value: Value) => Value
 }
 
