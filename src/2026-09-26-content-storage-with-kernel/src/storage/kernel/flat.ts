@@ -1,9 +1,5 @@
-import { ArrayKernel, Cell, CellKernel, StoreKernel, Update } from "./types"
-
-function applyUpdate<Value>(previousValue: Value, update: Update<Value>): Value {
-  if (typeof update !== "function") return update
-  return (update as (previousValue: Value) => Value)(previousValue)
-}
+import { applyUpdate, Update } from "../utils"
+import { ArrayKernel, Cell, CellKernel, StoreKernel } from "./types"
 
 export class FlatStoreKernel implements StoreKernel<FlatKey, FlatKey> {
   private readonly cellKernel: FlatCellKernel

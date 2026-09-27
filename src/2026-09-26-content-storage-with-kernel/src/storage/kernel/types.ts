@@ -1,3 +1,5 @@
+import { Update } from "../utils"
+
 export interface StoreKernel<CellRef, ArrayRef> {
   readonly cell: CellKernel<CellRef>
   readonly array: ArrayKernel<ArrayRef, ArrayRef | CellRef>
@@ -20,7 +22,3 @@ export interface ArrayKernel<ArrayRef, ItemRef> {
   get(ref: ArrayRef): readonly ItemRef[]
   update(ref: ArrayRef, update: Update<readonly ItemRef[]>): void
 }
-
-// utilities
-
-export type Update<Value> = Value | ((previousValue: Value) => Value)
