@@ -4,9 +4,9 @@ import { applyUpdate, JSONValue, Update } from "./utils"
 const transactionToken = Symbol("flatStorageTransaction")
 type TransactionToken = typeof transactionToken
 
-type IFlatStorage = Storage<FlatStorageRef, FlatStorageRef, TransactionToken>
+type FlatStorageContract = Storage<FlatStorageRef, FlatStorageRef, TransactionToken>
 
-export class FlatStorage implements IFlatStorage {
+export class FlatStorage implements FlatStorageContract {
   private readonly refGenerator = new StorageRefGenerator()
 
   private readonly cellTable = new ReferenceTable<JSONValue>(this.refGenerator)
@@ -23,7 +23,7 @@ export class FlatStorage implements IFlatStorage {
         set: (value) => this.cellTable.applyUpdate(ref, () => value),
       }
     },
-  } as IFlatStorage["cell"]
+  } as FlatStorageContract["cell"]
 
   readonly array = {
     create: (items: readonly FlatStorageRef[]): FlatStorageRef => this.arrayTable.create(items),
@@ -45,7 +45,7 @@ export class FlatStorage implements IFlatStorage {
         },
       }
     },
-  }
+  } as FlatStorageContract["array"]
 
   attach<Ref extends FlatStorageRef>(ref: Ref): Ref {
     if (!this.cellTable.has(ref) && !this.arrayTable.has(ref)) {
