@@ -4,24 +4,26 @@ import { applyUpdate, JSONValue, Update } from "./utils"
 const transactionToken = Symbol("flatStorageTransaction")
 type TransactionToken = typeof transactionToken
 
-export class FlatStorage implements Storage<FlatStorageRef, FlatStorageRef, TransactionToken> {
+type IFlatStorage = Storage<FlatStorageRef, FlatStorageRef, TransactionToken>
+
+export class FlatStorage implements IFlatStorage {
   private readonly refGenerator = new StorageRefGenerator()
 
   private readonly cellTable = new ReferenceTable<JSONValue>(this.refGenerator)
   private readonly arrayTable = new ReferenceTable<readonly FlatStorageRef[]>(this.refGenerator)
 
   readonly cell = {
-    create: (value: JSONValue): FlatStorageRef => this.cellTable.create(value),
-    get: (ref: FlatStorageRef): JSONValue => this.cellTable.get(ref),
-    edit: (ref: FlatStorageRef, tx: TransactionToken): { set: (value: JSONValue) => void } => {
+    create: (value) => this.cellTable.create(value),
+    get: (ref) => this.cellTable.get(ref),
+    edit: (ref, tx) => {
       if (tx !== transactionToken) {
         throw new Error("Invalid transaction.")
       }
       return {
-        set: (value: JSONValue) => this.cellTable.applyUpdate(ref, () => value),
+        set: (value) => this.cellTable.applyUpdate(ref, () => value),
       }
     },
-  }
+  } as IFlatStorage["cell"]
 
   readonly array = {
     create: (items: readonly FlatStorageRef[]): FlatStorageRef => this.arrayTable.create(items),
