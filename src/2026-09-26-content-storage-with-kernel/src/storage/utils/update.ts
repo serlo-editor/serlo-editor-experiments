@@ -1,10 +1,4 @@
-export type StorableValue =
-  | readonly unknown[]
-  | { readonly [key: string]: unknown }
-  | null
-  | string
-  | number
-  | boolean
+import type { StorableValue } from "./storable-value"
 
 export type Update<Value extends StorableValue> = Value | ((previousValue: Value) => Value)
 
