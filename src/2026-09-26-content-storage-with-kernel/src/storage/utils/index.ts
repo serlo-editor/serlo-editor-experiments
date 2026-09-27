@@ -1,2 +1,2 @@
 export * from "./update"
-export * from "./storable-value"
+export * from "./json-value"

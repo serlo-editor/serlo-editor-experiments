@@ -1,4 +1,4 @@
-import type { JSONValue } from "./storable-value"
+import type { JSONValue } from "./json-value"
 
 export type Update<Value extends JSONValue> = Value | ((previousValue: Value) => Value)
 
