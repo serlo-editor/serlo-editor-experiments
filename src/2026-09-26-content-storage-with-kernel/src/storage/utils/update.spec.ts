@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import { applyUpdate } from "./update"
+import { applyUpdate } from "./update.ts"
 
 test.describe("applyUpdate", () => {
   test("returns direct update values", () => {

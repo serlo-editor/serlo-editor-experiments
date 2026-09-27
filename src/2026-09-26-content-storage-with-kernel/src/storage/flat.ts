@@ -1,11 +1,15 @@
-import type { Storage } from "./types"
-import type { JSONValue } from "./utils/json-value"
-import { applyUpdate } from "./utils/update"
-import type { Update } from "./utils/update"
+import type { Storage } from "./types.ts"
+import type { JSONValue } from "./utils/json-value.ts"
+import { applyUpdate } from "./utils/update.ts"
+import type { Update } from "./utils/update.ts"
 
 type TransactionToken = symbol & { readonly [transactionTokenSymbol]: true }
 
 declare const transactionTokenSymbol: unique symbol
+
+function createTransactionToken(): TransactionToken {
+  return Symbol("transactionTransaction") as TransactionToken
+}
 
 type FlatStorageContract = Storage<FlatStorageRef, FlatStorageRef, TransactionToken>
 
@@ -56,7 +60,7 @@ export class FlatStorage implements FlatStorageContract {
   }
 
   mutate<T>(transaction: (tx: TransactionToken) => T): T {
-    const tx = Symbol("flatStorageTransaction") as TransactionToken
+    const tx = createTransactionToken()
     this.activeTransactions.add(tx)
     try {
       return transaction(tx)
@@ -68,8 +72,11 @@ export class FlatStorage implements FlatStorageContract {
 
 class ReferenceTable<Value extends JSONValue> {
   private readonly table = new Map<FlatStorageRef, Value>()
+  private readonly refGenerator: StorageRefGenerator
 
-  constructor(private readonly refGenerator: StorageRefGenerator) {}
+  constructor(refGenerator: StorageRefGenerator) {
+    this.refGenerator = refGenerator
+  }
 
   create(value: Value): FlatStorageRef {
     const ref = this.refGenerator.next()

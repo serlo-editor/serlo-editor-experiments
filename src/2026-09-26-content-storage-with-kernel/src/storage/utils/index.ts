@@ -1,2 +1,2 @@
-export * from "./update"
-export * from "./json-value"
+export * from "./update.ts"
+export * from "./json-value.ts"

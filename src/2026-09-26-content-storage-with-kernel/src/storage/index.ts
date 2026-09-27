@@ -1,1 +1,1 @@
-export { FlatStorage } from "./flat"
+export { FlatStorage } from "./flat.ts"
