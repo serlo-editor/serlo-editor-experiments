@@ -16,12 +16,13 @@ export class FlatStorage implements Storage<FlatKey, FlatKey> {
   readonly array = {
     create: (items: readonly FlatKey[]): FlatKey => this.arrayBucket.create(items),
     get: (ref: FlatKey): readonly FlatKey[] => this.arrayBucket.get(ref),
-    insert: (ref: FlatKey, index: number, item: FlatKey): void =>
+    insert: (ref: FlatKey, index: number, item: FlatKey): void => {
       this.arrayBucket.update(ref, (previousItems) => [
         ...previousItems.slice(0, index),
         item,
         ...previousItems.slice(index),
-      ]),
+      ])
+    },
   }
 
   attach<Ref extends FlatKey>(ref: Ref): Ref {
