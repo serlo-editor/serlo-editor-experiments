@@ -26,17 +26,14 @@ export class FlatStorage implements FlatStorageContract {
   } as FlatStorageContract["cell"]
 
   readonly array = {
-    create: (items: readonly FlatStorageRef[]): FlatStorageRef => this.arrayTable.create(items),
-    get: (ref: FlatStorageRef): readonly FlatStorageRef[] => this.arrayTable.get(ref),
-    edit: (
-      ref: FlatStorageRef,
-      tx: TransactionToken,
-    ): { insert: (index: number, item: FlatStorageRef) => void } => {
+    create: (items) => this.arrayTable.create(items),
+    get: (ref) => this.arrayTable.get(ref),
+    edit: (ref, tx) => {
       if (tx !== transactionToken) {
         throw new Error("Invalid transaction.")
       }
       return {
-        insert: (index: number, item: FlatStorageRef) => {
+        insert: (index, item) => {
           this.arrayTable.applyUpdate(ref, (previousItems) => [
             ...previousItems.slice(0, index),
             item,
