@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --experimental-strip-types --test src/**/*.spec.ts"
+    "test": "node --experimental-strip-types --test src/**/*.spec.ts src/**/*.test.ts"
   },
   "devDependencies": {
     "typescript": "^7.0.2"

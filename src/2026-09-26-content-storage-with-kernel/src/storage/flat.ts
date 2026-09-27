@@ -1,5 +1,7 @@
-import { Storage } from "./types"
-import { applyUpdate, JSONValue, Update } from "./utils"
+import type { Storage } from "./types.ts"
+import type { JSONValue } from "./utils/json-value.ts"
+import { applyUpdate } from "./utils/update.ts"
+import type { Update } from "./utils/update.ts"
 
 const transactionToken = Symbol("flatStorageTransaction")
 type TransactionToken = typeof transactionToken
@@ -58,8 +60,11 @@ export class FlatStorage implements FlatStorageContract {
 
 class ReferenceTable<Value extends JSONValue> {
   private readonly table = new Map<FlatStorageRef, Value>()
+  private readonly refGenerator: StorageRefGenerator
 
-  constructor(private readonly refGenerator: StorageRefGenerator) {}
+  constructor(refGenerator: StorageRefGenerator) {
+    this.refGenerator = refGenerator
+  }
 
   create(value: Value): FlatStorageRef {
     const ref = this.refGenerator.next()
