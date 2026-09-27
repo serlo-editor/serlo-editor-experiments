@@ -2,22 +2,18 @@ import { applyUpdate, StorableValue, Update } from "../utils"
 import { ArrayKernel, Cell, CellKernel, StoreKernel } from "./types"
 
 export class FlatStoreKernel implements StoreKernel<FlatKey, FlatKey> {
-  private readonly cellKernel: FlatCellKernel
-  private readonly arrayKernel: FlatArrayKernel
-
-  readonly cell: CellKernel<FlatKey>
-  readonly array: ArrayKernel<FlatKey, FlatKey>
+  readonly cell: FlatCellKernel
+  readonly array: FlatArrayKernel
 
   constructor() {
     const keyGenerator = new FlatKeyGenerator()
-    this.cellKernel = new FlatCellKernel(keyGenerator)
-    this.arrayKernel = new FlatArrayKernel(keyGenerator)
-    this.cell = this.cellKernel
-    this.array = this.arrayKernel
+
+    this.cell = new FlatCellKernel(keyGenerator)
+    this.array = new FlatArrayKernel(keyGenerator)
   }
 
   attach<Ref extends FlatKey>(ref: Ref): Ref {
-    if (!this.cellKernel.has(ref) && !this.arrayKernel.has(ref)) {
+    if (!this.cell.has(ref) && !this.array.has(ref)) {
       throw new Error(`Reference with key ${ref} does not exist.`)
     }
     return ref
