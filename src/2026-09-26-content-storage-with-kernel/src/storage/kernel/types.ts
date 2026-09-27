@@ -12,7 +12,7 @@ export interface CellKernel<CellRef> {
   update(ref: CellRef, update: Update<JSONValue>): void
 }
 
-export interface ArrayKernel<ArrayRef extends JSONValue, ItemRef> {
+export interface ArrayKernel<ArrayRef extends JSONValue, ItemRef extends JSONValue> {
   create(items: readonly ItemRef[]): ArrayRef
   get(ref: ArrayRef): readonly ItemRef[]
   update(ref: ArrayRef, update: Update<readonly ItemRef[]>): void
