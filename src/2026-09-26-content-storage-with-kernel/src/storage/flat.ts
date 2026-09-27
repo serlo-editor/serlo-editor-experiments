@@ -1,7 +1,10 @@
 import { Storage } from "./types"
 import { applyUpdate, JSONValue, Update } from "./utils"
 
-export class FlatStorage implements Storage<FlatKey, FlatKey> {
+const flatStorageTransaction = Symbol("flatStorageTransaction")
+type FlatStorageTransaction = typeof flatStorageTransaction
+
+export class FlatStorage implements Storage<FlatKey, FlatKey, FlatStorageTransaction> {
   private readonly keyGenerator = new FlatKeyGenerator()
 
   private readonly cellBucket = new Bucket<JSONValue>(this.keyGenerator)
@@ -10,18 +13,35 @@ export class FlatStorage implements Storage<FlatKey, FlatKey> {
   readonly cell = {
     create: (value: JSONValue): FlatKey => this.cellBucket.create(value),
     get: (ref: FlatKey): JSONValue => this.cellBucket.get(ref),
-    set: (ref: FlatKey, value: JSONValue): void => this.cellBucket.update(ref, value),
+    change: (ref: FlatKey, tx: FlatStorageTransaction): { set: (value: JSONValue) => void } => {
+      if (tx !== flatStorageTransaction) {
+        throw new Error("Invalid transaction.")
+      }
+      return {
+        set: (value: JSONValue) => this.cellBucket.update(ref, () => value),
+      }
+    },
   }
 
   readonly array = {
     create: (items: readonly FlatKey[]): FlatKey => this.arrayBucket.create(items),
     get: (ref: FlatKey): readonly FlatKey[] => this.arrayBucket.get(ref),
-    insert: (ref: FlatKey, index: number, item: FlatKey): void => {
-      this.arrayBucket.update(ref, (previousItems) => [
-        ...previousItems.slice(0, index),
-        item,
-        ...previousItems.slice(index),
-      ])
+    change: (
+      ref: FlatKey,
+      tx: FlatStorageTransaction,
+    ): { insert: (index: number, item: FlatKey) => void } => {
+      if (tx !== flatStorageTransaction) {
+        throw new Error("Invalid transaction.")
+      }
+      return {
+        insert: (index: number, item: FlatKey) => {
+          this.arrayBucket.update(ref, (previousItems) => [
+            ...previousItems.slice(0, index),
+            item,
+            ...previousItems.slice(index),
+          ])
+        },
+      }
     },
   }
 
@@ -30,6 +50,10 @@ export class FlatStorage implements Storage<FlatKey, FlatKey> {
       throw new Error(`Reference with key ${ref} does not exist.`)
     }
     return ref
+  }
+
+  mutate<T>(transaction: (tx: FlatStorageTransaction) => T): T {
+    return transaction(flatStorageTransaction)
   }
 }
 
