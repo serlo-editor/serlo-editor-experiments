@@ -1,3 +1,5 @@
+export type Update<Value> = Value | ((oldValue: Value) => Value)
+
 export interface StoreKernel<Location> {
   readonly cell: CellKernel<Location>
   readonly array: ArrayKernel<Location>
@@ -7,32 +9,20 @@ export interface StoreKernel<Location> {
 export interface CellKernel<Location> {
   create<Value>(value: Value): CellRef<Value, Location>
   get<Value>(ref: CellRef<Value, Location>): Value
-  update<Value>(ref: CellRef<Value, Location>, value: Value | ((oldValue: Value) => Value)): void
+  update<Value>(ref: CellRef<Value, Location>, value: Update<Value>): void
 }
 
 // Arrays contain references to values created by the kernel.
 export interface ArrayKernel<Location> {
   create(items: readonly StoreRef<Location>[]): ArrayRef<Location>
   get(ref: ArrayRef<Location>): readonly StoreRef<Location>[]
-  update(
-    ref: ArrayRef<Location>,
-    items:
-      | readonly StoreRef<Location>[]
-      | ((oldItems: readonly StoreRef<Location>[]) => readonly StoreRef<Location>[]),
-  ): void
+  update(ref: ArrayRef<Location>, items: Update<readonly StoreRef<Location>[]>): void
 }
 
 export interface MapKernel<Location> {
   create(fields: Readonly<Record<string, StoreRef<Location>>>): MapRef<Location>
   get(ref: MapRef<Location>): Readonly<Record<string, StoreRef<Location>>>
-  update(
-    ref: MapRef<Location>,
-    fields:
-      | Readonly<Record<string, StoreRef<Location>>>
-      | ((
-          oldFields: Readonly<Record<string, StoreRef<Location>>>,
-        ) => Readonly<Record<string, StoreRef<Location>>>),
-  ): void
+  update(ref: MapRef<Location>, fields: Update<Readonly<Record<string, StoreRef<Location>>>>): void
 }
 
 // A reference describes both where a value lives and what kind of value it is.
