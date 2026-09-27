@@ -1,7 +1,10 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
+import * as Y from "yjs"
+
 import { FlatStorage } from "./index.ts"
+import { YjsStorage } from "./yjs.ts"
 
 test.describe("FlatStorage", () => {
   test("stores and reads cells and arrays", () => {
@@ -129,5 +132,18 @@ test.describe("FlatStorage", () => {
       () => storage.attach(foreignRef),
       new Error(`Reference with key ${foreignRef} does not exist.`),
     )
+  })
+})
+
+test.describe("YjsStorage", () => {
+  test("stores and reads cells and arrays", () => {
+    const storage = new YjsStorage(new Y.Doc())
+    const cellRef = storage.cell.create({ title: "Draft", published: false })
+    const arrayRef = storage.array.create([cellRef])
+    storage.attach(arrayRef)
+
+    assert.deepEqual(storage.cell.get(cellRef), { title: "Draft", published: false })
+    assert.deepEqual(storage.array.get(arrayRef), [cellRef])
+    assert.notEqual(cellRef, arrayRef)
   })
 })

@@ -1,7 +1,7 @@
 import * as Y from "yjs"
 
-import { Storage } from "./types.ts"
-import { JSONValue } from "./utils/json-value.ts"
+import type { Storage } from "./types.ts"
+import type { JSONValue } from "./utils/json-value.ts"
 
 type YCell = Y.Map<JSONValue>
 type YArray = Y.Array<YRef>
@@ -10,7 +10,11 @@ type YRef = YCell | YArray
 type YjsStorageContract = Storage<YCell, YArray, Y.Transaction>
 
 export class YjsStorage implements YjsStorageContract {
-  constructor(private doc: Y.Doc) {}
+  private readonly doc: Y.Doc
+
+  constructor(doc: Y.Doc) {
+    this.doc = doc
+  }
 
   readonly cell = {
     create: (value) => {
