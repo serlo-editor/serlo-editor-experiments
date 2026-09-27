@@ -3,11 +3,29 @@ import { Storage } from "./types"
 
 export class FlatStorage implements Storage<FlatKey, FlatKey> {
   private readonly keyGenerator = new FlatKeyGenerator()
-  readonly cell = new Bucket<JSONValue>(this.keyGenerator)
-  readonly array = new Bucket<readonly FlatKey[]>(this.keyGenerator)
+
+  private readonly cellBucket = new Bucket<JSONValue>(this.keyGenerator)
+  private readonly arrayBucket = new Bucket<readonly FlatKey[]>(this.keyGenerator)
+
+  readonly cell = {
+    create: (value: JSONValue): FlatKey => this.cellBucket.create(value),
+    get: (ref: FlatKey): JSONValue => this.cellBucket.get(ref),
+    set: (ref: FlatKey, value: JSONValue): void => this.cellBucket.update(ref, value),
+  }
+
+  readonly array = {
+    create: (items: readonly FlatKey[]): FlatKey => this.arrayBucket.create(items),
+    get: (ref: FlatKey): readonly FlatKey[] => this.arrayBucket.get(ref),
+    insert: (ref: FlatKey, index: number, item: FlatKey): void =>
+      this.arrayBucket.update(ref, (previousItems) => [
+        ...previousItems.slice(0, index),
+        item,
+        ...previousItems.slice(index),
+      ]),
+  }
 
   attach<Ref extends FlatKey>(ref: Ref): Ref {
-    if (!this.cell.has(ref) && !this.array.has(ref)) {
+    if (!this.cellBucket.has(ref) && !this.arrayBucket.has(ref)) {
       throw new Error(`Reference with key ${ref} does not exist.`)
     }
     return ref

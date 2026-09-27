@@ -1,4 +1,4 @@
-import { JSONValue, Update } from "../utils"
+import { JSONValue } from "../utils"
 
 export interface Storage<CellRef extends JSONValue, ArrayRef extends JSONValue> {
   readonly cell: CellStore<CellRef>
@@ -9,11 +9,11 @@ export interface Storage<CellRef extends JSONValue, ArrayRef extends JSONValue> 
 export interface CellStore<CellRef> {
   create(value: JSONValue): CellRef
   get(ref: CellRef): JSONValue
-  update(ref: CellRef, update: Update<JSONValue>): void
+  set(ref: CellRef, value: JSONValue): void
 }
 
 export interface ArrayStore<ArrayRef extends JSONValue, ItemRef extends JSONValue> {
   create(items: readonly ItemRef[]): ArrayRef
   get(ref: ArrayRef): readonly ItemRef[]
-  update(ref: ArrayRef, update: Update<readonly ItemRef[]>): void
+  insert(ref: ArrayRef, index: number, item: ItemRef): void
 }
