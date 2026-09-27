@@ -1,5 +1,3 @@
-export type Update<Value> = Value | ((oldValue: Value) => Value)
-
 export interface StoreKernel<Location> {
   readonly cell: CellKernel<Location>
   readonly array: ArrayKernel<Location>
@@ -45,3 +43,7 @@ export interface MapRef<Location> {
 export type StoreRef<Location> = CellRef<any, Location> | ArrayRef<Location> | MapRef<Location>
 
 declare const cellValueType: unique symbol
+
+// utilities
+
+export type Update<Value> = Value | ((oldValue: Value) => Value)
