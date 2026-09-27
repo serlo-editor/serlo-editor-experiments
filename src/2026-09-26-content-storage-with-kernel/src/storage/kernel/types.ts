@@ -1,25 +1,24 @@
-export interface StoreKernel<Location, Destination> {
-  readonly cell: CellKernel<Location, Destination>
-  readonly array: ArrayKernel<Location, Destination>
-  readonly map: MapKernel<Location, Destination>
+export interface StoreKernel<Location> {
+  readonly cell: CellKernel<Location>
+  readonly array: ArrayKernel<Location>
+  readonly map: MapKernel<Location>
 }
 
-export interface CellKernel<Location, Destination> {
-  create<Value>(destination: Destination, value: Value): CellRef<Value, Location>
+export interface CellKernel<Location> {
+  create<Value>(value: Value): CellRef<Value, Location>
   get<Value>(ref: CellRef<Value, Location>): Value
   set<Value>(ref: CellRef<Value, Location>, value: Value): void
 }
 
 // Arrays contain references to values created by the kernel.
-export interface ArrayKernel<Location, Destination> {
-  create(destination: Destination, items: readonly StoreRef<Location>[]): ArrayRef<Location>
+export interface ArrayKernel<Location> {
+  create(items: readonly StoreRef<Location>[]): ArrayRef<Location>
   get(ref: ArrayRef<Location>): readonly StoreRef<Location>[]
   set(ref: ArrayRef<Location>, items: readonly StoreRef<Location>[]): void
 }
 
-export interface MapKernel<Location, Destination> {
+export interface MapKernel<Location> {
   create(
-    destination: Destination,
     fields: Readonly<Record<string, StoreRef<Location>>>,
   ): MapRef<Location>
   get(ref: MapRef<Location>): Readonly<Record<string, StoreRef<Location>>>
