@@ -1,9 +1,9 @@
-import { applyUpdate, StorableValue, Update } from "../utils"
+import { applyUpdate, JSONValue, Update } from "../utils"
 import { StoreKernel } from "./types"
 
 export class FlatStoreKernel implements StoreKernel<FlatKey, FlatKey> {
   private readonly keyGenerator = new FlatKeyGenerator()
-  readonly cell = new Bucket<StorableValue>(this.keyGenerator)
+  readonly cell = new Bucket<JSONValue>(this.keyGenerator)
   readonly array = new Bucket<readonly FlatKey[]>(this.keyGenerator)
 
   attach<Ref extends FlatKey>(ref: Ref): Ref {
@@ -14,7 +14,7 @@ export class FlatStoreKernel implements StoreKernel<FlatKey, FlatKey> {
   }
 }
 
-class Bucket<Value extends StorableValue> {
+class Bucket<Value extends JSONValue> {
   private readonly bucket = new Map<FlatKey, Value>()
 
   constructor(private readonly keyGenerator: FlatKeyGenerator) {}

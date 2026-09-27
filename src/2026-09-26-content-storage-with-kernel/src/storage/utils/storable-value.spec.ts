@@ -1,32 +1,32 @@
 import test from "node:test"
 
-import type { StorableValue } from "./storable-value.ts"
+import type { JSONValue } from "./storable-value.ts"
 
-test("scalars are of type `StorableValue`", () => {
-  const values = [null, false, 42, "text"] satisfies StorableValue[]
+test("scalars are of type `JSONValue`", () => {
+  const values = [null, false, 42, "text"] satisfies JSONValue[]
 
   void values
 })
 
-test("arrays and objects are of type `StorableValue`", () => {
+test("arrays and objects are of type `JSONValue`", () => {
   const values = [
     ["nested", 42] as const,
     { readonly: true, nested: ["value"] },
-  ] satisfies StorableValue[]
+  ] satisfies JSONValue[]
 
   void values
 })
 
-test("`undefined` is not a `StorableValue`", () => {
+test("`undefined` is not a `JSONValue`", () => {
   // @ts-expect-error undefined cannot be stored.
-  const undefinedValue: StorableValue = undefined
+  const undefinedValue: JSONValue = undefined
 
   void undefinedValue
 })
 
-test("functions are not StorableValue", () => {
+test("functions are not JSONValue", () => {
   // @ts-expect-error functions cannot be stored.
-  const functionValue: StorableValue = () => undefined
+  const functionValue: JSONValue = () => undefined
 
   void functionValue
 })
