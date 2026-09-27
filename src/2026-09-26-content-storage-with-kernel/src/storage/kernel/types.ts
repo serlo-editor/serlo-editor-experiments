@@ -1,6 +1,7 @@
 export interface StoreKernel<CellRef, ArrayRef> {
   readonly cell: CellKernel<CellRef>
   readonly array: ArrayKernel<ArrayRef, ArrayRef | CellRef>
+  attach<Ref extends CellRef | ArrayRef>(ref: Ref): Ref
 }
 
 export interface CellKernel<CellRef> {
