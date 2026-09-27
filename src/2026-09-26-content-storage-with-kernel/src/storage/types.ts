@@ -1,6 +1,6 @@
 import { JSONValue } from "./utils/index.ts"
 
-export interface Storage<CellRef extends JSONValue, ArrayRef extends JSONValue, Transaction> {
+export interface Storage<CellRef, ArrayRef, Transaction> {
   readonly cell: ReferenceStore<CellRef, JSONValue, Transaction, CellEditor>
   readonly array: ReferenceStore<
     ArrayRef,
@@ -16,11 +16,11 @@ export interface CellEditor {
   set(value: JSONValue): void
 }
 
-export interface ArrayEditor<ItemRef extends JSONValue> {
+export interface ArrayEditor<ItemRef> {
   insert(index: number, item: ItemRef): void
 }
 
-interface ReferenceStore<Ref extends JSONValue, Value extends JSONValue, Transaction, Editor> {
+interface ReferenceStore<Ref, Value, Transaction, Editor> {
   create(value: Value): Ref
   get(ref: Ref): Value
   edit(ref: Ref, tx: Transaction): Editor
