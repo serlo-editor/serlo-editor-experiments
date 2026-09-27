@@ -3,13 +3,15 @@ import type { JSONValue } from "./utils/json-value"
 import { applyUpdate } from "./utils/update"
 import type { Update } from "./utils/update"
 
-const transactionToken = Symbol("flatStorageTransaction")
-type TransactionToken = typeof transactionToken
+type TransactionToken = symbol & { readonly [transactionTokenSymbol]: true }
+
+declare const transactionTokenSymbol: unique symbol
 
 type FlatStorageContract = Storage<FlatStorageRef, FlatStorageRef, TransactionToken>
 
 export class FlatStorage implements FlatStorageContract {
   private readonly refGenerator = new StorageRefGenerator()
+  private readonly activeTransactions = new Set<TransactionToken>()
 
   private readonly cellTable = new ReferenceTable<JSONValue>(this.refGenerator)
   private readonly arrayTable = new ReferenceTable<readonly FlatStorageRef[]>(this.refGenerator)
@@ -18,7 +20,7 @@ export class FlatStorage implements FlatStorageContract {
     create: (value) => this.cellTable.create(value),
     get: (ref) => this.cellTable.get(ref),
     edit: (ref, tx) => {
-      if (tx !== transactionToken) {
+      if (!this.activeTransactions.has(tx)) {
         throw new Error("Invalid transaction.")
       }
       return {
@@ -31,7 +33,7 @@ export class FlatStorage implements FlatStorageContract {
     create: (items) => this.arrayTable.create(items),
     get: (ref) => this.arrayTable.get(ref),
     edit: (ref, tx) => {
-      if (tx !== transactionToken) {
+      if (!this.activeTransactions.has(tx)) {
         throw new Error("Invalid transaction.")
       }
       return {
@@ -54,7 +56,13 @@ export class FlatStorage implements FlatStorageContract {
   }
 
   mutate<T>(transaction: (tx: TransactionToken) => T): T {
-    return transaction(transactionToken)
+    const tx = Symbol("flatStorageTransaction") as TransactionToken
+    this.activeTransactions.add(tx)
+    try {
+      return transaction(tx)
+    } finally {
+      this.activeTransactions.delete(tx)
+    }
   }
 }
 
@@ -88,10 +96,10 @@ class ReferenceTable<Value extends JSONValue> {
 }
 
 class StorageRefGenerator {
-  private counter = 0
+  private static counter = 0
 
   next(): FlatStorageRef {
-    return `node:${this.counter++}` as FlatStorageRef
+    return `node:${StorageRefGenerator.counter++}` as FlatStorageRef
   }
 }
 
