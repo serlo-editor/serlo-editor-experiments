@@ -1,10 +1,10 @@
 import { Storage } from "./types"
 import { applyUpdate, JSONValue, Update } from "./utils"
 
-const flatStorageTransactionToken = Symbol("flatStorageTransaction")
-type FlatStorageTransactionToken = typeof flatStorageTransactionToken
+const transactionToken = Symbol("flatStorageTransaction")
+type TransactionToken = typeof transactionToken
 
-export class FlatStorage implements Storage<FlatStorageRef, FlatStorageRef, FlatStorageTransactionToken> {
+export class FlatStorage implements Storage<FlatStorageRef, FlatStorageRef, TransactionToken> {
   private readonly refGenerator = new StorageRefGenerator()
 
   private readonly cellTable = new ReferenceTable<JSONValue>(this.refGenerator)
@@ -13,11 +13,8 @@ export class FlatStorage implements Storage<FlatStorageRef, FlatStorageRef, Flat
   readonly cell = {
     create: (value: JSONValue): FlatStorageRef => this.cellTable.create(value),
     get: (ref: FlatStorageRef): JSONValue => this.cellTable.get(ref),
-    edit: (
-      ref: FlatStorageRef,
-      tx: FlatStorageTransactionToken,
-    ): { set: (value: JSONValue) => void } => {
-      if (tx !== flatStorageTransactionToken) {
+    edit: (ref: FlatStorageRef, tx: TransactionToken): { set: (value: JSONValue) => void } => {
+      if (tx !== transactionToken) {
         throw new Error("Invalid transaction.")
       }
       return {
@@ -31,9 +28,9 @@ export class FlatStorage implements Storage<FlatStorageRef, FlatStorageRef, Flat
     get: (ref: FlatStorageRef): readonly FlatStorageRef[] => this.arrayTable.get(ref),
     edit: (
       ref: FlatStorageRef,
-      tx: FlatStorageTransactionToken,
+      tx: TransactionToken,
     ): { insert: (index: number, item: FlatStorageRef) => void } => {
-      if (tx !== flatStorageTransactionToken) {
+      if (tx !== transactionToken) {
         throw new Error("Invalid transaction.")
       }
       return {
@@ -55,8 +52,8 @@ export class FlatStorage implements Storage<FlatStorageRef, FlatStorageRef, Flat
     return ref
   }
 
-  mutate<T>(transaction: (tx: FlatStorageTransactionToken) => T): T {
-    return transaction(flatStorageTransactionToken)
+  mutate<T>(transaction: (tx: TransactionToken) => T): T {
+    return transaction(transactionToken)
   }
 }
 
