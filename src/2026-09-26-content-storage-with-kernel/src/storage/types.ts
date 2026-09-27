@@ -1,27 +1,27 @@
 import { JSONValue } from "./utils"
 
 export interface Storage<CellRef extends JSONValue, ArrayRef extends JSONValue, Transaction> {
-  readonly cell: Store<CellRef, JSONValue, Transaction, CellOperations>
-  readonly array: Store<
+  readonly cell: ReferenceStore<CellRef, JSONValue, Transaction, CellEditor>
+  readonly array: ReferenceStore<
     ArrayRef,
     readonly (CellRef | ArrayRef)[],
     Transaction,
-    ArrayOperations<CellRef | ArrayRef>
+    ArrayEditor<CellRef | ArrayRef>
   >
   attach<Ref extends CellRef | ArrayRef>(ref: Ref): Ref
   mutate<T>(transaction: (tx: Transaction) => T): T
 }
 
-export interface CellOperations {
+export interface CellEditor {
   set(value: JSONValue): void
 }
 
-export interface ArrayOperations<ItemRef extends JSONValue> {
+export interface ArrayEditor<ItemRef extends JSONValue> {
   insert(index: number, item: ItemRef): void
 }
 
-interface Store<Ref extends JSONValue, Value extends JSONValue, Transaction, Operations> {
+interface ReferenceStore<Ref extends JSONValue, Value extends JSONValue, Transaction, Editor> {
   create(value: Value): Ref
   get(ref: Ref): Value
-  change(ref: Ref, tx: Transaction): Operations
+  edit(ref: Ref, tx: Transaction): Editor
 }

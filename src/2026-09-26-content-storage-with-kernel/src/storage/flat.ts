@@ -1,41 +1,44 @@
 import { Storage } from "./types"
 import { applyUpdate, JSONValue, Update } from "./utils"
 
-const flatStorageTransaction = Symbol("flatStorageTransaction")
-type FlatStorageTransaction = typeof flatStorageTransaction
+const flatStorageTransactionToken = Symbol("flatStorageTransaction")
+type FlatStorageTransactionToken = typeof flatStorageTransactionToken
 
-export class FlatStorage implements Storage<FlatKey, FlatKey, FlatStorageTransaction> {
-  private readonly keyGenerator = new FlatKeyGenerator()
+export class FlatStorage implements Storage<FlatStorageRef, FlatStorageRef, FlatStorageTransactionToken> {
+  private readonly refGenerator = new StorageRefGenerator()
 
-  private readonly cellBucket = new Bucket<JSONValue>(this.keyGenerator)
-  private readonly arrayBucket = new Bucket<readonly FlatKey[]>(this.keyGenerator)
+  private readonly cellTable = new ReferenceTable<JSONValue>(this.refGenerator)
+  private readonly arrayTable = new ReferenceTable<readonly FlatStorageRef[]>(this.refGenerator)
 
   readonly cell = {
-    create: (value: JSONValue): FlatKey => this.cellBucket.create(value),
-    get: (ref: FlatKey): JSONValue => this.cellBucket.get(ref),
-    change: (ref: FlatKey, tx: FlatStorageTransaction): { set: (value: JSONValue) => void } => {
-      if (tx !== flatStorageTransaction) {
+    create: (value: JSONValue): FlatStorageRef => this.cellTable.create(value),
+    get: (ref: FlatStorageRef): JSONValue => this.cellTable.get(ref),
+    edit: (
+      ref: FlatStorageRef,
+      tx: FlatStorageTransactionToken,
+    ): { set: (value: JSONValue) => void } => {
+      if (tx !== flatStorageTransactionToken) {
         throw new Error("Invalid transaction.")
       }
       return {
-        set: (value: JSONValue) => this.cellBucket.update(ref, () => value),
+        set: (value: JSONValue) => this.cellTable.applyUpdate(ref, () => value),
       }
     },
   }
 
   readonly array = {
-    create: (items: readonly FlatKey[]): FlatKey => this.arrayBucket.create(items),
-    get: (ref: FlatKey): readonly FlatKey[] => this.arrayBucket.get(ref),
-    change: (
-      ref: FlatKey,
-      tx: FlatStorageTransaction,
-    ): { insert: (index: number, item: FlatKey) => void } => {
-      if (tx !== flatStorageTransaction) {
+    create: (items: readonly FlatStorageRef[]): FlatStorageRef => this.arrayTable.create(items),
+    get: (ref: FlatStorageRef): readonly FlatStorageRef[] => this.arrayTable.get(ref),
+    edit: (
+      ref: FlatStorageRef,
+      tx: FlatStorageTransactionToken,
+    ): { insert: (index: number, item: FlatStorageRef) => void } => {
+      if (tx !== flatStorageTransactionToken) {
         throw new Error("Invalid transaction.")
       }
       return {
-        insert: (index: number, item: FlatKey) => {
-          this.arrayBucket.update(ref, (previousItems) => [
+        insert: (index: number, item: FlatStorageRef) => {
+          this.arrayTable.applyUpdate(ref, (previousItems) => [
             ...previousItems.slice(0, index),
             item,
             ...previousItems.slice(index),
@@ -45,55 +48,55 @@ export class FlatStorage implements Storage<FlatKey, FlatKey, FlatStorageTransac
     },
   }
 
-  attach<Ref extends FlatKey>(ref: Ref): Ref {
-    if (!this.cellBucket.has(ref) && !this.arrayBucket.has(ref)) {
+  attach<Ref extends FlatStorageRef>(ref: Ref): Ref {
+    if (!this.cellTable.has(ref) && !this.arrayTable.has(ref)) {
       throw new Error(`Reference with key ${ref} does not exist.`)
     }
     return ref
   }
 
-  mutate<T>(transaction: (tx: FlatStorageTransaction) => T): T {
-    return transaction(flatStorageTransaction)
+  mutate<T>(transaction: (tx: FlatStorageTransactionToken) => T): T {
+    return transaction(flatStorageTransactionToken)
   }
 }
 
-class Bucket<Value extends JSONValue> {
-  private readonly bucket = new Map<FlatKey, Value>()
+class ReferenceTable<Value extends JSONValue> {
+  private readonly table = new Map<FlatStorageRef, Value>()
 
-  constructor(private readonly keyGenerator: FlatKeyGenerator) {}
+  constructor(private readonly refGenerator: StorageRefGenerator) {}
 
-  create(items: Value): FlatKey {
-    const key = this.keyGenerator.next()
-    this.bucket.set(key, items)
-    return key
+  create(value: Value): FlatStorageRef {
+    const ref = this.refGenerator.next()
+    this.table.set(ref, value)
+    return ref
   }
 
-  get(ref: FlatKey): Value {
-    const items = this.bucket.get(ref)
-    if (items === undefined) {
+  get(ref: FlatStorageRef): Value {
+    const value = this.table.get(ref)
+    if (value === undefined) {
       throw new Error(`Value with key ${ref} does not exist.`)
     }
-    return items
+    return value
   }
 
-  update(ref: FlatKey, update: Update<Value>): void {
+  applyUpdate(ref: FlatStorageRef, updater: Update<Value>): void {
     const previousValue = this.get(ref)
-    this.bucket.set(ref, applyUpdate(previousValue, update))
+    this.table.set(ref, applyUpdate(previousValue, updater))
   }
 
-  has(ref: FlatKey): boolean {
-    return this.bucket.has(ref)
+  has(ref: FlatStorageRef): boolean {
+    return this.table.has(ref)
   }
 }
 
-class FlatKeyGenerator {
+class StorageRefGenerator {
   private counter = 0
 
-  next(): FlatKey {
-    return `node:${this.counter++}` as FlatKey
+  next(): FlatStorageRef {
+    return `node:${this.counter++}` as FlatStorageRef
   }
 }
 
-type FlatKey = string & { readonly [flatKeySymbol]: true }
+type FlatStorageRef = string & { readonly [flatStorageRefSymbol]: true }
 
-declare const flatKeySymbol: unique symbol
+declare const flatStorageRefSymbol: unique symbol
