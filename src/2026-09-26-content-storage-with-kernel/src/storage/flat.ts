@@ -1,5 +1,5 @@
-import { applyUpdate, JSONValue, Update } from "../utils"
 import { Storage } from "./types"
+import { applyUpdate, JSONValue, Update } from "./utils"
 
 export class FlatStorage implements Storage<FlatKey, FlatKey> {
   private readonly keyGenerator = new FlatKeyGenerator()

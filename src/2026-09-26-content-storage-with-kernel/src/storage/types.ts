@@ -1,4 +1,4 @@
-import { JSONValue } from "../utils"
+import { JSONValue } from "./utils"
 
 export interface Storage<CellRef extends JSONValue, ArrayRef extends JSONValue> {
   readonly cell: CellStore<CellRef>
