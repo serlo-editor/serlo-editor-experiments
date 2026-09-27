@@ -1,34 +1,48 @@
 export interface StoreKernel<Location, Destination> {
-  readonly boolean: ScalarKernel<boolean, Location, Destination>
-  readonly number: ScalarKernel<number, Location, Destination>
-  readonly string: ScalarKernel<string, Location, Destination>
+  readonly cell: CellKernel<Location, Destination>
   readonly array: ArrayKernel<Location, Destination>
+  readonly map: MapKernel<Location, Destination>
 }
 
-export interface ScalarKernel<Value extends boolean | number | string, Location, Destination> {
-  initialize(destination: Destination, value: Value): StoreRef<Value, Location>
-  get(ref: StoreRef<Value, Location>): Value
-  set(ref: StoreRef<Value, Location>, value: Value): void
+export interface CellKernel<Location, Destination> {
+  create<Value>(destination: Destination, value: Value): Cell<Value, Location>
+  get<Value>(ref: Cell<Value, Location>): Value
+  set<Value>(ref: Cell<Value, Location>, value: Value): void
 }
 
-// Arrays contain child references; schemas own their interpretation and snapshots.
+// Arrays contain references to values created by the kernel.
 export interface ArrayKernel<Location, Destination> {
-  initialize<Value>(
-    destination: Destination,
-    items: readonly StoreRef<Value, Location>[],
-  ): StoreRef<Value[], Location>
-  get<Value>(ref: StoreRef<Value[], Location>): readonly StoreRef<Value, Location>[]
-  set<Value>(ref: StoreRef<Value[], Location>, items: readonly StoreRef<Value, Location>[]): void
+  create(destination: Destination, items: readonly StoreRef<Location>[]): ArrayRef<Location>
+  get(ref: ArrayRef<Location>): readonly StoreRef<Location>[]
+  set(ref: ArrayRef<Location>, items: readonly StoreRef<Location>[]): void
 }
 
-// Phantom type links this location to Value without storing a runtime value copy.
-// `storedValue` is a unique symbol to prevent accidental access and ensure type safety.
-//
-// Function property makes Value invariant under strictFunctionTypes, preventing
-// widening writable references (e.g. StoreRef<string> to
-// StoreRef<string | number>) and unsafe writes.
-export type StoreRef<Value, Location> = Location & {
+export interface MapKernel<Location, Destination> {
+  create(
+    destination: Destination,
+    fields: Readonly<Record<string, StoreRef<Location>>>,
+  ): MapRef<Location>
+  get(ref: MapRef<Location>): Readonly<Record<string, StoreRef<Location>>>
+  set(ref: MapRef<Location>, fields: Readonly<Record<string, StoreRef<Location>>>): void
+}
+
+// A reference describes both where a value lives and what kind of value it is.
+export interface Cell<Value, Location> {
+  readonly kind: "cell"
+  readonly location: Location
   readonly [storedValue]: (value: Value) => Value
 }
+
+export interface ArrayRef<Location> {
+  readonly kind: "array"
+  readonly location: Location
+}
+
+export interface MapRef<Location> {
+  readonly kind: "map"
+  readonly location: Location
+}
+
+export type StoreRef<Location> = Cell<any, Location> | ArrayRef<Location> | MapRef<Location>
 
 declare const storedValue: unique symbol
