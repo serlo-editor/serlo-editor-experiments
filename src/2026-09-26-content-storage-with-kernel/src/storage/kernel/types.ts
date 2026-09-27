@@ -1,25 +1,25 @@
-export interface StoreKernel<Cell, ArrayRef> {
-  readonly cell: CellKernel<Cell>
-  readonly array: ArrayKernel<Cell, ArrayRef | Cell>
+export interface StoreKernel<CellRef, ArrayRef> {
+  readonly cell: CellKernel<CellRef>
+  readonly array: ArrayKernel<ArrayRef, ArrayRef | CellRef>
 }
 
-export interface CellKernel<Cell> {
-  create<Value>(value: Value): TypedCell<Cell, Value>
-  get<Value>(ref: TypedCell<Cell, Value>): Value
-  update<Value>(ref: TypedCell<Cell, Value>, value: Update<Value>): void
+export interface CellKernel<CellRef> {
+  create<Value>(value: Value): Cell<CellRef, Value>
+  get<Value>(ref: Cell<CellRef, Value>): Value
+  update<Value>(ref: Cell<CellRef, Value>, update: Update<Value>): void
 }
 
-export type TypedCell<Cell, Value> = Cell & { readonly [cellValueType]: (value: Value) => Value }
+export type Cell<CellRef, Value> = CellRef & { readonly [cellValueType]: (value: Value) => Value }
 
 declare const cellValueType: unique symbol
 
 // Arrays contain references to values created by the kernel.
-export interface ArrayKernel<ArrayRef, ElementRef> {
-  create(items: readonly ElementRef[]): ArrayRef
-  get(ref: ArrayRef): readonly ElementRef[]
-  update(ref: ArrayRef, items: Update<readonly ElementRef[]>): void
+export interface ArrayKernel<ArrayRef, ItemRef> {
+  create(items: readonly ItemRef[]): ArrayRef
+  get(ref: ArrayRef): readonly ItemRef[]
+  update(ref: ArrayRef, update: Update<readonly ItemRef[]>): void
 }
 
 // utilities
 
-export type Update<Value> = Value | ((oldValue: Value) => Value)
+export type Update<Value> = Value | ((previousValue: Value) => Value)
