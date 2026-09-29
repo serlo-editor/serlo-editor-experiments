@@ -57,7 +57,7 @@ export class YjsStorage implements YjsStorageContract {
     return ref
   }
 
-  mutate<T>(transaction: (tx: Y.Transaction) => T): T {
-    return this.doc.transact(transaction)
+  transact<T>(callback: (tx: Y.Transaction) => T): T {
+    return this.doc.transact(callback)
   }
 }

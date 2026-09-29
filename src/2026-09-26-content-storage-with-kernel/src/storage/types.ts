@@ -1,15 +1,15 @@
 import { JSONValue } from "./utils/index.ts"
 
-export interface Storage<CellRef, ArrayRef, Transaction> {
-  readonly cell: ReferenceStore<CellRef, JSONValue, Transaction, CellEditor>
-  readonly array: ReferenceStore<
+export interface Storage<CellRef, ArrayRef, TransactionContext> {
+  readonly cell: ValueStore<CellRef, JSONValue, TransactionContext, CellEditor>
+  readonly array: ValueStore<
     ArrayRef,
     readonly (CellRef | ArrayRef)[],
-    Transaction,
+    TransactionContext,
     ArrayEditor<CellRef | ArrayRef>
   >
   attach<Ref extends CellRef | ArrayRef>(ref: Ref): Ref
-  mutate<T>(transaction: (tx: Transaction) => T): T
+  transact<T>(callback: (tx: TransactionContext) => T): T
 }
 
 export interface CellEditor {
@@ -20,8 +20,8 @@ export interface ArrayEditor<ItemRef> {
   insert(index: number, item: ItemRef): void
 }
 
-interface ReferenceStore<Ref, Value, Transaction, Editor> {
+interface ValueStore<Ref, Value, TransactionContext, Editor> {
   create(value: Value): Ref
   get(ref: Ref): Value
-  edit(ref: Ref, tx: Transaction): Editor
+  edit(ref: Ref, tx: TransactionContext): Editor
 }

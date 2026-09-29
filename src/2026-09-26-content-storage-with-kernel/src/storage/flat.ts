@@ -51,11 +51,11 @@ export class FlatStorage implements FlatStorageContract {
     return ref
   }
 
-  mutate<T>(transaction: (tx: TransactionToken) => T): T {
+  transact<T>(callback: (tx: TransactionToken) => T): T {
     const tx = createTransactionToken()
     this.activeTransactions.add(tx)
     try {
-      return transaction(tx)
+      return callback(tx)
     } finally {
       this.activeTransactions.delete(tx)
     }

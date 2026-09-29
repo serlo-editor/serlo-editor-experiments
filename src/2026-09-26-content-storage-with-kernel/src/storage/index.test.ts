@@ -17,11 +17,11 @@ test.describe("FlatStorage", () => {
     assert.notEqual(cellRef, arrayRef)
   })
 
-  test("edits cells inside mutation and returns mutation result", () => {
+  test("edits cells inside transaction and returns callback result", () => {
     const storage = new FlatStorage()
     const ref = storage.cell.create("Draft")
 
-    const result = storage.mutate((tx) => {
+    const result = storage.transact((tx) => {
       storage.cell.edit(ref, tx).set("Published")
       return storage.cell.get(ref)
     })
@@ -38,7 +38,7 @@ test.describe("FlatStorage", () => {
     const nestedArrayRef = storage.array.create([])
     const arrayRef = storage.array.create([secondRef, fourthRef])
 
-    storage.mutate((tx) => {
+    storage.transact((tx) => {
       const array = storage.array.edit(arrayRef, tx)
       array.insert(0, firstRef)
       array.insert(2, thirdRef)
@@ -70,24 +70,24 @@ test.describe("FlatStorage", () => {
       new Error("Invalid transaction."),
     )
 
-    storage.mutate((tx) => {
+    storage.transact((tx) => {
       escapedEdit = () => storage.cell.edit(cellRef, tx).set("changed")
     })
     assert.throws(escapedEdit, new Error("Invalid transaction."))
 
-    otherStorage.mutate((tx) => {
+    otherStorage.transact((tx) => {
       assert.throws(() => storage.cell.edit(cellRef, tx), new Error("Invalid transaction."))
     })
   })
 
-  test("cleans up transaction after mutation throws", () => {
+  test("cleans up transaction after callback throws", () => {
     const storage = new FlatStorage()
     const cellRef = storage.cell.create("value")
     let escapedEdit = () => {}
 
     assert.throws(
       () =>
-        storage.mutate((tx) => {
+        storage.transact((tx) => {
           escapedEdit = () => storage.cell.edit(cellRef, tx).set("changed")
           throw new Error("Mutation failed.")
         }),
