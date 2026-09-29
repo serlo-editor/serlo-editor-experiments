@@ -1,17 +1,17 @@
-import type { Storage } from "./types.ts"
+import type { NodeStore } from "./types.ts"
 import type { JSONValue } from "./utils/json-value.ts"
 import { applyUpdate } from "./utils/update.ts"
 import type { Update } from "./utils/update.ts"
 
-type FlatStorageContract = Storage<FlatStorageRef, FlatStorageRef, FlatStorageRef, TransactionToken>
+type FlatNodeStoreContract = NodeStore<FlatNodeRef, FlatNodeRef, FlatNodeRef, TransactionToken>
 
-export class FlatStorage implements FlatStorageContract {
-  private readonly refGenerator = new StorageRefGenerator()
+export class FlatNodeStore implements FlatNodeStoreContract {
+  private readonly refGenerator = new NodeRefGenerator()
   private readonly activeTransactions = new Set<TransactionToken>()
 
   private readonly cellTable = new ReferenceTable<JSONValue>(this.refGenerator)
-  private readonly arrayTable = new ReferenceTable<readonly FlatStorageRef[]>(this.refGenerator)
-  private readonly mapTable = new ReferenceTable<Readonly<Record<string, FlatStorageRef>>>(
+  private readonly arrayTable = new ReferenceTable<readonly FlatNodeRef[]>(this.refGenerator)
+  private readonly mapTable = new ReferenceTable<Readonly<Record<string, FlatNodeRef>>>(
     this.refGenerator,
   )
 
@@ -26,7 +26,7 @@ export class FlatStorage implements FlatStorageContract {
         set: (value) => this.cellTable.applyUpdate(ref, () => value),
       }
     },
-  } as FlatStorageContract["cell"]
+  } as FlatNodeStoreContract["cell"]
 
   readonly array = {
     create: (items) => this.arrayTable.create(items),
@@ -45,7 +45,7 @@ export class FlatStorage implements FlatStorageContract {
         },
       }
     },
-  } as FlatStorageContract["array"]
+  } as FlatNodeStoreContract["array"]
 
   readonly map = {
     create: (fields) => this.mapTable.create(fields),
@@ -63,9 +63,9 @@ export class FlatStorage implements FlatStorageContract {
         },
       }
     },
-  } as FlatStorageContract["map"]
+  } as FlatNodeStoreContract["map"]
 
-  attach<Ref extends FlatStorageRef>(ref: Ref): Ref {
+  attach<Ref extends FlatNodeRef>(ref: Ref): Ref {
     if (!this.cellTable.has(ref) && !this.arrayTable.has(ref) && !this.mapTable.has(ref)) {
       throw new Error(`Reference with key ${ref} does not exist.`)
     }
@@ -84,20 +84,20 @@ export class FlatStorage implements FlatStorageContract {
 }
 
 class ReferenceTable<Value extends JSONValue> {
-  private readonly table = new Map<FlatStorageRef, Value>()
-  private readonly refGenerator: StorageRefGenerator
+  private readonly table = new Map<FlatNodeRef, Value>()
+  private readonly refGenerator: NodeRefGenerator
 
-  constructor(refGenerator: StorageRefGenerator) {
+  constructor(refGenerator: NodeRefGenerator) {
     this.refGenerator = refGenerator
   }
 
-  create(value: Value): FlatStorageRef {
+  create(value: Value): FlatNodeRef {
     const ref = this.refGenerator.next()
     this.table.set(ref, value)
     return ref
   }
 
-  get(ref: FlatStorageRef): Value {
+  get(ref: FlatNodeRef): Value {
     const value = this.table.get(ref)
     if (value === undefined) {
       throw new Error(`Value with key ${ref} does not exist.`)
@@ -105,27 +105,27 @@ class ReferenceTable<Value extends JSONValue> {
     return value
   }
 
-  applyUpdate(ref: FlatStorageRef, updater: Update<Value>): void {
+  applyUpdate(ref: FlatNodeRef, updater: Update<Value>): void {
     const previousValue = this.get(ref)
     this.table.set(ref, applyUpdate(previousValue, updater))
   }
 
-  has(ref: FlatStorageRef): boolean {
+  has(ref: FlatNodeRef): boolean {
     return this.table.has(ref)
   }
 }
 
-class StorageRefGenerator {
+class NodeRefGenerator {
   private static counter = 0
 
-  next(): FlatStorageRef {
-    return `node:${StorageRefGenerator.counter++}` as FlatStorageRef
+  next(): FlatNodeRef {
+    return `node:${NodeRefGenerator.counter++}` as FlatNodeRef
   }
 }
 
-type FlatStorageRef = string & { readonly [flatStorageRefSymbol]: true }
+type FlatNodeRef = string & { readonly [flatNodeRefSymbol]: true }
 
-declare const flatStorageRefSymbol: unique symbol
+declare const flatNodeRefSymbol: unique symbol
 
 type TransactionToken = symbol & { readonly [transactionTokenSymbol]: true }
 

@@ -1,6 +1,6 @@
 import { JSONValue } from "./utils/index.ts"
 
-export interface Storage<CellRef, ArrayRef, MapRef, TransactionContext> {
+export interface NodeStore<CellRef, ArrayRef, MapRef, TransactionContext> {
   readonly cell: CellStore<CellRef, TransactionContext>
   readonly array: ArrayStore<NodeRef<CellRef, ArrayRef, MapRef>, ArrayRef, TransactionContext>
   readonly map: MapStore<NodeRef<CellRef, ArrayRef, MapRef>, MapRef, TransactionContext>

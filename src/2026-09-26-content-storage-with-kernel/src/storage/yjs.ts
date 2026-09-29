@@ -1,6 +1,6 @@
 import * as Y from "yjs"
 
-import type { Storage } from "./types.ts"
+import type { NodeStore } from "./types.ts"
 import type { JSONValue } from "./utils/json-value.ts"
 
 type YCell = Y.Map<JSONValue>
@@ -8,9 +8,9 @@ type YArray = Y.Array<YRef>
 type YMap = Y.Map<YRef>
 type YRef = YCell | YArray | YMap
 
-type YjsStorageContract = Storage<YCell, YArray, YMap, Y.Transaction>
+type YjsNodeStoreContract = NodeStore<YCell, YArray, YMap, Y.Transaction>
 
-export class YjsStorage implements YjsStorageContract {
+export class YjsNodeStore implements YjsNodeStoreContract {
   private readonly doc: Y.Doc
 
   constructor(doc: Y.Doc) {
@@ -33,7 +33,7 @@ export class YjsStorage implements YjsStorageContract {
         },
       }
     },
-  } as YjsStorageContract["cell"]
+  } as YjsNodeStoreContract["cell"]
 
   readonly array = {
     create: (items) => {
@@ -51,7 +51,7 @@ export class YjsStorage implements YjsStorageContract {
         },
       }
     },
-  } as YjsStorageContract["array"]
+  } as YjsNodeStoreContract["array"]
 
   readonly map = {
     create: (fields) => {
@@ -67,7 +67,7 @@ export class YjsStorage implements YjsStorageContract {
         },
       }
     },
-  } as YjsStorageContract["map"]
+  } as YjsNodeStoreContract["map"]
 
   attach<Ref extends YRef>(ref: Ref): Ref {
     this.doc.getMap("root").set("root", ref)
