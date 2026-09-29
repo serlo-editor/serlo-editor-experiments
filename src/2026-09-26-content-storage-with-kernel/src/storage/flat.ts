@@ -1,7 +1,5 @@
 import type { NodeStore } from "./types.ts"
 import type { JSONValue } from "./utils/json-value.ts"
-import { applyUpdate } from "./utils/update.ts"
-import type { Update } from "./utils/update.ts"
 
 type FlatNodeStoreContract = NodeStore<FlatNodeRef, FlatNodeRef, FlatNodeRef, TransactionToken>
 
@@ -107,13 +105,16 @@ class ReferenceTable<Value extends JSONValue> {
 
   applyUpdate(ref: FlatNodeRef, updater: Update<Value>): void {
     const previousValue = this.get(ref)
-    this.table.set(ref, applyUpdate(previousValue, updater))
+    const value = typeof updater === "function" ? updater(previousValue) : updater
+    this.table.set(ref, value)
   }
 
   has(ref: FlatNodeRef): boolean {
     return this.table.has(ref)
   }
 }
+
+export type Update<Value extends JSONValue> = Value | ((previousValue: Value) => Value)
 
 class NodeRefGenerator {
   private static counter = 0
