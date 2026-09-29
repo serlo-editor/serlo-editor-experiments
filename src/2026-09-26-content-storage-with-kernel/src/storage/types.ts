@@ -1,16 +1,26 @@
 import { JSONValue } from "./utils/index.ts"
 
 export interface Storage<CellRef, ArrayRef, TransactionContext> {
-  readonly cell: ValueStore<CellRef, JSONValue, TransactionContext, CellEditor>
-  readonly array: ValueStore<
-    ArrayRef,
-    readonly (CellRef | ArrayRef)[],
-    TransactionContext,
-    ArrayEditor<CellRef | ArrayRef>
-  >
-  attach<Ref extends CellRef | ArrayRef>(ref: Ref): Ref
-  transact<T>(callback: (tx: TransactionContext) => T): T
+  readonly cell: CellStore<CellRef, TransactionContext>
+  readonly array: ArrayStore<CellRef, ArrayRef, TransactionContext>
+
+  attach<Ref extends NodeRef<CellRef, ArrayRef>>(ref: Ref): Ref
+  transact<Result>(callback: (tx: TransactionContext) => Result): Result
 }
+
+interface CellStore<Ref, TransactionContext> {
+  create(value: JSONValue): Ref
+  get(ref: Ref): JSONValue
+  edit(ref: Ref, tx: TransactionContext): CellEditor
+}
+
+interface ArrayStore<CellRef, ArrayRef, TransactionContext> {
+  create(items: readonly NodeRef<CellRef, ArrayRef>[]): ArrayRef
+  get(ref: ArrayRef): readonly NodeRef<CellRef, ArrayRef>[]
+  edit(ref: ArrayRef, tx: TransactionContext): ArrayEditor<NodeRef<CellRef, ArrayRef>>
+}
+
+type NodeRef<CellRef, ArrayRef> = CellRef | ArrayRef
 
 export interface CellEditor {
   set(value: JSONValue): void
@@ -18,10 +28,4 @@ export interface CellEditor {
 
 export interface ArrayEditor<ItemRef> {
   insert(index: number, item: ItemRef): void
-}
-
-interface ValueStore<Ref, Value, TransactionContext, Editor> {
-  create(value: Value): Ref
-  get(ref: Ref): Value
-  edit(ref: Ref, tx: TransactionContext): Editor
 }

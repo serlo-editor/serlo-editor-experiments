@@ -6,10 +6,10 @@
   "scripts": {
     "test": "node --experimental-strip-types --test src/**/*.spec.ts src/**/*.test.ts"
   },
-  "devDependencies": {
-    "typescript": "^7.0.2"
-  },
   "dependencies": {
     "yjs": "^13.6.33"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2"
   }
 }
