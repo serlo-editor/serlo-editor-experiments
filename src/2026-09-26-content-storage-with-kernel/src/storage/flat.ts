@@ -3,7 +3,7 @@ import type { JSONValue } from "./utils/json-value.ts"
 import { applyUpdate } from "./utils/update.ts"
 import type { Update } from "./utils/update.ts"
 
-type FlatStorageContract = Storage<FlatStorageRef, FlatStorageRef, TransactionToken>
+type FlatStorageContract = Storage<FlatStorageRef, FlatStorageRef, FlatStorageRef, TransactionToken>
 
 export class FlatStorage implements FlatStorageContract {
   private readonly refGenerator = new StorageRefGenerator()
@@ -11,6 +11,9 @@ export class FlatStorage implements FlatStorageContract {
 
   private readonly cellTable = new ReferenceTable<JSONValue>(this.refGenerator)
   private readonly arrayTable = new ReferenceTable<readonly FlatStorageRef[]>(this.refGenerator)
+  private readonly mapTable = new ReferenceTable<Readonly<Record<string, FlatStorageRef>>>(
+    this.refGenerator,
+  )
 
   readonly cell = {
     create: (value) => this.cellTable.create(value),
@@ -44,8 +47,26 @@ export class FlatStorage implements FlatStorageContract {
     },
   } as FlatStorageContract["array"]
 
+  readonly map = {
+    create: (fields) => this.mapTable.create(fields),
+    get: (ref) => this.mapTable.get(ref),
+    edit: (ref, tx) => {
+      if (!this.activeTransactions.has(tx)) {
+        throw new Error("Invalid transaction.")
+      }
+      return {
+        set: (field, item) => {
+          this.mapTable.applyUpdate(ref, (previousFields) => ({
+            ...previousFields,
+            [field]: item,
+          }))
+        },
+      }
+    },
+  } as FlatStorageContract["map"]
+
   attach<Ref extends FlatStorageRef>(ref: Ref): Ref {
-    if (!this.cellTable.has(ref) && !this.arrayTable.has(ref)) {
+    if (!this.cellTable.has(ref) && !this.arrayTable.has(ref) && !this.mapTable.has(ref)) {
       throw new Error(`Reference with key ${ref} does not exist.`)
     }
     return ref

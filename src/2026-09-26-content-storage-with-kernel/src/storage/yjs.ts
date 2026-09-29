@@ -5,9 +5,10 @@ import type { JSONValue } from "./utils/json-value.ts"
 
 type YCell = Y.Map<JSONValue>
 type YArray = Y.Array<YRef>
-type YRef = YCell | YArray
+type YMap = Y.Map<YRef>
+type YRef = YCell | YArray | YMap
 
-type YjsStorageContract = Storage<YCell, YArray, Y.Transaction>
+type YjsStorageContract = Storage<YCell, YArray, YMap, Y.Transaction>
 
 export class YjsStorage implements YjsStorageContract {
   private readonly doc: Y.Doc
@@ -51,6 +52,22 @@ export class YjsStorage implements YjsStorageContract {
       }
     },
   } as YjsStorageContract["array"]
+
+  readonly map = {
+    create: (fields) => {
+      return new Y.Map<YRef>(Object.entries(fields))
+    },
+    get: (ref) => {
+      return Object.fromEntries(ref.entries())
+    },
+    edit: (ref) => {
+      return {
+        set: (field, item) => {
+          ref.set(field, item)
+        },
+      }
+    },
+  } as YjsStorageContract["map"]
 
   attach<Ref extends YRef>(ref: Ref): Ref {
     this.doc.getMap("root").set("root", ref)
