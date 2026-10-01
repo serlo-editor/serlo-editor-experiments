@@ -1,18 +1,33 @@
 import type { Branded } from "../utils.ts"
-import type { NodeStore } from "./types.ts"
+import type { NodeKind, NodeRef, NodeStore } from "./types.ts"
 import type { JSONValue } from "./utils/json-value.ts"
 
-type FlatNodeStoreContract = NodeStore<FlatNodeRef, FlatNodeRef, FlatNodeRef, TransactionToken>
+declare const flatCellRefSymbol: unique symbol
+declare const flatArrayRefSymbol: unique symbol
+declare const flatMapRefSymbol: unique symbol
+
+type FlatNodeRefs = {
+  cell: Branded<string, typeof flatCellRefSymbol>
+  array: Branded<string, typeof flatArrayRefSymbol>
+  map: Branded<string, typeof flatMapRefSymbol>
+}
+
+type FlatNodeRef<Kind extends NodeKind = NodeKind> = FlatNodeRefs[Kind]
+
+type FlatNodeStoreContract = NodeStore<FlatNodeRefs, TransactionToken>
 
 export class FlatNodeStore implements FlatNodeStoreContract {
   private readonly refGenerator = new NodeRefGenerator()
   private readonly activeTransactions = new Set<TransactionToken>()
 
-  private readonly cellTable = new ReferenceTable<JSONValue>(this.refGenerator)
-  private readonly arrayTable = new ReferenceTable<readonly FlatNodeRef[]>(this.refGenerator)
-  private readonly mapTable = new ReferenceTable<Readonly<Record<string, FlatNodeRef>>>(
+  private readonly cellTable = new ReferenceTable<"cell", JSONValue>(this.refGenerator)
+  private readonly arrayTable = new ReferenceTable<"array", readonly NodeRef<FlatNodeRefs>[]>(
     this.refGenerator,
   )
+  private readonly mapTable = new ReferenceTable<
+    "map",
+    Readonly<Record<string, NodeRef<FlatNodeRefs>>>
+  >(this.refGenerator)
 
   readonly cell = {
     create: (value) => this.cellTable.create(value),
@@ -64,7 +79,7 @@ export class FlatNodeStore implements FlatNodeStoreContract {
     },
   } as FlatNodeStoreContract["map"]
 
-  attach<Ref extends FlatNodeRef>(ref: Ref): Ref {
+  attach<Ref extends NodeRef<FlatNodeRefs>>(ref: Ref): Ref {
     if (!this.cellTable.has(ref) && !this.arrayTable.has(ref) && !this.mapTable.has(ref)) {
       throw new Error(`Reference with key ${ref} does not exist.`)
     }
@@ -82,21 +97,21 @@ export class FlatNodeStore implements FlatNodeStoreContract {
   }
 }
 
-class ReferenceTable<Value extends JSONValue> {
-  private readonly table = new Map<FlatNodeRef, Value>()
+class ReferenceTable<Kind extends NodeKind, Value extends JSONValue> {
+  private readonly table = new Map<FlatNodeRef<Kind>, Value>()
   private readonly refGenerator: NodeRefGenerator
 
   constructor(refGenerator: NodeRefGenerator) {
     this.refGenerator = refGenerator
   }
 
-  create(value: Value): FlatNodeRef {
-    const ref = this.refGenerator.next()
+  create(value: Value): FlatNodeRef<Kind> {
+    const ref = this.refGenerator.next<Kind>()
     this.table.set(ref, value)
     return ref
   }
 
-  get(ref: FlatNodeRef): Value {
+  get(ref: FlatNodeRef<Kind>): Value {
     const value = this.table.get(ref)
     if (value === undefined) {
       throw new Error(`Value with key ${ref} does not exist.`)
@@ -104,14 +119,14 @@ class ReferenceTable<Value extends JSONValue> {
     return value
   }
 
-  applyUpdate(ref: FlatNodeRef, updater: Update<Value>): void {
+  applyUpdate(ref: FlatNodeRef<Kind>, updater: Update<Value>): void {
     const previousValue = this.get(ref)
     const value = typeof updater === "function" ? updater(previousValue) : updater
     this.table.set(ref, value)
   }
 
   has(ref: FlatNodeRef): boolean {
-    return this.table.has(ref)
+    return this.table.has(ref as FlatNodeRef<Kind>)
   }
 }
 
@@ -120,14 +135,10 @@ export type Update<Value extends JSONValue> = Value | ((previousValue: Value) =>
 class NodeRefGenerator {
   private static counter = 0
 
-  next(): FlatNodeRef {
-    return `node:${NodeRefGenerator.counter++}` as FlatNodeRef
+  next<Kind extends NodeKind>(): FlatNodeRef<Kind> {
+    return `node:${NodeRefGenerator.counter++}` as FlatNodeRef<Kind>
   }
 }
-
-type FlatNodeRef = Branded<string, typeof flatNodeRefSymbol>
-
-declare const flatNodeRefSymbol: unique symbol
 
 type TransactionToken = Branded<symbol, typeof transactionTokenSymbol>
 

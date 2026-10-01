@@ -5,7 +5,7 @@ import type { TestContext } from "node:test"
 import * as Y from "yjs"
 
 import { FlatNodeStore } from "./flat.ts"
-import type { NodeStore } from "./types.ts"
+import type { NodeRefsByKind, NodeStore } from "./types.ts"
 import type { JSONValue } from "./utils/json-value.ts"
 import { YjsNodeStore } from "./yjs.ts"
 
@@ -26,10 +26,8 @@ function describeEach<T>(
   }
 }
 
-function registerNodeStoreTests<CellRef, ArrayRef, MapRef, TransactionContext>(
-  createNodeStore: (
-    context: TestContext,
-  ) => NodeStore<CellRef, ArrayRef, MapRef, TransactionContext>,
+function registerNodeStoreTests<Refs extends NodeRefsByKind, TransactionContext>(
+  createNodeStore: (context: TestContext) => NodeStore<Refs, TransactionContext>,
 ): void {
   test("reads every JSON value kind without losing empty or falsy values", (context) => {
     const nodeStore = createNodeStore(context)

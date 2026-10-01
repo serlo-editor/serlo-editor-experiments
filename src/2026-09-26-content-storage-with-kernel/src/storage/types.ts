@@ -1,11 +1,21 @@
-import { JSONValue } from "./utils/index.ts"
+import type { JSONValue } from "./utils/json-value.ts"
 
-export interface NodeStore<CellRef, ArrayRef, MapRef, TransactionContext> {
-  readonly cell: CellStore<CellRef, TransactionContext>
-  readonly array: ArrayStore<NodeRef<CellRef, ArrayRef, MapRef>, ArrayRef, TransactionContext>
-  readonly map: MapStore<NodeRef<CellRef, ArrayRef, MapRef>, MapRef, TransactionContext>
+export type NodeKind = "cell" | "array" | "map"
 
-  attach<Ref extends NodeRef<CellRef, ArrayRef, MapRef>>(ref: Ref): Ref
+export interface NodeRefsByKind {
+  cell: unknown
+  array: unknown
+  map: unknown
+}
+
+export type NodeRef<Refs extends NodeRefsByKind, Kind extends NodeKind = NodeKind> = Refs[Kind]
+
+export interface NodeStore<Refs extends NodeRefsByKind, TransactionContext> {
+  readonly cell: CellStore<NodeRef<Refs, "cell">, TransactionContext>
+  readonly array: ArrayStore<NodeRef<Refs>, NodeRef<Refs, "array">, TransactionContext>
+  readonly map: MapStore<NodeRef<Refs>, NodeRef<Refs, "map">, TransactionContext>
+
+  attach<Ref extends NodeRef<Refs>>(ref: Ref): Ref
   transact<Result>(callback: (tx: TransactionContext) => Result): Result
 }
 
@@ -26,8 +36,6 @@ interface MapStore<ItemRef, MapRef, TransactionContext> {
   get(ref: MapRef): Readonly<Record<string, ItemRef>>
   edit(ref: MapRef, tx: TransactionContext): MapEditor<ItemRef>
 }
-
-type NodeRef<CellRef, ArrayRef, MapRef> = CellRef | ArrayRef | MapRef
 
 export interface CellEditor {
   set(value: JSONValue): void
