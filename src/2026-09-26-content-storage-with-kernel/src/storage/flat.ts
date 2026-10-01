@@ -1,8 +1,8 @@
 import type { Branded, JSONValue } from "../utils/index.ts"
-import type { NodeKind, NodeRef, NodeStore } from "./types.ts"
+import type { NodeKind, NodeRef, NodeStore, Ref } from "./types.ts"
 
 type FlatNodeRefs = {
-  [Kind in NodeKind]: Branded<string, Kind>
+  [Kind in NodeKind]: Ref & Branded<string, Kind>
 }
 
 type FlatNodeRef<Kind extends NodeKind = NodeKind> = NodeRef<FlatNodeRefs, Kind>

@@ -1,15 +1,15 @@
 import * as Y from "yjs"
 
 import type { JSONValue } from "../utils/index.ts"
-import type { NodeRef, NodeStore } from "./types.ts"
+import type { NodeRef, NodeStore, Ref } from "./types.ts"
 
 type YArray = Y.Array<YjsNodeRef>
 type YMap = Y.Map<YjsNodeRef>
 
 type YjsNodeRefs = {
-  cell: Y.Map<JSONValue>
-  array: YArray
-  map: YMap
+  cell: Y.Map<JSONValue> & Ref
+  array: YArray & Ref
+  map: YMap & Ref
 }
 type YjsNodeRef = NodeRef<YjsNodeRefs>
 
@@ -26,7 +26,7 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     create: (value) => {
       const cell = new Y.Map<JSONValue>()
       cell.set("value", value)
-      return cell
+      return cell as YjsNodeRefs["cell"]
     },
     get: (ref) => {
       return ref.get("value")
@@ -44,7 +44,7 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     create: (items) => {
       const array = new Y.Array<YjsNodeRef>()
       array.push(items as YjsNodeRef[])
-      return array
+      return array as YjsNodeRefs["array"]
     },
     get: (ref) => {
       return ref.toArray()
@@ -60,7 +60,7 @@ export class YjsNodeStore implements YjsNodeStoreContract {
 
   readonly map = {
     create: (fields) => {
-      return new Y.Map<YjsNodeRef>(Object.entries(fields))
+      return new Y.Map<YjsNodeRef>(Object.entries(fields)) as YjsNodeRefs["map"]
     },
     get: (ref) => {
       return Object.fromEntries(ref.entries())

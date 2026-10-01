@@ -1,9 +1,11 @@
-import type { JSONValue } from "../utils/index.ts"
+import type { Branded, JSONValue } from "../utils/index.ts"
+
+export type Ref = Branded<unknown, "Ref">
 
 export interface NodeRefsByKind {
-  cell: unknown
-  array: unknown
-  map: unknown
+  cell: Ref
+  array: Ref
+  map: Ref
 }
 
 export type NodeKind = keyof NodeRefsByKind
