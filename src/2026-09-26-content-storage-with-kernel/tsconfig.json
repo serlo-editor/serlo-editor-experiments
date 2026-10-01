@@ -1,11 +1,13 @@
 {
   "compilerOptions": {
+    "allowImportingTsExtensions": true,
     "module": "nodenext",
     "target": "esnext",
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "types": ["node"]
   },
-  "include": ["index.ts"]
+  "include": ["src/**/*.ts"]
 }

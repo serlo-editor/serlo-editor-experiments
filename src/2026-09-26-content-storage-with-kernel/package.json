@@ -4,12 +4,21 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "check": "pnpm run check:tsc && pnpm run check:format && pnpm run check:lint",
+    "check:format": "oxfmt --check",
+    "check:lint": "oxlint",
+    "check:tsc": "tsc --noEmit",
+    "fix": "pnpm run fix:format && pnpm run fix:lint && pnpm run check:tsc",
+    "fix:format": "oxfmt",
+    "fix:lint": "oxlint --fix",
     "test": "node --experimental-strip-types --test src/**/*.spec.ts src/**/*.test.ts"
   },
   "dependencies": {
     "yjs": "^13.6.33"
   },
   "devDependencies": {
+    "oxfmt": "^0.63.0",
+    "oxlint": "^1.78.0",
     "typescript": "^7.0.2"
   }
 }
