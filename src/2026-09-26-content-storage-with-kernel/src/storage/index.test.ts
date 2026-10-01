@@ -4,9 +4,9 @@ import type { TestContext } from "node:test"
 
 import * as Y from "yjs"
 
+import type { JSONValue } from "../utils/json-value.ts"
 import { FlatNodeStore } from "./flat.ts"
 import type { NodeRefsByKind, NodeStore } from "./types.ts"
-import type { JSONValue } from "./utils/json-value.ts"
 import { YjsNodeStore } from "./yjs.ts"
 
 const nodeStoreImplementations = [
