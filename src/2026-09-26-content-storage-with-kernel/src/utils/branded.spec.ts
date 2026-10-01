@@ -2,11 +2,8 @@ import test from "node:test"
 
 import type { Branded } from "./branded.ts"
 
-declare const firstBrand: unique symbol
-declare const secondBrand: unique symbol
-
-type FirstId = Branded<string, typeof firstBrand>
-type SecondId = Branded<string, typeof secondBrand>
+type FirstId = Branded<string, "FirstId">
+type SecondId = Branded<string, "SecondId">
 
 test("branded values retain their underlying type", () => {
   const firstId = "first" as FirstId
