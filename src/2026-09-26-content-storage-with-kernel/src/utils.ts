@@ -1,1 +1,1 @@
-export type Branded<T, B extends symbol> = T & { readonly [K in B]: true }
+export type Branded<T, B extends PropertyKey> = T & { readonly [K in B]: true }

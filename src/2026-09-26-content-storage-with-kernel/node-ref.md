@@ -65,13 +65,13 @@ Define backend-owned references:
 
 ```ts
 type FlatNodeRefs = {
-  cell: Branded<string, typeof flatCellRefSymbol>
-  array: Branded<string, typeof flatArrayRefSymbol>
-  map: Branded<string, typeof flatMapRefSymbol>
+  cell: Branded<string, "cell">
+  array: Branded<string, "array">
+  map: Branded<string, "map">
 }
 ```
 
-Use existing `Branded<>` from `src/utils.ts`, with a unique symbol per node kind. Update `ReferenceTable`, `NodeRefGenerator`, `attach`, array item types, and map field types to use the new references.
+Use existing `Branded<>` from `src/utils.ts`, with a string key per node kind. Update `ReferenceTable`, `NodeRefGenerator`, `attach`, array item types, and map field types to use the new references.
 
 Runtime keys may remain unchanged (`node:0`, `node:1`, etc.). Do not add persisted kind data to Flat keys. Reference tables must continue rejecting references that do not exist.
 

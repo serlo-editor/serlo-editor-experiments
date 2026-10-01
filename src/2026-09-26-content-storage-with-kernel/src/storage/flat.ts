@@ -2,14 +2,10 @@ import type { Branded } from "../utils.ts"
 import type { NodeKind, NodeRef, NodeStore } from "./types.ts"
 import type { JSONValue } from "./utils/json-value.ts"
 
-declare const flatCellRefSymbol: unique symbol
-declare const flatArrayRefSymbol: unique symbol
-declare const flatMapRefSymbol: unique symbol
-
 type FlatNodeRefs = {
-  cell: Branded<string, typeof flatCellRefSymbol>
-  array: Branded<string, typeof flatArrayRefSymbol>
-  map: Branded<string, typeof flatMapRefSymbol>
+  cell: Branded<string, "cell">
+  array: Branded<string, "array">
+  map: Branded<string, "map">
 }
 
 type FlatNodeRef<Kind extends NodeKind = NodeKind> = FlatNodeRefs[Kind]
@@ -140,9 +136,7 @@ class NodeRefGenerator {
   }
 }
 
-type TransactionToken = Branded<symbol, typeof transactionTokenSymbol>
-
-declare const transactionTokenSymbol: unique symbol
+type TransactionToken = Branded<symbol, "TransactionToken">
 
 function createTransactionToken(): TransactionToken {
   return Symbol("transactionTransaction") as TransactionToken
