@@ -51,8 +51,16 @@ Change `Storage` from four independent reference parameters to a reference map p
 ```ts
 export interface Storage<Refs extends StorageRefs, TransactionContext> {
   readonly cell: CellStore<Refs["cell"], TransactionContext>
-  readonly array: ArrayStore<Refs["cell"] | Refs["array"] | Refs["map"], Refs["array"], TransactionContext>
-  readonly map: MapStore<Refs["cell"] | Refs["array"] | Refs["map"], Refs["map"], TransactionContext>
+  readonly array: ArrayStore<
+    Refs["cell"] | Refs["array"] | Refs["map"],
+    Refs["array"],
+    TransactionContext
+  >
+  readonly map: MapStore<
+    Refs["cell"] | Refs["array"] | Refs["map"],
+    Refs["map"],
+    TransactionContext
+  >
 
   attach<Ref extends NodeRef<Refs>>(ref: Ref): Ref
   transact<Result>(callback: (tx: TransactionContext) => Result): Result
@@ -153,13 +161,7 @@ Existing tests must continue to verify:
 `src/storage/index.ts` should export the new public type utilities if consumers need them:
 
 ```ts
-export type {
-  NodeRef,
-  RefOf,
-  Storage,
-  StorageKind,
-  StorageRefs,
-} from "./types.ts"
+export type { NodeRef, RefOf, Storage, StorageKind, StorageRefs } from "./types.ts"
 ```
 
 Do not export backend implementation reference types unless current API requires them.
@@ -192,10 +194,7 @@ interface Schema<Snapshot, Value, Kind extends StorageKind> {
     snapshot: Snapshot,
   ): RefOf<Refs, Kind>
 
-  bind<Refs extends StorageRefs, Tx>(
-    storage: Storage<Refs, Tx>,
-    ref: RefOf<Refs, Kind>,
-  ): Value
+  bind<Refs extends StorageRefs, Tx>(storage: Storage<Refs, Tx>, ref: RefOf<Refs, Kind>): Value
 
   snapshot<Refs extends StorageRefs, Tx>(
     storage: Storage<Refs, Tx>,
