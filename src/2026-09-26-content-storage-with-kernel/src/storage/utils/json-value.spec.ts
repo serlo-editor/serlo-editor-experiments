@@ -1,6 +1,6 @@
 import test from "node:test"
 
-import type { JSONValue } from "../../utils/json-value.ts"
+import type { JSONValue } from "../../utils/index.ts"
 
 test("scalars are of type `JSONValue`", () => {
   const values = [null, false, 42, "text"] satisfies JSONValue[]

@@ -1,4 +1,4 @@
-import type { JSONValue } from "../utils/json-value.ts"
+import type { JSONValue } from "../utils/index.ts"
 
 export type NodeKind = "cell" | "array" | "map"
 

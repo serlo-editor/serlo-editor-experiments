@@ -1,5 +1,4 @@
-import type { Branded } from "../utils/index.ts"
-import type { JSONValue } from "../utils/json-value.ts"
+import type { Branded, JSONValue } from "../utils/index.ts"
 import type { NodeKind, NodeStore } from "./types.ts"
 
 type FlatNodeRefs = {

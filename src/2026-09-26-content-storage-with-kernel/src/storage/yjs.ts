@@ -1,6 +1,6 @@
 import * as Y from "yjs"
 
-import type { JSONValue } from "../utils/json-value.ts"
+import type { JSONValue } from "../utils/index.ts"
 import type { NodeRef, NodeStore } from "./types.ts"
 
 type YCell = Y.Map<JSONValue>
