@@ -1,4 +1,4 @@
-import type { Branded } from "../utils.ts"
+import type { Branded } from "../utils/index.ts"
 import type { NodeKind, NodeStore } from "./types.ts"
 import type { JSONValue } from "./utils/json-value.ts"
 

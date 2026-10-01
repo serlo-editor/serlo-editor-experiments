@@ -1,6 +1,6 @@
 import test from "node:test"
 
-import type { Branded } from "./utils.ts"
+import type { Branded } from "./branded.ts"
 
 declare const firstBrand: unique symbol
 declare const secondBrand: unique symbol
