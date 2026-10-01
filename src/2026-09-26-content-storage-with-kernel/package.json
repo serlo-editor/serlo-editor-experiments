@@ -8,7 +8,7 @@
     "check:format": "oxfmt --check",
     "check:lint": "oxlint",
     "check:tsc": "tsc --noEmit",
-    "fix": "pnpm run fix:format && pnpm run fix:lint && pnpm run check:tsc",
+    "fix": "pnpm run fix:format && pnpm run fix:lint && pnpm run check:tsc && pnpm run test",
     "fix:format": "oxfmt",
     "fix:lint": "oxlint --fix",
     "test": "node --experimental-strip-types --test src/**/*.spec.ts src/**/*.test.ts"
