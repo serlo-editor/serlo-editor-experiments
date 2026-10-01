@@ -1,5 +1,5 @@
 import type { Branded } from "../utils.ts"
-import type { NodeKind, NodeRef, NodeStore } from "./types.ts"
+import type { NodeKind, NodeStore } from "./types.ts"
 import type { JSONValue } from "./utils/json-value.ts"
 
 type FlatNodeRefs = {
@@ -17,13 +17,12 @@ export class FlatNodeStore implements FlatNodeStoreContract {
   private readonly activeTransactions = new Set<TransactionToken>()
 
   private readonly cellTable = new ReferenceTable<"cell", JSONValue>(this.refGenerator)
-  private readonly arrayTable = new ReferenceTable<"array", readonly NodeRef<FlatNodeRefs>[]>(
+  private readonly arrayTable = new ReferenceTable<"array", readonly FlatNodeRef[]>(
     this.refGenerator,
   )
-  private readonly mapTable = new ReferenceTable<
-    "map",
-    Readonly<Record<string, NodeRef<FlatNodeRefs>>>
-  >(this.refGenerator)
+  private readonly mapTable = new ReferenceTable<"map", Readonly<Record<string, FlatNodeRef>>>(
+    this.refGenerator,
+  )
 
   readonly cell = {
     create: (value) => this.cellTable.create(value),
@@ -75,7 +74,7 @@ export class FlatNodeStore implements FlatNodeStoreContract {
     },
   } as FlatNodeStoreContract["map"]
 
-  attach<Ref extends NodeRef<FlatNodeRefs>>(ref: Ref): Ref {
+  attach<Ref extends FlatNodeRef>(ref: Ref): Ref {
     if (!this.cellTable.has(ref) && !this.arrayTable.has(ref) && !this.mapTable.has(ref)) {
       throw new Error(`Reference with key ${ref} does not exist.`)
     }
