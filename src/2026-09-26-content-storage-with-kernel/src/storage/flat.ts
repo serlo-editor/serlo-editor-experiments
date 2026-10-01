@@ -1,13 +1,11 @@
 import type { Branded, JSONValue } from "../utils/index.ts"
-import type { NodeKind, NodeStore } from "./types.ts"
+import type { NodeKind, NodeRef, NodeStore } from "./types.ts"
 
 type FlatNodeRefs = {
-  cell: Branded<string, "cell">
-  array: Branded<string, "array">
-  map: Branded<string, "map">
+  [Kind in NodeKind]: Branded<string, Kind>
 }
 
-type FlatNodeRef<Kind extends NodeKind = NodeKind> = FlatNodeRefs[Kind]
+type FlatNodeRef<Kind extends NodeKind = NodeKind> = NodeRef<FlatNodeRefs, Kind>
 
 type FlatNodeStoreContract = NodeStore<FlatNodeRefs, TransactionToken>
 

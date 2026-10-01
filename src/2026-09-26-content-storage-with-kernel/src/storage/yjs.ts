@@ -3,12 +3,11 @@ import * as Y from "yjs"
 import type { JSONValue } from "../utils/index.ts"
 import type { NodeRef, NodeStore } from "./types.ts"
 
-type YCell = Y.Map<JSONValue>
 type YArray = Y.Array<YjsNodeRef>
 type YMap = Y.Map<YjsNodeRef>
 
 type YjsNodeRefs = {
-  cell: YCell
+  cell: Y.Map<JSONValue>
   array: YArray
   map: YMap
 }

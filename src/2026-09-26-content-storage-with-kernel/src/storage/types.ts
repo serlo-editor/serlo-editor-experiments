@@ -1,12 +1,12 @@
 import type { JSONValue } from "../utils/index.ts"
 
-export type NodeKind = "cell" | "array" | "map"
-
 export interface NodeRefsByKind {
   cell: unknown
   array: unknown
   map: unknown
 }
+
+export type NodeKind = keyof NodeRefsByKind
 
 export type NodeRef<Refs extends NodeRefsByKind, Kind extends NodeKind = NodeKind> = Refs[Kind]
 
