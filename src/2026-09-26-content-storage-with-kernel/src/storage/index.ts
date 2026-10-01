@@ -1,3 +1,2 @@
-export { FlatNodeStore } from "./flat.ts"
-
-export type { NodeKind, NodeRef, NodeRefsByKind, NodeStore } from "./types.ts"
+export {FlatNodeStore} from "./flat.ts"
+export {YjsNodeStore} from "./yjs.ts"
