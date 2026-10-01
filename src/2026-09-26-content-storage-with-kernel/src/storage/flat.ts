@@ -1,3 +1,4 @@
+import type { Branded } from "../utils.ts"
 import type { NodeStore } from "./types.ts"
 import type { JSONValue } from "./utils/json-value.ts"
 
@@ -124,11 +125,11 @@ class NodeRefGenerator {
   }
 }
 
-type FlatNodeRef = string & { readonly [flatNodeRefSymbol]: true }
+type FlatNodeRef = Branded<string, typeof flatNodeRefSymbol>
 
 declare const flatNodeRefSymbol: unique symbol
 
-type TransactionToken = symbol & { readonly [transactionTokenSymbol]: true }
+type TransactionToken = Branded<symbol, typeof transactionTokenSymbol>
 
 declare const transactionTokenSymbol: unique symbol
 
