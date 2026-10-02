@@ -11,7 +11,7 @@ export function defineSchema<
 ): Schema<Snapshot, BoundHandle, Kind> {
   return {
     create(store, snapshot) {
-      return interpreter.create(createContext(store), snapshot)
+      return interpreter.create({ store }, snapshot)
     },
 
     bind(store, ref) {
@@ -30,21 +30,9 @@ export interface SchemaInterpreter<
   bind<Refs extends NodeRefs, Tx>(ctx: BindContext<Refs, Tx>, ref: Refs[Kind]): BoundHandle
 }
 
-function createContext<Refs extends NodeRefs, Tx>(
-  store: NodeStore<Refs, Tx>,
-): CreateContext<Refs, Tx> {
-  return {
-    store,
-
-    createChild(schema, snapshot) {
-      return schema.create(store, snapshot)
-    },
-  }
-}
-
 function bindContext<Refs extends NodeRefs, Tx>(store: NodeStore<Refs, Tx>): BindContext<Refs, Tx> {
   return {
-    ...createContext(store),
+    store,
 
     bindChild<
       Snapshot extends JSONValue,
@@ -59,15 +47,6 @@ function bindContext<Refs extends NodeRefs, Tx>(store: NodeStore<Refs, Tx>): Bin
 
 export interface CreateContext<Refs extends NodeRefs, Tx> {
   readonly store: NodeStore<Refs, Tx>
-
-  createChild<
-    Snapshot extends JSONValue,
-    BoundHandle extends Handle<Snapshot>,
-    Kind extends NodeKind,
-  >(
-    schema: Schema<Snapshot, BoundHandle, Kind>,
-    snapshot: Snapshot,
-  ): Refs[Kind]
 }
 
 export interface BindContext<Refs extends NodeRefs, Tx> extends CreateContext<Refs, Tx> {

@@ -19,7 +19,7 @@ export function array<
 ): Schema<readonly Item[], ArrayHandle<Item, Child>, "array"> {
   return defineSchema<readonly Item[], ArrayHandle<Item, Child>, "array">({
     create(ctx, snapshots) {
-      const refs = snapshots.map((snapshot) => ctx.createChild(childSchema, snapshot))
+      const refs = snapshots.map((snapshot) => childSchema.create(ctx.store, snapshot))
       return ctx.store.array.create(refs)
     },
 
@@ -34,7 +34,7 @@ export function array<
         },
 
         insert(index, snapshot) {
-          const childRef = ctx.createChild(childSchema, snapshot)
+          const childRef = childSchema.create(ctx.store, snapshot)
           ctx.store.transact((tx) => {
             ctx.store.array.edit(ref, tx).insert(index, childRef)
           })
