@@ -1,16 +1,16 @@
 import type { NodeKind, NodeRefs, NodeStore } from "../storage/types.ts"
 import type { JSONValue } from "../utils/index.ts"
-import type { Schema, SnapshotHandle } from "./types.ts"
+import type { Handle, Schema } from "./types.ts"
 
 export interface CreateContext<Refs extends NodeRefs, Tx> {
   readonly store: NodeStore<Refs, Tx>
 
   createChild<
     Snapshot extends JSONValue,
-    Handle extends SnapshotHandle<Snapshot>,
+    BoundHandle extends Handle<Snapshot>,
     Kind extends NodeKind,
   >(
-    schema: Schema<Snapshot, Handle, Kind>,
+    schema: Schema<Snapshot, BoundHandle, Kind>,
     snapshot: Snapshot,
   ): Refs[Kind]
 }
@@ -18,32 +18,34 @@ export interface CreateContext<Refs extends NodeRefs, Tx> {
 export interface BindContext<Refs extends NodeRefs, Tx> extends CreateContext<Refs, Tx> {
   bindChild<
     Snapshot extends JSONValue,
-    Handle extends SnapshotHandle<Snapshot>,
+    BoundHandle extends Handle<Snapshot>,
     Kind extends NodeKind,
   >(
-    schema: Schema<Snapshot, Handle, Kind>,
+    schema: Schema<Snapshot, BoundHandle, Kind>,
     ref: Refs[NodeKind],
-  ): Handle
+  ): BoundHandle
 }
 
 export interface SchemaInterpreter<
   Snapshot extends JSONValue,
-  Handle extends SnapshotHandle<Snapshot>,
+  BoundHandle extends Handle<Snapshot>,
   Kind extends NodeKind,
 > {
   create<Refs extends NodeRefs, Tx>(ctx: CreateContext<Refs, Tx>, snapshot: Snapshot): Refs[Kind]
 
-  bind<Refs extends NodeRefs, Tx>(ctx: BindContext<Refs, Tx>, ref: Refs[Kind]): Handle
+  bind<Refs extends NodeRefs, Tx>(ctx: BindContext<Refs, Tx>, ref: Refs[Kind]): BoundHandle
 }
 
 const interpreters = new WeakMap<object, unknown>()
 
 export function defineSchema<
   Snapshot extends JSONValue,
-  Handle extends SnapshotHandle<Snapshot>,
+  BoundHandle extends Handle<Snapshot>,
   Kind extends NodeKind,
->(interpreter: SchemaInterpreter<Snapshot, Handle, Kind>): Schema<Snapshot, Handle, Kind> {
-  const schema: Schema<Snapshot, Handle, Kind> = {
+>(
+  interpreter: SchemaInterpreter<Snapshot, BoundHandle, Kind>,
+): Schema<Snapshot, BoundHandle, Kind> {
+  const schema: Schema<Snapshot, BoundHandle, Kind> = {
     create(store, snapshot) {
       return interpreter.create(createContext(store), snapshot)
     },
@@ -75,9 +77,9 @@ function bindContext<Refs extends NodeRefs, Tx>(store: NodeStore<Refs, Tx>): Bin
 
     bindChild<
       Snapshot extends JSONValue,
-      Handle extends SnapshotHandle<Snapshot>,
+      BoundHandle extends Handle<Snapshot>,
       Kind extends NodeKind,
-    >(schema: Schema<Snapshot, Handle, Kind>, ref: Refs[NodeKind]) {
+    >(schema: Schema<Snapshot, BoundHandle, Kind>, ref: Refs[NodeKind]) {
       // Storage erases child node kinds; trusted composition restores them.
       return lookup(schema).bind(bindContext(store), ref as Refs[Kind])
     },
@@ -86,9 +88,9 @@ function bindContext<Refs extends NodeRefs, Tx>(store: NodeStore<Refs, Tx>): Bin
 
 function lookup<
   Snapshot extends JSONValue,
-  Handle extends SnapshotHandle<Snapshot>,
+  BoundHandle extends Handle<Snapshot>,
   Kind extends NodeKind,
->(schema: Schema<Snapshot, Handle, Kind>): SchemaInterpreter<Snapshot, Handle, Kind> {
+>(schema: Schema<Snapshot, BoundHandle, Kind>): SchemaInterpreter<Snapshot, BoundHandle, Kind> {
   const interpreter = interpreters.get(schema)
 
   if (!interpreter) {
@@ -96,5 +98,5 @@ function lookup<
   }
 
   // Factory registers each interpreter under its matching schema object.
-  return interpreter as SchemaInterpreter<Snapshot, Handle, Kind>
+  return interpreter as SchemaInterpreter<Snapshot, BoundHandle, Kind>
 }

@@ -1,19 +1,18 @@
 import type { NodeKind } from "../storage/types.ts"
 import type { JSONValue } from "../utils/index.ts"
 import { defineSchema } from "./define-schema.ts"
-import type { Schema, SnapshotHandle } from "./types.ts"
+import type { Handle, Schema } from "./types.ts"
 
-export interface ArrayHandle<
-  Item extends JSONValue,
-  Child extends SnapshotHandle<Item>,
-> extends SnapshotHandle<readonly Item[]> {
+export interface ArrayHandle<Item extends JSONValue, Child extends Handle<Item>> extends Handle<
+  readonly Item[]
+> {
   at(index: number): Child
   insert(index: number, value: Item): void
 }
 
 export function array<
   Item extends JSONValue,
-  Child extends SnapshotHandle<Item>,
+  Child extends Handle<Item>,
   ChildKind extends NodeKind,
 >(
   childSchema: Schema<Item, Child, ChildKind>,

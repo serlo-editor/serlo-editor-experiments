@@ -1,16 +1,19 @@
 import type { NodeKind, NodeRefs, NodeStore, RootRef } from "../storage/types.ts"
 import type { JSONValue } from "../utils/index.ts"
 
-export interface SnapshotHandle<Snapshot extends JSONValue> {
+export interface Handle<Snapshot extends JSONValue> {
   snapshot(): Snapshot
 }
 
 export interface Schema<
   Snapshot extends JSONValue,
-  Handle extends SnapshotHandle<Snapshot>,
+  BoundHandle extends Handle<Snapshot>,
   Kind extends NodeKind,
 > {
   create<Refs extends NodeRefs, Tx>(store: NodeStore<Refs, Tx>, snapshot: Snapshot): Refs[Kind]
 
-  bind<Refs extends NodeRefs, Tx>(store: NodeStore<Refs, Tx>, ref: Refs[Kind] & RootRef): Handle
+  bind<Refs extends NodeRefs, Tx>(
+    store: NodeStore<Refs, Tx>,
+    ref: Refs[Kind] & RootRef,
+  ): BoundHandle
 }

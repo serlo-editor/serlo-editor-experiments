@@ -1,7 +1,7 @@
 import { defineSchema } from "./define-schema.ts"
-import type { Schema, SnapshotHandle } from "./types.ts"
+import type { Handle, Schema } from "./types.ts"
 
-export interface StringHandle extends SnapshotHandle<string> {
+export interface StringHandle extends Handle<string> {
   get(): string
   set(value: string): void
 }
