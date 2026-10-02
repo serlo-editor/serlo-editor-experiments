@@ -3,7 +3,6 @@ import type {
   NodeKind,
   NodeRefsByKind as NodeRefs,
   NodeStore,
-  Ref,
   RootRef,
 } from "../storage/types.ts"
 import type { JSONValue } from "../utils/index.ts"
