@@ -89,7 +89,7 @@ function registerNodeStoreTests<Refs extends NodeRefsByKind, TransactionContext>
   test("reads maps containing cells, arrays, and nested maps", (context) => {
     const nodeStore = createNodeStore(context)
     const titleRef = nodeStore.cell.create("Title")
-    const bodyRef = nodeStore.cell.create<JSONValue>({ text: "Body" })
+    const bodyRef = nodeStore.cell.create({ text: "Body" })
     const emptyRef = nodeStore.map.create({})
     const leafRef = nodeStore.map.create({ body: bodyRef })
     const arrayRef = nodeStore.array.create([emptyRef, leafRef])
@@ -108,9 +108,9 @@ function registerNodeStoreTests<Refs extends NodeRefsByKind, TransactionContext>
     assert.equal(nodeStore.cell.get(titleRef), "Title")
     assert.deepEqual(nodeStore.cell.get(bodyRef), { text: "Body" })
 
-    nodeStore.transact((tx) => nodeStore.cell.edit(bodyRef, tx).set("Changed"))
+    nodeStore.transact((tx) => nodeStore.cell.edit(bodyRef, tx).set({ text: "Changed" }))
     assert.deepEqual(nodeStore.map.get(leafRef), { body: bodyRef })
-    assert.equal(nodeStore.cell.get(bodyRef), "Changed")
+    assert.equal(nodeStore.cell.get(bodyRef), { text: "Changed" })
   })
 
   test("sets and replaces map fields inside and after transactions", (context) => {
@@ -207,7 +207,7 @@ function registerNodeStoreTests<Refs extends NodeRefsByKind, TransactionContext>
 
   test("creates distinct references for equal values and edits them independently", (context) => {
     const nodeStore = createNodeStore(context)
-    const firstRef = nodeStore.cell.create<string>("Same")
+    const firstRef = nodeStore.cell.create("Same" as string)
     const secondRef = nodeStore.cell.create("Same")
     const firstArrayRef = nodeStore.array.create([])
     const secondArrayRef = nodeStore.array.create([])
@@ -307,7 +307,7 @@ function registerNodeStoreTests<Refs extends NodeRefsByKind, TransactionContext>
 
   test("propagates callback errors and permits subsequent transactions", (context) => {
     const nodeStore = createNodeStore(context)
-    const ref = nodeStore.cell.create<string>("Draft")
+    const ref = nodeStore.cell.create("Draft" as string)
     nodeStore.attach(ref)
     const error = new Error("Transaction failed")
 
