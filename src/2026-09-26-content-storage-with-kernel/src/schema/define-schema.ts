@@ -2,40 +2,6 @@ import type { NodeKind, NodeRefs, NodeStore } from "../storage/types.ts"
 import type { JSONValue } from "../utils/index.ts"
 import type { Handle, Schema } from "./types.ts"
 
-export interface CreateContext<Refs extends NodeRefs, Tx> {
-  readonly store: NodeStore<Refs, Tx>
-
-  createChild<
-    Snapshot extends JSONValue,
-    BoundHandle extends Handle<Snapshot>,
-    Kind extends NodeKind,
-  >(
-    schema: Schema<Snapshot, BoundHandle, Kind>,
-    snapshot: Snapshot,
-  ): Refs[Kind]
-}
-
-export interface BindContext<Refs extends NodeRefs, Tx> extends CreateContext<Refs, Tx> {
-  bindChild<
-    Snapshot extends JSONValue,
-    BoundHandle extends Handle<Snapshot>,
-    Kind extends NodeKind,
-  >(
-    schema: Schema<Snapshot, BoundHandle, Kind>,
-    ref: Refs[NodeKind],
-  ): BoundHandle
-}
-
-export interface SchemaInterpreter<
-  Snapshot extends JSONValue,
-  BoundHandle extends Handle<Snapshot>,
-  Kind extends NodeKind,
-> {
-  create<Refs extends NodeRefs, Tx>(ctx: CreateContext<Refs, Tx>, snapshot: Snapshot): Refs[Kind]
-
-  bind<Refs extends NodeRefs, Tx>(ctx: BindContext<Refs, Tx>, ref: Refs[Kind]): BoundHandle
-}
-
 const interpreters = new WeakMap<object, unknown>()
 
 export function defineSchema<
@@ -99,4 +65,38 @@ function lookup<
 
   // Factory registers each interpreter under its matching schema object.
   return interpreter as SchemaInterpreter<Snapshot, BoundHandle, Kind>
+}
+
+export interface CreateContext<Refs extends NodeRefs, Tx> {
+  readonly store: NodeStore<Refs, Tx>
+
+  createChild<
+    Snapshot extends JSONValue,
+    BoundHandle extends Handle<Snapshot>,
+    Kind extends NodeKind,
+  >(
+    schema: Schema<Snapshot, BoundHandle, Kind>,
+    snapshot: Snapshot,
+  ): Refs[Kind]
+}
+
+export interface BindContext<Refs extends NodeRefs, Tx> extends CreateContext<Refs, Tx> {
+  bindChild<
+    Snapshot extends JSONValue,
+    BoundHandle extends Handle<Snapshot>,
+    Kind extends NodeKind,
+  >(
+    schema: Schema<Snapshot, BoundHandle, Kind>,
+    ref: Refs[NodeKind],
+  ): BoundHandle
+}
+
+export interface SchemaInterpreter<
+  Snapshot extends JSONValue,
+  BoundHandle extends Handle<Snapshot>,
+  Kind extends NodeKind,
+> {
+  create<Refs extends NodeRefs, Tx>(ctx: CreateContext<Refs, Tx>, snapshot: Snapshot): Refs[Kind]
+
+  bind<Refs extends NodeRefs, Tx>(ctx: BindContext<Refs, Tx>, ref: Refs[Kind]): BoundHandle
 }
