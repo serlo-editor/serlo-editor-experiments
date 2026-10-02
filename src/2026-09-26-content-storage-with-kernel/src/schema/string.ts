@@ -1,4 +1,3 @@
-import { defineSchema } from "./define-schema.ts"
 import type { Handle, Schema } from "./types.ts"
 
 export interface StringHandle extends Handle<string> {
@@ -7,14 +6,14 @@ export interface StringHandle extends Handle<string> {
 }
 
 export function string(): Schema<string, StringHandle, "cell"> {
-  return defineSchema<string, StringHandle, "cell">({
-    create(ctx, snapshot) {
-      return ctx.store.cell.create(snapshot)
+  return {
+    create(store, snapshot) {
+      return store.cell.create(snapshot)
     },
 
-    bind(ctx, ref) {
+    bind(store, ref) {
       const read = (): string => {
-        const value = ctx.store.cell.get(ref)
+        const value = store.cell.get(ref)
         if (typeof value !== "string") {
           throw new TypeError("Expected string cell.")
         }
@@ -26,11 +25,11 @@ export function string(): Schema<string, StringHandle, "cell"> {
         snapshot: read,
 
         set(value) {
-          ctx.store.transact((tx) => {
-            ctx.store.cell.edit(ref, tx).set(value)
+          store.transact((tx) => {
+            store.cell.edit(ref, tx).set(value)
           })
         },
       }
     },
-  })
+  }
 }

@@ -1,6 +1,6 @@
 import type { NodeKind } from "../storage/types.ts"
 import type { JSONValue } from "../utils/index.ts"
-import { defineSchema } from "./define-schema.ts"
+import { bindChild } from "./bind-child.ts"
 import type { Handle, Schema } from "./types.ts"
 
 export interface ArrayHandle<Item extends JSONValue, Child extends Handle<Item>> extends Handle<
@@ -17,35 +17,35 @@ export function array<
 >(
   childSchema: Schema<Item, Child, ChildKind>,
 ): Schema<readonly Item[], ArrayHandle<Item, Child>, "array"> {
-  return defineSchema<readonly Item[], ArrayHandle<Item, Child>, "array">({
-    create(ctx, snapshots) {
-      const refs = snapshots.map((snapshot) => childSchema.create(ctx.store, snapshot))
-      return ctx.store.array.create(refs)
+  return {
+    create(store, snapshots) {
+      const refs = snapshots.map((snapshot) => childSchema.create(store, snapshot))
+      return store.array.create(refs)
     },
 
-    bind(ctx, ref) {
+    bind(store, ref) {
       return {
         at(index) {
-          const childRef = ctx.store.array.get(ref)[index]
+          const childRef = store.array.get(ref)[index]
           if (childRef === undefined) {
             throw new RangeError("Array index absent.")
           }
-          return ctx.bindChild(childSchema, childRef)
+          return bindChild(store, childSchema, childRef)
         },
 
         insert(index, snapshot) {
-          const childRef = childSchema.create(ctx.store, snapshot)
-          ctx.store.transact((tx) => {
-            ctx.store.array.edit(ref, tx).insert(index, childRef)
+          const childRef = childSchema.create(store, snapshot)
+          store.transact((tx) => {
+            store.array.edit(ref, tx).insert(index, childRef)
           })
         },
 
         snapshot() {
-          return ctx.store.array.get(ref).map((childRef) => {
-            return ctx.bindChild(childSchema, childRef).snapshot()
+          return store.array.get(ref).map((childRef) => {
+            return bindChild(store, childSchema, childRef).snapshot()
           })
         },
       }
     },
-  })
+  }
 }
