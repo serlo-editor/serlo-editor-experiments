@@ -110,7 +110,7 @@ function registerNodeStoreTests<Refs extends NodeRefsByKind, TransactionContext>
 
     nodeStore.transact((tx) => nodeStore.cell.edit(bodyRef, tx).set({ text: "Changed" }))
     assert.deepEqual(nodeStore.map.get(leafRef), { body: bodyRef })
-    assert.equal(nodeStore.cell.get(bodyRef), { text: "Changed" })
+    assert.deepEqual(nodeStore.cell.get(bodyRef), { text: "Changed" })
   })
 
   test("sets and replaces map fields inside and after transactions", (context) => {
