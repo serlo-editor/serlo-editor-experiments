@@ -12,8 +12,5 @@ export interface Schema<
 > {
   create<Refs extends NodeRefs, Tx>(store: NodeStore<Refs, Tx>, snapshot: Snapshot): Refs[Kind]
 
-  bind<Refs extends NodeRefs, Tx>(
-    store: NodeStore<Refs, Tx>,
-    ref: NoInfer<Refs[Kind]> & RootRef,
-  ): Handle
+  bind<Refs extends NodeRefs, Tx>(store: NodeStore<Refs, Tx>, ref: Refs[Kind] & RootRef): Handle
 }
