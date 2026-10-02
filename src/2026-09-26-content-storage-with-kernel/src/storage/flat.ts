@@ -1,11 +1,10 @@
 import type { Branded, JSONValue } from "../utils/index.ts"
-import type { NodeKind, NodeRef, NodeStore, Ref, RootRef } from "./types.ts"
+import type { NodeKind, NodeStore, Ref, RootRef } from "./types.ts"
 
 type FlatNodeRefs = {
   [Kind in NodeKind]: Ref & Branded<string, Kind>
 }
-
-type FlatNodeRef<Kind extends NodeKind = NodeKind> = NodeRef<FlatNodeRefs, Kind>
+type FlatNodeRef = FlatNodeRefs[NodeKind]
 
 type FlatNodeStoreContract = NodeStore<FlatNodeRefs, TransactionToken>
 
@@ -90,20 +89,20 @@ export class FlatNodeStore implements FlatNodeStoreContract {
 }
 
 class ReferenceTable<Kind extends NodeKind, Value extends JSONValue> {
-  private readonly table = new Map<FlatNodeRef<Kind>, Value>()
+  private readonly table = new Map<FlatNodeRefs[Kind], Value>()
   private readonly refGenerator: NodeRefGenerator
 
   constructor(refGenerator: NodeRefGenerator) {
     this.refGenerator = refGenerator
   }
 
-  create(value: Value): FlatNodeRef<Kind> {
+  create(value: Value): FlatNodeRefs[Kind] {
     const ref = this.refGenerator.next<Kind>()
     this.table.set(ref, value)
     return ref
   }
 
-  get(ref: FlatNodeRef<Kind>): Value {
+  get(ref: FlatNodeRefs[Kind]): Value {
     const value = this.table.get(ref)
     if (value === undefined) {
       throw new Error(`Value with key ${ref} does not exist.`)
@@ -111,14 +110,14 @@ class ReferenceTable<Kind extends NodeKind, Value extends JSONValue> {
     return value
   }
 
-  applyUpdate(ref: FlatNodeRef<Kind>, updater: Update<Value>): void {
+  applyUpdate(ref: FlatNodeRefs[Kind], updater: Update<Value>): void {
     const previousValue = this.get(ref)
     const value = typeof updater === "function" ? updater(previousValue) : updater
     this.table.set(ref, value)
   }
 
   has(ref: FlatNodeRef): boolean {
-    return this.table.has(ref as FlatNodeRef<Kind>)
+    return this.table.has(ref as FlatNodeRefs[Kind])
   }
 }
 
@@ -127,8 +126,8 @@ export type Update<Value extends JSONValue> = Value | ((previousValue: Value) =>
 class NodeRefGenerator {
   private static counter = 0
 
-  next<Kind extends NodeKind>(): FlatNodeRef<Kind> {
-    return `node:${NodeRefGenerator.counter++}` as FlatNodeRef<Kind>
+  next<Kind extends NodeKind>(): FlatNodeRefs[Kind] {
+    return `node:${NodeRefGenerator.counter++}` as FlatNodeRefs[Kind]
   }
 }
 
