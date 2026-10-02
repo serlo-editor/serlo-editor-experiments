@@ -11,14 +11,12 @@ export interface NodeRefsByKind {
 
 export type NodeKind = keyof NodeRefsByKind
 
-export type NodeRef<Refs extends NodeRefsByKind, Kind extends NodeKind = NodeKind> = Refs[Kind]
-
 export interface NodeStore<Refs extends NodeRefsByKind, TransactionContext> {
-  readonly cell: CellStore<NodeRef<Refs, "cell">, TransactionContext>
-  readonly array: ArrayStore<NodeRef<Refs>, NodeRef<Refs, "array">, TransactionContext>
-  readonly map: MapStore<NodeRef<Refs>, NodeRef<Refs, "map">, TransactionContext>
+  readonly cell: CellStore<Refs["cell"], TransactionContext>
+  readonly array: ArrayStore<Refs[NodeKind], Refs["array"], TransactionContext>
+  readonly map: MapStore<Refs[NodeKind], Refs["map"], TransactionContext>
 
-  attach<Ref extends NodeRef<Refs>>(ref: Ref): Ref & RootRef
+  attach<Ref extends Refs[NodeKind]>(ref: Ref): Ref & RootRef
   transact<Result>(callback: (tx: TransactionContext) => Result): Result
 }
 
