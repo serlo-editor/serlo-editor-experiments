@@ -6,7 +6,7 @@ import * as Y from "yjs"
 
 import type { JSONValue } from "../utils/index.ts"
 import { FlatNodeStore } from "./flat.ts"
-import type { NodeRefs, NodeStore } from "./types.ts"
+import type { NodeStore, Ref } from "./types.ts"
 import { YjsNodeStore } from "./yjs.ts"
 
 const nodeStoreImplementations = [
@@ -15,6 +15,14 @@ const nodeStoreImplementations = [
 ] as const
 
 describeEach(nodeStoreImplementations, (registerTests) => registerTests())
+
+test("YjsNodeStore rejects cells missing their value", (context) => {
+  const store = createYjsNodeStore(context)
+  const ref = store.attach(store.cell.create("Draft"))
+  store.transact(() => ref.delete("value"))
+
+  assert.throws(() => store.cell.get(ref), { message: "Cell value absent." })
+})
 
 // node:test has no built-in describe.each.
 function describeEach<T>(
@@ -26,8 +34,8 @@ function describeEach<T>(
   }
 }
 
-function registerNodeStoreTests<Refs extends NodeRefs, TransactionContext>(
-  createNodeStore: (context: TestContext) => NodeStore<Refs, TransactionContext>,
+function registerNodeStoreTests<Cell extends Ref, Array extends Ref, Map extends Ref, Tx>(
+  createNodeStore: (context: TestContext) => NodeStore<{ cell: Cell; array: Array; map: Map }, Tx>,
 ): void {
   test("reads every JSON value kind without losing empty or falsy values", (context) => {
     const nodeStore = createNodeStore(context)
@@ -207,7 +215,7 @@ function registerNodeStoreTests<Refs extends NodeRefs, TransactionContext>(
 
   test("creates distinct references for equal values and edits them independently", (context) => {
     const nodeStore = createNodeStore(context)
-    const firstRef = nodeStore.cell.create("Same" as string)
+    const firstRef = nodeStore.cell.create("Same")
     const secondRef = nodeStore.cell.create("Same")
     const firstArrayRef = nodeStore.array.create([])
     const secondArrayRef = nodeStore.array.create([])
@@ -234,7 +242,7 @@ function registerNodeStoreTests<Refs extends NodeRefs, TransactionContext>(
 
   test("reads replacements inside and after transactions, including type changes", (context) => {
     const nodeStore = createNodeStore(context)
-    const ref = nodeStore.cell.create<JSONValue>("Draft")
+    const ref = nodeStore.cell.create("Draft")
     nodeStore.attach(ref)
     const replacements: readonly JSONValue[] = [
       { title: "Published" },
@@ -307,7 +315,7 @@ function registerNodeStoreTests<Refs extends NodeRefs, TransactionContext>(
 
   test("propagates callback errors and permits subsequent transactions", (context) => {
     const nodeStore = createNodeStore(context)
-    const ref = nodeStore.cell.create("Draft" as string)
+    const ref = nodeStore.cell.create("Draft")
     nodeStore.attach(ref)
     const error = new Error("Transaction failed")
 

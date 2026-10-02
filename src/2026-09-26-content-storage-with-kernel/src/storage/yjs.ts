@@ -1,7 +1,7 @@
 import * as Y from "yjs"
 
 import type { JSONValue } from "../utils/index.ts"
-import type { CellRef, NodeKind, NodeStore, Ref, RootRef } from "./types.ts"
+import type { NodeKind, NodeStore, Ref, RootRef } from "./types.ts"
 
 type YArray = Y.Array<YjsNodeRef>
 type YMap = Y.Map<YjsNodeRef>
@@ -22,14 +22,18 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     this.doc = doc
   }
 
-  readonly cell = {
+  readonly cell: YjsNodeStoreContract["cell"] = {
     create: (value) => {
       const cell = new Y.Map<JSONValue>()
       cell.set("value", value)
-      return cell as CellRef<Y.Map<JSONValue> & Ref, any>
+      return cell as YjsNodeRefs["cell"]
     },
     get: (ref) => {
-      return ref.get("value")
+      const value = ref.get("value")
+      if (value === undefined) {
+        throw new Error("Cell value absent.")
+      }
+      return value
     },
     edit: (ref) => {
       return {
@@ -38,9 +42,9 @@ export class YjsNodeStore implements YjsNodeStoreContract {
         },
       }
     },
-  } as YjsNodeStoreContract["cell"]
+  }
 
-  readonly array = {
+  readonly array: YjsNodeStoreContract["array"] = {
     create: (items) => {
       const array = new Y.Array<YjsNodeRef>()
       array.push(items as YjsNodeRef[])
@@ -56,9 +60,9 @@ export class YjsNodeStore implements YjsNodeStoreContract {
         },
       }
     },
-  } as YjsNodeStoreContract["array"]
+  }
 
-  readonly map = {
+  readonly map: YjsNodeStoreContract["map"] = {
     create: (fields) => {
       return new Y.Map<YjsNodeRef>(Object.entries(fields)) as YjsNodeRefs["map"]
     },
@@ -72,7 +76,7 @@ export class YjsNodeStore implements YjsNodeStoreContract {
         },
       }
     },
-  } as YjsNodeStoreContract["map"]
+  }
 
   attach<Ref extends YjsNodeRef>(ref: Ref): Ref & RootRef {
     this.doc.getMap("root").set("root", ref)

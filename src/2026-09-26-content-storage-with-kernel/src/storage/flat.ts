@@ -20,7 +20,7 @@ export class FlatNodeStore implements FlatNodeStoreContract {
     this.refGenerator,
   )
 
-  readonly cell = {
+  readonly cell: FlatNodeStoreContract["cell"] = {
     create: (value) => this.cellTable.create(value),
     get: (ref) => this.cellTable.get(ref),
     edit: (ref, tx) => {
@@ -31,9 +31,9 @@ export class FlatNodeStore implements FlatNodeStoreContract {
         set: (value) => this.cellTable.applyUpdate(ref, () => value),
       }
     },
-  } as FlatNodeStoreContract["cell"]
+  }
 
-  readonly array = {
+  readonly array: FlatNodeStoreContract["array"] = {
     create: (items) => this.arrayTable.create(items),
     get: (ref) => this.arrayTable.get(ref),
     edit: (ref, tx) => {
@@ -50,9 +50,9 @@ export class FlatNodeStore implements FlatNodeStoreContract {
         },
       }
     },
-  } as FlatNodeStoreContract["array"]
+  }
 
-  readonly map = {
+  readonly map: FlatNodeStoreContract["map"] = {
     create: (fields) => this.mapTable.create(fields),
     get: (ref) => this.mapTable.get(ref),
     edit: (ref, tx) => {
@@ -68,7 +68,7 @@ export class FlatNodeStore implements FlatNodeStoreContract {
         },
       }
     },
-  } as FlatNodeStoreContract["map"]
+  }
 
   attach<Ref extends FlatNodeRef>(ref: Ref): Ref & RootRef {
     if (!this.cellTable.has(ref) && !this.arrayTable.has(ref) && !this.mapTable.has(ref)) {

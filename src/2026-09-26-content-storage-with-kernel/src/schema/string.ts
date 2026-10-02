@@ -13,7 +13,13 @@ export function string(): Schema<string, StringHandle, "cell"> {
     },
 
     bind(ctx, ref) {
-      const read = () => ctx.store.cell.get(ref)
+      const read = (): string => {
+        const value = ctx.store.cell.get(ref)
+        if (typeof value !== "string") {
+          throw new TypeError("Expected string cell.")
+        }
+        return value
+      }
 
       return {
         get: read,

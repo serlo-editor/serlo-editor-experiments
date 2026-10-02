@@ -21,12 +21,10 @@ export interface NodeStore<Refs extends NodeRefs, TransactionContext> {
 }
 
 interface CellStore<Ref, TransactionContext> {
-  create<Value extends JSONValue>(value: Value): CellRef<Ref, Value>
-  get<Value extends JSONValue>(ref: CellRef<Ref, Value>): Value
-  edit<Value extends JSONValue>(ref: CellRef<Ref, Value>, tx: TransactionContext): CellEditor<Value>
+  create(value: JSONValue): Ref
+  get(ref: Ref): JSONValue
+  edit(ref: Ref, tx: TransactionContext): CellEditor
 }
-
-export type CellRef<Ref, Value extends JSONValue> = Ref & { __value: Value }
 
 interface ArrayStore<ItemRef, ArrayRef, TransactionContext> {
   create(items: readonly ItemRef[]): ArrayRef
@@ -40,8 +38,8 @@ interface MapStore<ItemRef, MapRef, TransactionContext> {
   edit(ref: MapRef, tx: TransactionContext): MapEditor<ItemRef>
 }
 
-export interface CellEditor<Value> {
-  set(value: Value): void
+export interface CellEditor {
+  set(value: JSONValue): void
 }
 
 export interface ArrayEditor<ItemRef> {

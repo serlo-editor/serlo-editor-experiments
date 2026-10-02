@@ -46,6 +46,38 @@ function registerSchemaTests<Cell extends Ref, Array extends Ref, Map extends Re
     assert.equal(text.snapshot(), "Hello, 世界 👋")
   })
 
+  test("rejects non-string cell values when reading string handles", (context) => {
+    const store = createStore(context)
+    const textSchema = schema.string()
+
+    for (const value of [null, false, 42, [], {}]) {
+      const root = store.attach(store.cell.create(value))
+      const text = textSchema.bind(store, root)
+
+      assert.throws(() => text.get(), { name: "TypeError", message: "Expected string cell." })
+      assert.throws(() => text.snapshot(), TypeError)
+    }
+  })
+
+  test("validates child reads after storage writes and permits recovery", (context) => {
+    const store = createStore(context)
+    const childRef = store.cell.create("Ada")
+    const root = store.attach(store.array.create([childRef]))
+    const names = schema.array(schema.string()).bind(store, root)
+    const child = names.at(0)
+
+    assert.equal(child.get(), "Ada")
+    store.transact((tx) => store.cell.edit(childRef, tx).set(42))
+
+    assert.throws(() => child.get(), TypeError)
+    assert.throws(() => child.snapshot(), TypeError)
+    assert.throws(() => names.snapshot(), TypeError)
+
+    child.set("Grace")
+    assert.equal(child.get(), "Grace")
+    assert.deepEqual(names.snapshot(), ["Grace"])
+  })
+
   test("creates a string array, edits children, inserts, and retrieves", (context) => {
     const store = createStore(context)
     const namesSchema = schema.array(schema.string())
