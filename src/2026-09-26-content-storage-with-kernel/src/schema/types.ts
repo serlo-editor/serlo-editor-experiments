@@ -1,7 +1,7 @@
 import type {
   CellRef,
   NodeKind,
-  NodeRefsByKind,
+  NodeRefsByKind as NodeRefs,
   NodeStore,
   Ref,
   RootRef,
@@ -17,26 +17,19 @@ export interface Schema<
   Handle extends SnapshotHandle<Snapshot>,
   Kind extends NodeKind,
 > {
-  create<Cell extends Ref, Array extends Ref, Map extends Ref, Tx>(
-    store: NodeStore<RefsFor<Cell, Array, Map>, Tx>,
+  create<Refs extends NodeRefs, Tx>(
+    store: NodeStore<Refs, Tx>,
     snapshot: Snapshot,
-  ): SchemaRef<RefsFor<Cell, Array, Map>, Kind, Snapshot>
+  ): SchemaRef<Refs, Kind, Snapshot>
 
-  bind<Cell extends Ref, Array extends Ref, Map extends Ref, Tx>(
-    store: NodeStore<RefsFor<Cell, Array, Map>, Tx>,
-    ref: NoInfer<SchemaRef<RefsFor<Cell, Array, Map>, Kind, Snapshot>> & RootRef,
+  bind<Refs extends NodeRefs, Tx>(
+    store: NodeStore<Refs, Tx>,
+    ref: NoInfer<SchemaRef<Refs, Kind, Snapshot>> & RootRef,
   ): Handle
 }
 
 export type SchemaRef<
-  Refs extends NodeRefsByKind,
+  Refs extends NodeRefs,
   Kind extends NodeKind,
   Snapshot extends JSONValue,
 > = Kind extends "cell" ? CellRef<Refs["cell"], Snapshot> : Refs[Kind]
-
-// Infer each ref kind directly; indexed accesses alone cannot infer backend refs.
-type RefsFor<Cell extends Ref, Array extends Ref, Map extends Ref> = {
-  cell: Cell
-  array: Array
-  map: Map
-}
