@@ -1,7 +1,7 @@
 import * as Y from "yjs"
 
 import type { JSONValue } from "../utils/index.ts"
-import type { CellRef, NodeRef, NodeStore, Ref } from "./types.ts"
+import type { CellRef, NodeRef, NodeStore, Ref, RootRef } from "./types.ts"
 
 type YArray = Y.Array<YjsNodeRef>
 type YMap = Y.Map<YjsNodeRef>
@@ -74,9 +74,9 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     },
   } as YjsNodeStoreContract["map"]
 
-  attach<Ref extends YjsNodeRef>(ref: Ref): Ref {
+  attach<Ref extends YjsNodeRef>(ref: Ref): Ref & RootRef {
     this.doc.getMap("root").set("root", ref)
-    return ref
+    return ref as Ref & RootRef
   }
 
   transact<T>(callback: (tx: Y.Transaction) => T): T {

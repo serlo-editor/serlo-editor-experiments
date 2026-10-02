@@ -1,6 +1,7 @@
 import type { Branded, JSONValue } from "../utils/index.ts"
 
 export type Ref = Branded<unknown, "Ref">
+export type RootRef = Branded<Ref, "RootRef">
 
 export interface NodeRefsByKind {
   cell: Ref
@@ -17,7 +18,7 @@ export interface NodeStore<Refs extends NodeRefsByKind, TransactionContext> {
   readonly array: ArrayStore<NodeRef<Refs>, NodeRef<Refs, "array">, TransactionContext>
   readonly map: MapStore<NodeRef<Refs>, NodeRef<Refs, "map">, TransactionContext>
 
-  attach<Ref extends NodeRef<Refs>>(ref: Ref): Ref
+  attach<Ref extends NodeRef<Refs>>(ref: Ref): Ref & RootRef
   transact<Result>(callback: (tx: TransactionContext) => Result): Result
 }
 

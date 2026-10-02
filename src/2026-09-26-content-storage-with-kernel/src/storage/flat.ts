@@ -1,5 +1,5 @@
 import type { Branded, JSONValue } from "../utils/index.ts"
-import type { NodeKind, NodeRef, NodeStore, Ref } from "./types.ts"
+import type { NodeKind, NodeRef, NodeStore, Ref, RootRef } from "./types.ts"
 
 type FlatNodeRefs = {
   [Kind in NodeKind]: Ref & Branded<string, Kind>
@@ -71,11 +71,11 @@ export class FlatNodeStore implements FlatNodeStoreContract {
     },
   } as FlatNodeStoreContract["map"]
 
-  attach<Ref extends FlatNodeRef>(ref: Ref): Ref {
+  attach<Ref extends FlatNodeRef>(ref: Ref): Ref & RootRef {
     if (!this.cellTable.has(ref) && !this.arrayTable.has(ref) && !this.mapTable.has(ref)) {
       throw new Error(`Reference with key ${ref} does not exist.`)
     }
-    return ref
+    return ref as Ref & RootRef
   }
 
   transact<T>(callback: (tx: TransactionToken) => T): T {
