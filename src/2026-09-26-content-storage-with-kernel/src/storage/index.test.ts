@@ -89,7 +89,7 @@ function registerNodeStoreTests<Refs extends NodeRefsByKind, TransactionContext>
   test("reads maps containing cells, arrays, and nested maps", (context) => {
     const nodeStore = createNodeStore(context)
     const titleRef = nodeStore.cell.create("Title")
-    const bodyRef = nodeStore.cell.create({ text: "Body" })
+    const bodyRef = nodeStore.cell.create<JSONValue>({ text: "Body" })
     const emptyRef = nodeStore.map.create({})
     const leafRef = nodeStore.map.create({ body: bodyRef })
     const arrayRef = nodeStore.array.create([emptyRef, leafRef])
@@ -207,7 +207,7 @@ function registerNodeStoreTests<Refs extends NodeRefsByKind, TransactionContext>
 
   test("creates distinct references for equal values and edits them independently", (context) => {
     const nodeStore = createNodeStore(context)
-    const firstRef = nodeStore.cell.create("Same")
+    const firstRef = nodeStore.cell.create<string>("Same")
     const secondRef = nodeStore.cell.create("Same")
     const firstArrayRef = nodeStore.array.create([])
     const secondArrayRef = nodeStore.array.create([])
@@ -234,7 +234,7 @@ function registerNodeStoreTests<Refs extends NodeRefsByKind, TransactionContext>
 
   test("reads replacements inside and after transactions, including type changes", (context) => {
     const nodeStore = createNodeStore(context)
-    const ref = nodeStore.cell.create("Draft")
+    const ref = nodeStore.cell.create<JSONValue>("Draft")
     nodeStore.attach(ref)
     const replacements: readonly JSONValue[] = [
       { title: "Published" },
@@ -307,7 +307,7 @@ function registerNodeStoreTests<Refs extends NodeRefsByKind, TransactionContext>
 
   test("propagates callback errors and permits subsequent transactions", (context) => {
     const nodeStore = createNodeStore(context)
-    const ref = nodeStore.cell.create("Draft")
+    const ref = nodeStore.cell.create<string>("Draft")
     nodeStore.attach(ref)
     const error = new Error("Transaction failed")
 

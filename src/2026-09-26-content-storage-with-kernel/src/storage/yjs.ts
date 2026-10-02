@@ -1,7 +1,7 @@
 import * as Y from "yjs"
 
 import type { JSONValue } from "../utils/index.ts"
-import type { NodeRef, NodeStore, Ref } from "./types.ts"
+import type { CellRef, NodeRef, NodeStore, Ref } from "./types.ts"
 
 type YArray = Y.Array<YjsNodeRef>
 type YMap = Y.Map<YjsNodeRef>
@@ -26,7 +26,7 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     create: (value) => {
       const cell = new Y.Map<JSONValue>()
       cell.set("value", value)
-      return cell as YjsNodeRefs["cell"]
+      return cell as CellRef<Y.Map<JSONValue> & Ref, any>
     },
     get: (ref) => {
       return ref.get("value")
