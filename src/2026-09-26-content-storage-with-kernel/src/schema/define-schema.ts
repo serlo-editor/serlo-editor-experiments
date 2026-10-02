@@ -2,8 +2,6 @@ import type { NodeKind, NodeRefs, NodeStore } from "../storage/types.ts"
 import type { JSONValue } from "../utils/index.ts"
 import type { Handle, Schema } from "./types.ts"
 
-const interpreters = new WeakMap<object, unknown>()
-
 export function defineSchema<
   Snapshot extends JSONValue,
   BoundHandle extends Handle<Snapshot>,
@@ -11,18 +9,15 @@ export function defineSchema<
 >(
   interpreter: SchemaInterpreter<Snapshot, BoundHandle, Kind>,
 ): Schema<Snapshot, BoundHandle, Kind> {
-  const schema: Schema<Snapshot, BoundHandle, Kind> = {
+  return {
     create(store, snapshot) {
       return interpreter.create(createContext(store), snapshot)
     },
 
-    bind(store, rootRef) {
-      return interpreter.bind(bindContext(store), rootRef)
+    bind(store, ref) {
+      return interpreter.bind(bindContext(store), ref)
     },
   }
-
-  interpreters.set(schema, interpreter)
-  return schema
 }
 
 export interface SchemaInterpreter<
@@ -42,7 +37,7 @@ function createContext<Refs extends NodeRefs, Tx>(
     store,
 
     createChild(schema, snapshot) {
-      return lookup(schema).create(createContext(store), snapshot)
+      return schema.create(store, snapshot)
     },
   }
 }
@@ -57,24 +52,9 @@ function bindContext<Refs extends NodeRefs, Tx>(store: NodeStore<Refs, Tx>): Bin
       Kind extends NodeKind,
     >(schema: Schema<Snapshot, BoundHandle, Kind>, ref: Refs[NodeKind]) {
       // Storage erases child node kinds; trusted composition restores them.
-      return lookup(schema).bind(bindContext(store), ref as Refs[Kind])
+      return schema.bind(store, ref as Refs[Kind])
     },
   }
-}
-
-function lookup<
-  Snapshot extends JSONValue,
-  BoundHandle extends Handle<Snapshot>,
-  Kind extends NodeKind,
->(schema: Schema<Snapshot, BoundHandle, Kind>): SchemaInterpreter<Snapshot, BoundHandle, Kind> {
-  const interpreter = interpreters.get(schema)
-
-  if (!interpreter) {
-    throw new TypeError("Schema must be created with defineSchema.")
-  }
-
-  // Factory registers each interpreter under its matching schema object.
-  return interpreter as SchemaInterpreter<Snapshot, BoundHandle, Kind>
 }
 
 export interface CreateContext<Refs extends NodeRefs, Tx> {

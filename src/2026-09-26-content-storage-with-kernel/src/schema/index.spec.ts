@@ -65,7 +65,9 @@ function registerSchemaTests<Cell extends Ref, Array extends Ref, Map extends Re
     const root = store.attach(store.array.create([childRef]))
     const names = schema.array(schema.string()).bind(store, root)
     const child = names.at(0)
+    const directChild = schema.string().bind(store, childRef)
 
+    assert.equal(directChild.get(), "Ada")
     assert.equal(child.get(), "Ada")
     store.transact((tx) => store.cell.edit(childRef, tx).set(42))
 
@@ -74,6 +76,7 @@ function registerSchemaTests<Cell extends Ref, Array extends Ref, Map extends Re
     assert.throws(() => names.snapshot(), TypeError)
 
     child.set("Grace")
+    assert.equal(directChild.get(), "Grace")
     assert.equal(child.get(), "Grace")
     assert.deepEqual(names.snapshot(), ["Grace"])
   })
@@ -163,11 +166,12 @@ function registerSchemaTests<Cell extends Ref, Array extends Ref, Map extends Re
     assert.deepEqual(names.snapshot(), ["Ada"])
   })
 
-  test("requires attached refs and preserves inferred string handle types", (context) => {
+  test("binds plain refs and preserves inferred string handle types", (context) => {
     const store = createStore(context)
     const namesSchema = schema.array(schema.string())
     const ref = namesSchema.create(store, ["Ada"])
-    const names = namesSchema.bind(store, store.attach(ref))
+    store.attach(ref)
+    const names = namesSchema.bind(store, ref)
     const value: string = names.at(0).get()
     const snapshot: readonly string[] = names.snapshot()
 
@@ -176,8 +180,6 @@ function registerSchemaTests<Cell extends Ref, Array extends Ref, Map extends Re
 
     // Compile-time checks only: invalid operations must not run.
     const invalidUsage = () => {
-      // @ts-expect-error Public binding requires RootRef.
-      namesSchema.bind(store, ref)
       // @ts-expect-error String cells cannot be set to numbers.
       names.at(0).set(42)
       // @ts-expect-error String arrays cannot insert numbers.
