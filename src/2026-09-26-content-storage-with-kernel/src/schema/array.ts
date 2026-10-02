@@ -1,6 +1,5 @@
 import type { NodeKind } from "../storage/types.ts"
 import type { JSONValue } from "../utils/index.ts"
-import { bindChild } from "./bind-child.ts"
 import type { Handle, Schema } from "./types.ts"
 
 export interface ArrayHandle<Item extends JSONValue, Child extends Handle<Item>> extends Handle<
@@ -30,7 +29,7 @@ export function array<
           if (childRef === undefined) {
             throw new RangeError("Array index absent.")
           }
-          return bindChild(store, childSchema, childRef)
+          return childSchema.bind(store, childRef)
         },
 
         insert(index, snapshot) {
@@ -42,7 +41,7 @@ export function array<
 
         snapshot() {
           return store.array.get(ref).map((childRef) => {
-            return bindChild(store, childSchema, childRef).snapshot()
+            return childSchema.bind(store, childRef).snapshot()
           })
         },
       }
