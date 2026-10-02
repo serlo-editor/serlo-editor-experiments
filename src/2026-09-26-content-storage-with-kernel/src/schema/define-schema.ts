@@ -1,8 +1,8 @@
-import type { NodeKind, NodeRefsByKind, NodeStore } from "../storage/types.ts"
+import type { NodeKind, NodeRefs, NodeStore } from "../storage/types.ts"
 import type { JSONValue } from "../utils/index.ts"
 import type { Schema, SchemaRef, SnapshotHandle } from "./types.ts"
 
-export interface CreateContext<Refs extends NodeRefsByKind, Tx> {
+export interface CreateContext<Refs extends NodeRefs, Tx> {
   readonly store: NodeStore<Refs, Tx>
 
   createChild<
@@ -15,7 +15,7 @@ export interface CreateContext<Refs extends NodeRefsByKind, Tx> {
   ): SchemaRef<Refs, Kind, Snapshot>
 }
 
-export interface BindContext<Refs extends NodeRefsByKind, Tx> extends CreateContext<Refs, Tx> {
+export interface BindContext<Refs extends NodeRefs, Tx> extends CreateContext<Refs, Tx> {
   bindChild<
     Snapshot extends JSONValue,
     Handle extends SnapshotHandle<Snapshot>,
@@ -31,12 +31,12 @@ export interface SchemaInterpreter<
   Handle extends SnapshotHandle<Snapshot>,
   Kind extends NodeKind,
 > {
-  create<Refs extends NodeRefsByKind, Tx>(
+  create<Refs extends NodeRefs, Tx>(
     ctx: CreateContext<Refs, Tx>,
     snapshot: Snapshot,
   ): SchemaRef<Refs, Kind, Snapshot>
 
-  bind<Refs extends NodeRefsByKind, Tx>(
+  bind<Refs extends NodeRefs, Tx>(
     ctx: BindContext<Refs, Tx>,
     ref: SchemaRef<Refs, Kind, Snapshot>,
   ): Handle
@@ -63,7 +63,7 @@ export function defineSchema<
   return schema
 }
 
-function createContext<Refs extends NodeRefsByKind, Tx>(
+function createContext<Refs extends NodeRefs, Tx>(
   store: NodeStore<Refs, Tx>,
 ): CreateContext<Refs, Tx> {
   return {
@@ -75,9 +75,7 @@ function createContext<Refs extends NodeRefsByKind, Tx>(
   }
 }
 
-function bindContext<Refs extends NodeRefsByKind, Tx>(
-  store: NodeStore<Refs, Tx>,
-): BindContext<Refs, Tx> {
+function bindContext<Refs extends NodeRefs, Tx>(store: NodeStore<Refs, Tx>): BindContext<Refs, Tx> {
   return {
     ...createContext(store),
 

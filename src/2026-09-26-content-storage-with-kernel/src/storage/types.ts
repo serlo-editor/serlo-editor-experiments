@@ -3,15 +3,15 @@ import type { Branded, JSONValue } from "../utils/index.ts"
 export type Ref = Branded<unknown, "Ref">
 export type RootRef = Branded<Ref, "RootRef">
 
-export interface NodeRefsByKind {
+export interface NodeRefs {
   cell: Ref
   array: Ref
   map: Ref
 }
 
-export type NodeKind = keyof NodeRefsByKind
+export type NodeKind = keyof NodeRefs
 
-export interface NodeStore<Refs extends NodeRefsByKind, TransactionContext> {
+export interface NodeStore<Refs extends NodeRefs, TransactionContext> {
   readonly cell: CellStore<Refs["cell"], TransactionContext>
   readonly array: ArrayStore<Refs[NodeKind], Refs["array"], TransactionContext>
   readonly map: MapStore<Refs[NodeKind], Refs["map"], TransactionContext>

@@ -1,10 +1,4 @@
-import type {
-  CellRef,
-  NodeKind,
-  NodeRefsByKind as NodeRefs,
-  NodeStore,
-  RootRef,
-} from "../storage/types.ts"
+import type { CellRef, NodeKind, NodeRefs, NodeStore, RootRef } from "../storage/types.ts"
 import type { JSONValue } from "../utils/index.ts"
 
 export interface SnapshotHandle<Snapshot extends JSONValue> {
