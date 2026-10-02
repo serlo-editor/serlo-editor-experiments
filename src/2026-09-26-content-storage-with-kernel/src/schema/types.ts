@@ -7,10 +7,10 @@ export interface Handle<Snapshot extends JSONValue> {
 
 export interface Schema<
   Snapshot extends JSONValue,
-  BoundHandle extends Handle<Snapshot>,
+  SchemaHandle extends Handle<Snapshot>,
   Kind extends NodeKind,
 > {
   create<Refs extends NodeRefs, Tx>(store: NodeStore<Refs, Tx>, snapshot: Snapshot): Refs[Kind]
 
-  bind<Refs extends NodeRefs, Tx>(store: NodeStore<Refs, Tx>, ref: Refs[Kind]): BoundHandle
+  bind<Refs extends NodeRefs, Tx>(store: NodeStore<Refs, Tx>, ref: Refs[Kind]): SchemaHandle
 }
