@@ -25,6 +25,16 @@ export function defineSchema<
   return schema
 }
 
+export interface SchemaInterpreter<
+  Snapshot extends JSONValue,
+  BoundHandle extends Handle<Snapshot>,
+  Kind extends NodeKind,
+> {
+  create<Refs extends NodeRefs, Tx>(ctx: CreateContext<Refs, Tx>, snapshot: Snapshot): Refs[Kind]
+
+  bind<Refs extends NodeRefs, Tx>(ctx: BindContext<Refs, Tx>, ref: Refs[Kind]): BoundHandle
+}
+
 function createContext<Refs extends NodeRefs, Tx>(
   store: NodeStore<Refs, Tx>,
 ): CreateContext<Refs, Tx> {
@@ -89,14 +99,4 @@ export interface BindContext<Refs extends NodeRefs, Tx> extends CreateContext<Re
     schema: Schema<Snapshot, BoundHandle, Kind>,
     ref: Refs[NodeKind],
   ): BoundHandle
-}
-
-export interface SchemaInterpreter<
-  Snapshot extends JSONValue,
-  BoundHandle extends Handle<Snapshot>,
-  Kind extends NodeKind,
-> {
-  create<Refs extends NodeRefs, Tx>(ctx: CreateContext<Refs, Tx>, snapshot: Snapshot): Refs[Kind]
-
-  bind<Refs extends NodeRefs, Tx>(ctx: BindContext<Refs, Tx>, ref: Refs[Kind]): BoundHandle
 }
