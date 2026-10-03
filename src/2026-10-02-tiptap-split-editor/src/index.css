@@ -1,0 +1,708 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 0 0% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 0 0% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 0 0% 3.9%;
+    --primary: 0 0% 9%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 0 0% 96.1%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 0 0% 96.1%;
+    --muted-foreground: 0 0% 45.1%;
+    --accent: 0 0% 96.1%;
+    --accent-foreground: 0 0% 9%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 89.8%;
+    --input: 0 0% 89.8%;
+    --ring: 0 0% 3.9%;
+    --radius: 0.5rem;
+    --chart-1: 12 76% 61%;
+    --chart-2: 173 58% 39%;
+    --chart-3: 197 37% 24%;
+    --chart-4: 43 74% 66%;
+    --chart-5: 27 87% 67%;
+  }
+
+  .dark {
+    --background: 0 0% 3.9%;
+    --foreground: 0 0% 98%;
+    --card: 0 0% 3.9%;
+    --card-foreground: 0 0% 98%;
+    --popover: 0 0% 3.9%;
+    --popover-foreground: 0 0% 98%;
+    --primary: 0 0% 98%;
+    --primary-foreground: 0 0% 9%;
+    --secondary: 0 0% 14.9%;
+    --secondary-foreground: 0 0% 98%;
+    --muted: 0 0% 14.9%;
+    --muted-foreground: 0 0% 63.9%;
+    --accent: 0 0% 14.9%;
+    --accent-foreground: 0 0% 98%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 14.9%;
+    --input: 0 0% 14.9%;
+    --ring: 0 0% 83.1%;
+    --chart-1: 220 70% 50%;
+    --chart-2: 160 60% 45%;
+    --chart-3: 30 80% 55%;
+    --chart-4: 280 65% 60%;
+    --chart-5: 340 75% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+.typeahead-popover ul::-webkit-scrollbar {
+  display: none;
+}
+
+.typeahead-popover ul {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.typeahead-popover li {
+  margin: 0 8px 0 8px;
+  padding: 8px;
+  color: #050505;
+  cursor: pointer;
+  line-height: 16px;
+  font-size: 15px;
+  display: flex;
+  align-content: center;
+  flex-direction: row;
+  flex-shrink: 0;
+  background-color: #fff;
+  border-radius: 8px;
+  border: 0;
+}
+
+.typeahead-popover li.active {
+  display: flex;
+  width: 20px;
+  height: 20px;
+  background-size: contain;
+}
+
+.typeahead-popover li:first-child {
+  border-radius: 8px 8px 0px 0px;
+}
+
+.typeahead-popover li:last-child {
+  border-radius: 0px 0px 8px 8px;
+}
+
+.typeahead-popover li:hover {
+  background-color: #eee;
+}
+
+.typeahead-popover li .text {
+  display: flex;
+  line-height: 20px;
+  flex-grow: 1;
+  min-width: 150px;
+}
+
+.typeahead-popover li .icon {
+  display: flex;
+  width: 20px;
+  height: 20px;
+  user-select: none;
+  margin-right: 8px;
+  line-height: 16px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+.component-picker-menu {
+  width: 200px;
+}
+
+/* tiptap placeholder (Placeholder extension sets data-placeholder on the empty node) */
+.tiptap > p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: #b4bbe3;
+}
+
+/* paragraphs continuing the line above (Enter, see `TightParagraph`): no
+   spacing between them, in the editor and in the previews */
+.prose p[data-tight] {
+  margin-top: 0;
+}
+.prose *:has(+ p[data-tight]) {
+  margin-bottom: 0;
+}
+
+/* list items hold paragraphs, and sit closer together than prose defaults to */
+.prose li > p {
+  margin: 0;
+}
+.prose li {
+  margin-top: 0.25em;
+  margin-bottom: 0.25em;
+}
+
+/* tables produced by the tiptap editor (editor and preview both use .prose) */
+.prose table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid #c8c8cc;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  table-layout: fixed;
+  margin: 1.25em 0;
+  font-size: inherit;
+  line-height: 1.4;
+}
+.prose table th,
+.prose table td {
+  border-right: 1px solid #d6d6da;
+  border-bottom: 1px solid #d6d6da;
+  padding: 0.5em 0.6em;
+  text-align: left;
+  vertical-align: top;
+  position: relative;
+}
+.prose table tr > :last-child {
+  border-right: none;
+}
+.prose table tr:last-child > * {
+  border-bottom: none;
+}
+.prose table th {
+  background: #f3f6fd;
+  font-weight: 600;
+}
+.prose table p {
+  margin: 0;
+}
+/* cell selection (drag across cells) */
+.tiptap .selectedCell::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(99, 102, 241, 0.12);
+  pointer-events: none;
+}
+
+/* code blocks (editor and preview both use .prose): light theme on a blue tint */
+.prose pre {
+  background: #f2f6ff;
+  color: #24292f;
+  border: 1px solid #dbe4fb;
+  border-radius: 0.75rem;
+  padding: 0.9em 1em;
+  font-size: 0.85em;
+  line-height: 1.55;
+  overflow-x: auto;
+}
+/* room for the language picker in the editor */
+.tiptap pre {
+  padding-right: 8rem;
+}
+.prose pre code {
+  background: none;
+  color: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  padding: 0;
+}
+/* highlight.js token colors, light */
+.hljs-comment,
+.hljs-quote {
+  color: #6b7a8d;
+  font-style: italic;
+}
+.hljs-keyword,
+.hljs-selector-tag,
+.hljs-literal,
+.hljs-doctag {
+  color: #a626a4;
+}
+.hljs-string,
+.hljs-regexp,
+.hljs-meta .hljs-string {
+  color: #1a7f37;
+}
+.hljs-number,
+.hljs-symbol,
+.hljs-variable,
+.hljs-template-variable,
+.hljs-attr,
+.hljs-attribute,
+.hljs-selector-attr,
+.hljs-selector-pseudo {
+  color: #b3541e;
+}
+.hljs-title,
+.hljs-name,
+.hljs-selector-id,
+.hljs-selector-class,
+.hljs-type,
+.hljs-built_in,
+.hljs-class .hljs-title {
+  color: #1f6feb;
+}
+.hljs-meta,
+.hljs-tag {
+  color: #57606a;
+}
+.hljs-emphasis {
+  font-style: italic;
+}
+.hljs-strong {
+  font-weight: 700;
+}
+
+/* spoilers: <details>/<summary> in the preview, a node view in the editor */
+.prose details,
+.tiptap .spoiler {
+  position: relative;
+  border: 1px solid #c8c8cc;
+  border-radius: 0.75rem;
+  margin: 1.25em 0;
+  overflow: hidden;
+}
+.prose details > summary,
+.tiptap .spoiler summary {
+  background: #f3f6fd;
+  border-bottom: 1px solid transparent;
+  padding: 0.5em 0.8em 0.5em 1.5em;
+  line-height: 1.5;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  margin: 0;
+}
+.prose details[open] > summary,
+.tiptap .spoiler[data-open] summary {
+  border-bottom-color: #e2e6f4;
+}
+.prose details > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* the disclosure triangle: a ::before in the preview, a button in the editor */
+.prose details > summary::before,
+.tiptap .spoiler-toggle::before {
+  content: "";
+  display: block;
+  width: 0;
+  height: 0;
+  border-left: 0.38em solid currentColor;
+  border-top: 0.29em solid transparent;
+  border-bottom: 0.29em solid transparent;
+  transition: transform 0.2s ease;
+}
+/* positioned inside the summary, which the preview's triangle is part of */
+.prose details > summary {
+  position: relative;
+}
+.prose details > summary::before {
+  position: absolute;
+  left: 0.62em;
+  top: 50%;
+  transform: translateY(-50%);
+}
+.prose details[open] > summary::before {
+  transform: translateY(-50%) rotate(90deg);
+}
+/* the button is a sibling of the summary, so it lines up with its padding box */
+.tiptap .spoiler-toggle {
+  position: absolute;
+  z-index: 1;
+  left: 0.62em;
+  top: 0.5em;
+  display: flex;
+  align-items: center;
+  height: 1.5em;
+  padding: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+.tiptap .spoiler[data-open] .spoiler-toggle::before {
+  transform: rotate(90deg);
+}
+
+/* opening and closing slides the content out of / into the title */
+:root {
+  /* lets `height: auto` animate in the editor's node view */
+  interpolate-size: allow-keywords;
+}
+.prose details::details-content {
+  block-size: 0;
+  overflow: hidden;
+  transition:
+    block-size 0.2s ease,
+    content-visibility 0.2s allow-discrete;
+}
+.prose details[open]::details-content {
+  block-size: auto;
+}
+.prose details > div[data-spoiler-content],
+.tiptap .spoiler [data-spoiler-content] {
+  padding: 0.6em 0.8em;
+}
+.tiptap .spoiler [data-spoiler-content] {
+  height: auto;
+  overflow: hidden;
+  transition:
+    height 0.2s ease,
+    padding 0.2s ease;
+}
+.tiptap .spoiler:not([data-open]) [data-spoiler-content] {
+  height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.prose details > summary > *:first-child,
+.prose details > div[data-spoiler-content] > *:first-child,
+.tiptap .spoiler [data-spoiler-content] > *:first-child {
+  margin-top: 0;
+}
+.prose details > div[data-spoiler-content] > *:last-child,
+.tiptap .spoiler [data-spoiler-content] > *:last-child {
+  margin-bottom: 0;
+}
+
+/* placeholder for an empty spoiler / box title */
+.tiptap summary.is-empty::before,
+.tiptap [data-box-title].is-empty::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: #b4bbe3;
+}
+
+/* boxes: the same card in the editor and the preview, both carry the class */
+.box {
+  position: relative;
+  border: 1px solid #c8c8cc;
+  border-radius: 0.75rem;
+  margin: 1.25em 0;
+  overflow: hidden;
+}
+.box [data-box-title] {
+  background: #f3f6fd;
+  border-bottom: 1px solid #e2e6f4;
+  padding: 0.5em 0.8em;
+  line-height: 1.5;
+  margin: 0;
+  /* contains the floated badge, so a title-less bar keeps its line height */
+  display: flow-root;
+  min-height: 1.5em;
+}
+/* room for the type picker, which is not part of the title in the editor */
+.tiptap .box [data-box-title] {
+  padding-right: 10rem;
+}
+.box [data-box-content] {
+  padding: 0.6em 0.8em;
+}
+.box [data-box-title] > *:first-child,
+.box [data-box-content] > *:first-child {
+  margin-top: 0;
+}
+.box [data-box-content] > *:last-child {
+  margin-bottom: 0;
+}
+
+/* the type badge, floated so the title text flows around it */
+.box-badge {
+  float: right;
+  display: flex;
+  align-items: center;
+  gap: 0.25em;
+  margin-left: 0.8em;
+  line-height: inherit;
+  color: #4f46e5;
+  user-select: none;
+}
+.box-badge svg {
+  width: 1em;
+  height: 1em;
+}
+
+/* formulas: a MathLive field in the editor, MathLive's static markup in the
+   preview (see render-math.ts) */
+.tiptap .math,
+.prose [data-math] {
+  border-radius: 0.25rem;
+  line-height: 1;
+}
+/* the editor's chip, so an empty or short formula is still visible as one */
+.tiptap .math {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35em;
+  background: #f3f6fd;
+  padding: 0 0.1em;
+}
+.tiptap .math-inline {
+  vertical-align: baseline;
+}
+.tiptap .math-inline.math-empty math-field {
+  min-width: 1.75em;
+}
+.tiptap .math-selected {
+  outline: 2px solid #c7d2fe;
+  outline-offset: 1px;
+}
+.tiptap .math-host {
+  display: inline-flex;
+  min-width: 0;
+}
+/* a formula on its own line: centered like in the preview, with the buttons
+   pinned to the right edge so they do not push it out of the middle */
+.tiptap .math-block {
+  display: flex;
+  position: relative;
+  justify-content: center;
+  margin: 1.25em 0;
+  padding: 0.25em 3.5em;
+}
+.prose [data-math-block] {
+  display: block;
+  margin: 1.25em 0;
+  text-align: center;
+}
+
+/* the buttons shown while a formula is being edited */
+.tiptap .math-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2em;
+  padding-right: 0.15em;
+}
+.tiptap .math-block .math-controls {
+  position: absolute;
+  top: 50%;
+  right: 0.4em;
+  transform: translateY(-50%);
+}
+
+/* the field brings its own border, background and menu, none of which fit
+   inside a line of text */
+.tiptap math-field {
+  border: none;
+  background: none;
+  padding: 0;
+  outline: none;
+  font-size: inherit;
+  --caret-color: #4f46e5;
+  --selection-background-color: #e0e7ff;
+  --primary: #4f46e5;
+}
+/* the toggles have their own buttons next to the field */
+.tiptap math-field::part(menu-toggle),
+.tiptap math-field::part(virtual-keyboard-toggle) {
+  display: none;
+}
+
+/* images and videos: an editing card in the editor (thumbnail, link, delete),
+   the picture and the embed itself only in the previews */
+.tiptap .media-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 1.25em 0;
+  padding: 0.6rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  background: #f9fafb;
+  font-size: 1rem;
+}
+/* one picture (one video, …) per row, a gallery has several of them */
+.tiptap .media-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.tiptap .media-selected {
+  outline: 2px solid #c7d2fe;
+  outline-offset: 2px;
+}
+.tiptap .media-thumbnail {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: none;
+  width: 7rem;
+  aspect-ratio: 16 / 9;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  background: #e5e7eb;
+  color: #9ca3af;
+}
+.tiptap .media-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  margin: 0;
+}
+.tiptap .media-thumbnail svg {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+.tiptap .media-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+  flex: 1;
+}
+.tiptap .media-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+.tiptap .media-input {
+  width: 100%;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  background: #fff;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  color: #374151;
+  outline: none;
+}
+.tiptap .media-input:focus {
+  border-color: #c7d2fe;
+  box-shadow: 0 0 0 2px #e0e7ff;
+}
+.tiptap .media-hint {
+  font-size: 0.75rem;
+  color: #b45309;
+}
+.tiptap .media-delete {
+  flex: none;
+  align-self: flex-start;
+  border-radius: 9999px;
+  padding: 0.25rem;
+  color: #9ca3af;
+}
+.tiptap .media-delete:hover {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+.tiptap .media-delete svg {
+  width: 1rem;
+  height: 1rem;
+}
+.tiptap .media-add {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  border: 1px dashed #d1d5db;
+  border-radius: 0.5rem;
+  padding: 0.3rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+.tiptap .media-add:hover {
+  border-color: #c7d2fe;
+  background: #eef2ff;
+  color: #4f46e5;
+}
+.tiptap .media-add svg {
+  width: 0.875rem;
+  height: 0.875rem;
+}
+
+/* an image without a link shows nothing, like a video without one */
+.prose img[src=""] {
+  display: none;
+}
+
+/* several images stand side by side on one panel and scroll when they do not
+   fit the viewport; a single image is shown on its own, without the panel */
+.prose .gallery {
+  display: flex;
+  gap: 0.75rem;
+  margin: 1.25em 0;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background: #eef3fe;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+}
+/* one height for all of them, whatever their format; the width follows, so a
+   wide picture is wide and the panel scrolls rather than letterboxing it */
+.prose .gallery img {
+  flex: none;
+  width: auto;
+  height: 14rem;
+  max-width: none;
+  margin: 0;
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  background: #fff;
+  object-fit: contain;
+}
+
+/* the preview plays the video */
+.prose [data-video] {
+  position: relative;
+  margin: 1.25em 0;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: #000;
+  aspect-ratio: 16 / 9;
+}
+.prose [data-video] iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+/* nothing to play (no link, or not a YouTube one): the learners see nothing,
+   the editor card keeps the link that was typed */
+.prose [data-video]:empty {
+  display: none;
+}
+
+/* the preview shows the applet, which brings its own toolbar and is taller
+   than it is wide on the small end */
+.prose [data-geogebra] {
+  position: relative;
+  margin: 1.25em 0;
+  border-radius: 0.75rem;
+  overflow: hidden;
+  background: #fff;
+  aspect-ratio: 4 / 3;
+}
+.prose [data-geogebra] iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+/* no applet (no link, or not a GeoGebra one): like a video without one */
+.prose [data-geogebra]:empty {
+  display: none;
+}
