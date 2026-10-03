@@ -1,4 +1,4 @@
-import type { Handle, Schema } from "./types.ts"
+import type { Handle, HandleOf, Schema, SnapshotOf } from "./types.ts"
 
 export interface ObjectHandle<Schemas extends SchemaMap> extends Handle<ObjectSnapshot<Schemas>> {
   field<Key extends keyof Schemas & string>(key: Key): HandleOf<Schemas[Key]>
@@ -43,9 +43,3 @@ type SchemaMap = Readonly<Record<string, Schema<any, any, any>>>
 type ObjectSnapshot<Schemas extends SchemaMap> = {
   readonly [Key in keyof Schemas]: SnapshotOf<Schemas[Key]>
 }
-
-type SnapshotOf<ChildSchema> =
-  ChildSchema extends Schema<infer Snapshot, any, any> ? Snapshot : never
-
-type HandleOf<ChildSchema> =
-  ChildSchema extends Schema<any, infer ChildHandle, any> ? ChildHandle : never

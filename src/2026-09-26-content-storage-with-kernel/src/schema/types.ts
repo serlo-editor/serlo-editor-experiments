@@ -14,3 +14,9 @@ export interface Schema<
 
   bind<Refs extends NodeRefs, Tx>(store: NodeStore<Refs, Tx>, ref: Refs[Kind]): SchemaHandle
 }
+
+export type SnapshotOf<ChildSchema> =
+  ChildSchema extends Schema<infer Snapshot, any, any> ? Snapshot : never
+
+export type HandleOf<ChildSchema> =
+  ChildSchema extends Schema<any, infer ChildHandle, any> ? ChildHandle : never
