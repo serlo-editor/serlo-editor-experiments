@@ -18,10 +18,13 @@ export function createDocument<
   initialSnapshot: Snapshot,
 ): Document<Snapshot, Root> {
   const ref = schema.create(store, structuredClone(initialSnapshot))
-  const root = schema.bind(store, store.attach(ref))
 
   return {
-    root,
-    snapshot: () => structuredClone(root.snapshot()),
+    get root() {
+      return schema.bind(store, store.attach(ref))
+    },
+    snapshot() {
+      return structuredClone(this.root.snapshot())
+    },
   }
 }
