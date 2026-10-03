@@ -49,4 +49,5 @@ export interface ArrayEditor<ItemRef> {
 
 export interface MapEditor<ItemRef> {
   set(field: string, item: ItemRef): void
+  remove(field: string): void
 }

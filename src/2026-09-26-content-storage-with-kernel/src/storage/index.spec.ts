@@ -146,6 +146,30 @@ describeWithStores("NodeStore", (getStore) => {
     }
   })
 
+  test("removes map fields idempotently without mutating previous reads", () => {
+    const store = getStore()
+    const keys = ["", "世界 👋", "__proto__", "constructor", "toString"]
+    const fields = Object.fromEntries(keys.map((key) => [key, store.cell.create(key)]))
+    const ref = store.attach(store.map.create(fields))
+    const previous = store.map.get(ref)
+    store.transact((tx) => {
+      const editor = store.map.edit(ref, tx)
+      for (const key of keys) {
+        editor.remove(key)
+        editor.remove(key)
+        assert.equal(Object.hasOwn(store.map.get(ref), key), false)
+      }
+      editor.remove("missing")
+      assert.deepEqual(store.map.get(ref), {})
+    })
+    assert.deepEqual(store.map.get(ref), {})
+    assert.deepEqual(previous, fields)
+
+    const child = store.cell.create("Again")
+    store.transact((tx) => store.map.edit(ref, tx).set("__proto__", child))
+    assert.deepEqual(store.map.get(ref), { ["__proto__"]: child })
+  })
+
   test("inserts maps into arrays", () => {
     const nodeStore = getStore()
     const rootRef = nodeStore.array.create([])

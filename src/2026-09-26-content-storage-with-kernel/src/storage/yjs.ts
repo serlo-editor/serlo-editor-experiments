@@ -66,6 +66,9 @@ export class YjsNodeStore implements YjsNodeStoreContract {
       set: (field, item) => {
         ref.set(field, item)
       },
+      remove: (field) => {
+        ref.delete(field)
+      },
     }),
   }
 

@@ -61,6 +61,13 @@ export class FlatNodeStore implements FlatNodeStoreContract {
             [field]: item,
           }))
         },
+        remove: (field) => {
+          this.mapTable.applyUpdate(ref, (previousFields) => {
+            const fields = { ...previousFields }
+            delete fields[field]
+            return fields
+          })
+        },
       }
     },
   }
