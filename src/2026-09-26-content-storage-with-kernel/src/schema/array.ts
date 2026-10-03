@@ -5,6 +5,7 @@ import type { Handle, Schema } from "./types.ts"
 export interface ArrayHandle<Item extends JSONValue, Child extends Handle<Item>> extends Handle<
   readonly Item[]
 > {
+  children(): Child[]
   map<Result>(callback: (child: Child, index: number) => Result): Result[]
   remove(index: number): void
   insert(index: number, value: Item): void
@@ -24,10 +25,14 @@ export function array<
     },
 
     bind(store, ref) {
+      const children = () =>
+        store.array.get(ref).map((childRef) => childSchema.bind(store, childRef))
+
       return {
+        children,
+
         map(callback) {
-          const children = store.array.get(ref).map((childRef) => childSchema.bind(store, childRef))
-          return children.map((child, index) => callback(child, index))
+          return children().map((child, index) => callback(child, index))
         },
 
         remove(index) {
@@ -44,9 +49,7 @@ export function array<
         },
 
         snapshot() {
-          return store.array.get(ref).map((childRef) => {
-            return childSchema.bind(store, childRef).snapshot()
-          })
+          return children().map((child) => child.snapshot())
         },
       }
     },
