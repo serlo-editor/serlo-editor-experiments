@@ -55,6 +55,9 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     },
     edit: (ref) => {
       return {
+        remove: (index) => {
+          ref.delete(index, 1)
+        },
         insert: (index, item) => {
           ref.insert(index, [item])
         },

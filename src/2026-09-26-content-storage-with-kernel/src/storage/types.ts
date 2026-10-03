@@ -43,6 +43,7 @@ export interface CellEditor {
 }
 
 export interface ArrayEditor<ItemRef> {
+  remove(index: number): void
   insert(index: number, item: ItemRef): void
 }
 

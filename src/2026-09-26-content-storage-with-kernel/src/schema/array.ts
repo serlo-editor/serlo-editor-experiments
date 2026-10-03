@@ -5,7 +5,8 @@ import type { Handle, Schema } from "./types.ts"
 export interface ArrayHandle<Item extends JSONValue, Child extends Handle<Item>> extends Handle<
   readonly Item[]
 > {
-  at(index: number): Child
+  map<Result>(callback: (child: Child, index: number, array: Child[]) => Result): Result[]
+  remove(index: number): void
   insert(index: number, value: Item): void
 }
 
@@ -24,12 +25,15 @@ export function array<
 
     bind(store, ref) {
       return {
-        at(index) {
-          const childRef = store.array.get(ref)[index]
-          if (childRef === undefined) {
-            throw new RangeError("Array index absent.")
-          }
-          return childSchema.bind(store, childRef)
+        map(callback) {
+          const children = store.array.get(ref).map((childRef) => childSchema.bind(store, childRef))
+          return children.map(callback)
+        },
+
+        remove(index) {
+          store.transact((tx) => {
+            store.array.edit(ref, tx).remove(index)
+          })
         },
 
         insert(index, snapshot) {

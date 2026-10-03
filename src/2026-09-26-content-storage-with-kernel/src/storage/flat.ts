@@ -41,6 +41,12 @@ export class FlatNodeStore implements FlatNodeStoreContract {
         throw new Error("Invalid transaction.")
       }
       return {
+        remove: (index) => {
+          this.arrayTable.applyUpdate(ref, (previousItems) => [
+            ...previousItems.slice(0, index),
+            ...previousItems.slice(index + 1),
+          ])
+        },
         insert: (index, item) => {
           this.arrayTable.applyUpdate(ref, (previousItems) => [
             ...previousItems.slice(0, index),
