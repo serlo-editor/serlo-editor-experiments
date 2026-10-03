@@ -1,15 +1,13 @@
-import type { JSONValue, Primitive } from "../utils/index.ts"
+import type { Primitive } from "../utils/index.ts"
 import type { Handle, Schema } from "./types.ts"
 
-export function string(): Schema<string, StringHandle, "cell"> {
+export function string() {
   return primitive("string", (value): value is string => typeof value === "string")
 }
 
-type StringHandle = PrimitiveHandle<string>
-
 function primitive<Value extends Primitive>(
   expected: string,
-  isValue: PrimitiveGuard<Value>,
+  isValue: Guard<Value>,
 ): Schema<Value, PrimitiveHandle<Value>, "cell"> {
   return {
     create(store, snapshot) {
@@ -43,4 +41,4 @@ interface PrimitiveHandle<Value extends Primitive> extends Handle<Value> {
   set(value: Value): void
 }
 
-type PrimitiveGuard<Value extends Primitive> = (value: JSONValue) => value is Value
+type Guard<Value> = (value: unknown) => value is Value
