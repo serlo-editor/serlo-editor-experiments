@@ -1,7 +1,13 @@
 import type { Handle, HandleOf, Schema, SnapshotOf } from "./types.ts"
 
-export interface ObjectHandle<Schemas extends SchemaMap> extends Handle<ObjectSnapshot<Schemas>> {
+interface ObjectHandle<Schemas extends SchemaMap> extends Handle<ObjectSnapshot<Schemas>> {
   field<Key extends keyof Schemas & string>(key: Key): HandleOf<Schemas[Key]>
+}
+
+type SchemaMap = Readonly<Record<string, Schema<any, any, any>>>
+
+type ObjectSnapshot<Schemas extends SchemaMap> = {
+  readonly [Key in keyof Schemas]: SnapshotOf<Schemas[Key]>
 }
 
 export function object<Schemas extends SchemaMap>(
@@ -36,10 +42,4 @@ export function object<Schemas extends SchemaMap>(
       }
     },
   }
-}
-
-type SchemaMap = Readonly<Record<string, Schema<any, any, any>>>
-
-type ObjectSnapshot<Schemas extends SchemaMap> = {
-  readonly [Key in keyof Schemas]: SnapshotOf<Schemas[Key]>
 }
