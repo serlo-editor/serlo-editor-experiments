@@ -15,14 +15,10 @@ export function object<Schemas extends SchemaMap>(
 ): Schema<ObjectSnapshot<Schemas>, ObjectHandle<Schemas>, "map"> {
   return {
     create(store, snapshot) {
-      return store.map.create(
-        Object.fromEntries(
-          Object.entries(schemas).map(([key, schema]) => [
-            key,
-            schema.create(store, snapshot[key]),
-          ]),
-        ),
+      const fields = Object.fromEntries(
+        Object.entries(schemas).map(([key, schema]) => [key, schema.create(store, snapshot[key])]),
       )
+      return store.map.create(fields)
     },
 
     bind(store, ref) {

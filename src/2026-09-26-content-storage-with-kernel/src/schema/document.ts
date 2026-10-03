@@ -1,4 +1,4 @@
-import type { NodeKind, NodeStore } from "../storage/types.ts"
+import type { NodeKind, NodeRefs, NodeStore } from "../storage/types.ts"
 import type { JSONValue } from "../utils/index.ts"
 import type { Handle, Schema } from "./types.ts"
 
@@ -11,9 +11,10 @@ export function createDocument<
   Snapshot extends JSONValue,
   Root extends Handle<Snapshot>,
   Kind extends NodeKind,
-  Store extends NodeStore<any, any>,
+  Refs extends NodeRefs,
+  Tx,
 >(
-  store: Store,
+  store: NodeStore<Refs, Tx>,
   schema: Schema<Snapshot, Root, Kind>,
   initialSnapshot: Snapshot,
 ): Document<Snapshot, Root> {
