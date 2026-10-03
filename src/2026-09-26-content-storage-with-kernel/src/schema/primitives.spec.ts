@@ -3,7 +3,7 @@ import test from "node:test"
 
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import { createDocument } from "./document.ts"
-import { boolean, string } from "./primitives.ts"
+import { boolean, number, string } from "./primitives.ts"
 
 describeWithStores("primitive schemas", (getStore) => {
   test("creates and edits string documents", () => {
@@ -28,5 +28,17 @@ describeWithStores("primitive schemas", (getStore) => {
 
     assert.equal(root.get(), true)
     assert.equal(root.snapshot(), true)
+  })
+
+  test("creates and edits number documents", () => {
+    const { root } = createDocument(getStore(), number(), 1)
+
+    assert.equal(root.get(), 1)
+    assert.equal(root.snapshot(), 1)
+
+    root.set(2)
+
+    assert.equal(root.get(), 2)
+    assert.equal(root.snapshot(), 2)
   })
 })

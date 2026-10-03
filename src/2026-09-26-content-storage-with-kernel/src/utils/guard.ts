@@ -9,3 +9,7 @@ export function isBoolean(value: JSONValue): value is boolean {
 export function isString(value: JSONValue): value is string {
   return typeof value === "string"
 }
+
+export function isNumber(value: JSONValue): value is number {
+  return typeof value === "number"
+}
