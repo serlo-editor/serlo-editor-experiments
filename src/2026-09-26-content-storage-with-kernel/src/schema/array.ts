@@ -5,7 +5,7 @@ import type { Handle, Schema } from "./types.ts"
 export interface ArrayHandle<Item extends JSONValue, Child extends Handle<Item>> extends Handle<
   readonly Item[]
 > {
-  map<Result>(callback: (child: Child, index: number, array: Child[]) => Result): Result[]
+  map<Result>(callback: (child: Child, index: number) => Result): Result[]
   remove(index: number): void
   insert(index: number, value: Item): void
 }
@@ -27,7 +27,7 @@ export function array<
       return {
         map(callback) {
           const children = store.array.get(ref).map((childRef) => childSchema.bind(store, childRef))
-          return children.map(callback)
+          return children.map((child, index) => callback(child, index))
         },
 
         remove(index) {
