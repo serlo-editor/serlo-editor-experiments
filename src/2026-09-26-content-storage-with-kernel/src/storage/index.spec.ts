@@ -5,7 +5,7 @@ import * as Y from "yjs"
 
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import type { JSONValue } from "../utils/index.ts"
-import { YjsNodeStore } from "./yjs.ts"
+import { FlatNodeStore, YjsNodeStore } from "./index.ts"
 
 describeWithStores("NodeStore", (getStore) => {
   test("reads every JSON value kind without losing empty or falsy values", () => {
@@ -301,6 +301,62 @@ describeWithStores("NodeStore", (getStore) => {
 
     assert.equal(nodeStore.cell.get(ref), "Recovered")
   })
+})
+
+test("FlatNodeStore keeps references distinct across stores and node kinds", () => {
+  const first = new FlatNodeStore()
+  const second = new FlatNodeStore()
+  const firstRefs = [first.cell.create(null), first.array.create([]), first.map.create({})]
+  const secondRefs = [second.cell.create(null), second.array.create([]), second.map.create({})]
+
+  assert.equal(new Set([...firstRefs, ...secondRefs]).size, 6)
+  for (const ref of firstRefs) {
+    assert.equal(first.attach(ref), ref)
+    assert.throws(() => second.attach(ref), {
+      message: `Reference with key ${ref} does not exist.`,
+    })
+  }
+})
+
+test("FlatNodeStore editors require an active transaction from their own store", () => {
+  const store = new FlatNodeStore()
+  const cell = store.cell.create(null)
+  const array = store.array.create([])
+  const map = store.map.create({})
+  const checkEditors = (tx: Parameters<typeof store.cell.edit>[1], valid: boolean) => {
+    for (const edit of [
+      () => store.cell.edit(cell, tx),
+      () => store.array.edit(array, tx),
+      () => store.map.edit(map, tx),
+    ]) {
+      if (valid) {
+        assert.doesNotThrow(edit)
+      } else {
+        assert.throws(edit, { message: "Invalid transaction." })
+      }
+    }
+  }
+
+  const expired = store.transact((tx) => {
+    checkEditors(tx, true)
+    store.transact((nested) => {
+      checkEditors(tx, true)
+      checkEditors(nested, true)
+    })
+    checkEditors(tx, true)
+    return tx
+  })
+  checkEditors(expired, false)
+  new FlatNodeStore().transact((tx) => checkEditors(tx, false))
+
+  let failed = expired
+  assert.throws(() =>
+    store.transact((tx) => {
+      failed = tx
+      throw new Error("Transaction failed")
+    }),
+  )
+  checkEditors(failed, false)
 })
 
 test("YjsNodeStore rejects cells missing their value", (context) => {

@@ -35,13 +35,11 @@ export class YjsNodeStore implements YjsNodeStoreContract {
       }
       return value
     },
-    edit: (ref) => {
-      return {
-        set: (value) => {
-          ref.set("value", value)
-        },
-      }
-    },
+    edit: (ref) => ({
+      set: (value) => {
+        ref.set("value", value)
+      },
+    }),
   }
 
   readonly array: YjsNodeStoreContract["array"] = {
@@ -50,35 +48,25 @@ export class YjsNodeStore implements YjsNodeStoreContract {
       array.push(items as YjsNodeRef[])
       return array as YjsNodeRefs["array"]
     },
-    get: (ref) => {
-      return ref.toArray()
-    },
-    edit: (ref) => {
-      return {
-        remove: (index) => {
-          ref.delete(index, 1)
-        },
-        insert: (index, item) => {
-          ref.insert(index, [item])
-        },
-      }
-    },
+    get: (ref) => ref.toArray(),
+    edit: (ref) => ({
+      remove: (index) => {
+        ref.delete(index, 1)
+      },
+      insert: (index, item) => {
+        ref.insert(index, [item])
+      },
+    }),
   }
 
   readonly map: YjsNodeStoreContract["map"] = {
-    create: (fields) => {
-      return new Y.Map<YjsNodeRef>(Object.entries(fields)) as YjsNodeRefs["map"]
-    },
-    get: (ref) => {
-      return Object.fromEntries(ref.entries())
-    },
-    edit: (ref) => {
-      return {
-        set: (field, item) => {
-          ref.set(field, item)
-        },
-      }
-    },
+    create: (fields) => new Y.Map<YjsNodeRef>(Object.entries(fields)) as YjsNodeRefs["map"],
+    get: (ref) => Object.fromEntries(ref.entries()),
+    edit: (ref) => ({
+      set: (field, item) => {
+        ref.set(field, item)
+      },
+    }),
   }
 
   attach<Ref extends YjsNodeRef>(ref: Ref): Ref & RootRef {

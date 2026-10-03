@@ -9,24 +9,17 @@ type FlatNodeRef = FlatNodeRefs[NodeKind]
 type FlatNodeStoreContract = NodeStore<FlatNodeRefs, TransactionToken>
 
 export class FlatNodeStore implements FlatNodeStoreContract {
-  private readonly refGenerator = new NodeRefGenerator()
   private readonly activeTransactions = new Set<TransactionToken>()
 
-  private readonly cellTable = new ReferenceTable<"cell", JSONValue>(this.refGenerator)
-  private readonly arrayTable = new ReferenceTable<"array", readonly FlatNodeRef[]>(
-    this.refGenerator,
-  )
-  private readonly mapTable = new ReferenceTable<"map", Readonly<Record<string, FlatNodeRef>>>(
-    this.refGenerator,
-  )
+  private readonly cellTable = new ReferenceTable<"cell", JSONValue>()
+  private readonly arrayTable = new ReferenceTable<"array", readonly FlatNodeRef[]>()
+  private readonly mapTable = new ReferenceTable<"map", Readonly<Record<string, FlatNodeRef>>>()
 
   readonly cell: FlatNodeStoreContract["cell"] = {
     create: (value) => this.cellTable.create(value),
     get: (ref) => this.cellTable.get(ref),
     edit: (ref, tx) => {
-      if (!this.activeTransactions.has(tx)) {
-        throw new Error("Invalid transaction.")
-      }
+      this.assertActiveTransaction(tx)
       return {
         set: (value) => this.cellTable.applyUpdate(ref, () => value),
       }
@@ -37,9 +30,7 @@ export class FlatNodeStore implements FlatNodeStoreContract {
     create: (items) => this.arrayTable.create(items),
     get: (ref) => this.arrayTable.get(ref),
     edit: (ref, tx) => {
-      if (!this.activeTransactions.has(tx)) {
-        throw new Error("Invalid transaction.")
-      }
+      this.assertActiveTransaction(tx)
       return {
         remove: (index) => {
           this.arrayTable.applyUpdate(ref, (previousItems) => [
@@ -62,9 +53,7 @@ export class FlatNodeStore implements FlatNodeStoreContract {
     create: (fields) => this.mapTable.create(fields),
     get: (ref) => this.mapTable.get(ref),
     edit: (ref, tx) => {
-      if (!this.activeTransactions.has(tx)) {
-        throw new Error("Invalid transaction.")
-      }
+      this.assertActiveTransaction(tx)
       return {
         set: (field, item) => {
           this.mapTable.applyUpdate(ref, (previousFields) => ({
@@ -84,7 +73,7 @@ export class FlatNodeStore implements FlatNodeStoreContract {
   }
 
   transact<T>(callback: (tx: TransactionToken) => T): T {
-    const tx = createTransactionToken()
+    const tx = Symbol("transactionTransaction") as TransactionToken
     this.activeTransactions.add(tx)
     try {
       return callback(tx)
@@ -92,18 +81,20 @@ export class FlatNodeStore implements FlatNodeStoreContract {
       this.activeTransactions.delete(tx)
     }
   }
+
+  private assertActiveTransaction(tx: TransactionToken): void {
+    if (!this.activeTransactions.has(tx)) {
+      throw new Error("Invalid transaction.")
+    }
+  }
 }
 
 class ReferenceTable<Kind extends NodeKind, Value extends JSONValue> {
+  private static counter = 0
   private readonly table = new Map<FlatNodeRefs[Kind], Value>()
-  private readonly refGenerator: NodeRefGenerator
-
-  constructor(refGenerator: NodeRefGenerator) {
-    this.refGenerator = refGenerator
-  }
 
   create(value: Value): FlatNodeRefs[Kind] {
-    const ref = this.refGenerator.next<Kind>()
+    const ref = `node:${ReferenceTable.counter++}` as FlatNodeRefs[Kind]
     this.table.set(ref, value)
     return ref
   }
@@ -129,16 +120,4 @@ class ReferenceTable<Kind extends NodeKind, Value extends JSONValue> {
 
 export type Update<Value extends JSONValue> = Value | ((previousValue: Value) => Value)
 
-class NodeRefGenerator {
-  private static counter = 0
-
-  next<Kind extends NodeKind>(): FlatNodeRefs[Kind] {
-    return `node:${NodeRefGenerator.counter++}` as FlatNodeRefs[Kind]
-  }
-}
-
 type TransactionToken = Branded<symbol, "TransactionToken">
-
-function createTransactionToken(): TransactionToken {
-  return Symbol("transactionTransaction") as TransactionToken
-}
