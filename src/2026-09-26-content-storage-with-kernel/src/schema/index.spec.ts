@@ -8,8 +8,8 @@ import { FlatNodeStore, YjsNodeStore } from "../storage/index.ts"
 import type { NodeStore, Ref } from "../storage/types.ts"
 import * as schema from "./index.ts"
 
-test("exports only array and string", () => {
-  assert.deepEqual(Object.keys(schema).sort(), ["array", "string"])
+test("exports array and primitive schemas", () => {
+  assert.deepEqual(Object.keys(schema).sort(), ["array", "boolean", "string"])
 })
 
 test.describe("FlatNodeStore schemas", () => {

@@ -1,2 +1,2 @@
-export { string } from "./primitive.ts"
+export { boolean, string } from "./primitives.ts"
 export { array } from "./array.ts"
