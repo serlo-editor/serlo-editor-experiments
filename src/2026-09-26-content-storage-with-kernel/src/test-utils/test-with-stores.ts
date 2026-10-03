@@ -1,5 +1,4 @@
 import test from "node:test"
-import type { TestContext } from "node:test"
 
 import * as Y from "yjs"
 
@@ -14,18 +13,30 @@ type StoreRefs<Store extends FlatNodeStore | YjsNodeStore> = {
 
 type StoreTx<Store extends FlatNodeStore | YjsNodeStore> = Parameters<Store["cell"]["edit"]>[1]
 
-export function testWithStores(
+export function describeWithStores(
   name: string,
-  callback: <Refs extends NodeRefs, Tx>(
-    store: NodeStore<Refs, Tx>,
-    context: TestContext,
-  ) => void | Promise<void>,
+  callback: <Refs extends NodeRefs, Tx>(getStore: () => NodeStore<Refs, Tx>) => void,
 ): void {
-  test(`${name} (FlatNodeStore)`, (context) =>
-    callback<StoreRefs<FlatNodeStore>, StoreTx<FlatNodeStore>>(new FlatNodeStore(), context))
-  test(`${name} (YjsNodeStore)`, (context) => {
-    const doc = new Y.Doc()
-    context.after(() => doc.destroy())
-    return callback<StoreRefs<YjsNodeStore>, StoreTx<YjsNodeStore>>(new YjsNodeStore(doc), context)
+  test.describe(name, () => {
+    test.describe("FlatNodeStore", () => {
+      let store!: NodeStore<StoreRefs<FlatNodeStore>, StoreTx<FlatNodeStore>>
+
+      test.beforeEach(() => {
+        store = new FlatNodeStore()
+      })
+      callback<StoreRefs<FlatNodeStore>, StoreTx<FlatNodeStore>>(() => store)
+    })
+
+    test.describe("YjsNodeStore", () => {
+      let store!: NodeStore<StoreRefs<YjsNodeStore>, StoreTx<YjsNodeStore>>
+      let doc!: Y.Doc
+
+      test.beforeEach(() => {
+        doc = new Y.Doc()
+        store = new YjsNodeStore(doc)
+      })
+      test.afterEach(() => doc.destroy())
+      callback<StoreRefs<YjsNodeStore>, StoreTx<YjsNodeStore>>(() => store)
+    })
   })
 }

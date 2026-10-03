@@ -1,26 +1,15 @@
 import assert from "node:assert/strict"
 import test from "node:test"
-import type { TestContext } from "node:test"
 
-import * as Y from "yjs"
-
-import { FlatNodeStore, YjsNodeStore } from "../storage/index.ts"
-import type { NodeStore, Ref } from "../storage/types.ts"
+import type { NodeRefs, NodeStore } from "../storage/types.ts"
+import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import * as schema from "./index.ts"
 
-test.describe("FlatNodeStore schemas", () => {
-  registerSchemaTests(() => new FlatNodeStore())
-})
+describeWithStores("schemas", registerSchemaTests)
 
-test.describe("YjsNodeStore schemas", () => {
-  registerSchemaTests(createYjsNodeStore)
-})
-
-function registerSchemaTests<Cell extends Ref, Array extends Ref, Map extends Ref, Tx>(
-  createStore: (context: TestContext) => NodeStore<{ cell: Cell; array: Array; map: Map }, Tx>,
-): void {
-  test("creates, attaches, reads, edits, and rebinds a string", (context) => {
-    const store = createStore(context)
+function registerSchemaTests<Refs extends NodeRefs, Tx>(getStore: () => NodeStore<Refs, Tx>): void {
+  test("creates, attaches, reads, edits, and rebinds a string", () => {
+    const store = getStore()
     const textSchema = schema.string()
     const root = store.attach(textSchema.create(store, "Ada"))
     const text = textSchema.bind(store, root)
@@ -42,8 +31,8 @@ function registerSchemaTests<Cell extends Ref, Array extends Ref, Map extends Re
     assert.equal(text.snapshot(), "Hello, 世界 👋")
   })
 
-  test("rejects non-string cell values when reading string handles", (context) => {
-    const store = createStore(context)
+  test("rejects non-string cell values when reading string handles", () => {
+    const store = getStore()
     const textSchema = schema.string()
 
     for (const value of [null, false, 42, [], {}]) {
@@ -55,8 +44,8 @@ function registerSchemaTests<Cell extends Ref, Array extends Ref, Map extends Re
     }
   })
 
-  test("validates child reads after storage writes and permits recovery", (context) => {
-    const store = createStore(context)
+  test("validates child reads after storage writes and permits recovery", () => {
+    const store = getStore()
     const childRef = store.cell.create("Ada")
     const root = store.attach(store.array.create([childRef]))
     const names = schema.array(schema.string()).bind(store, root)
@@ -77,8 +66,8 @@ function registerSchemaTests<Cell extends Ref, Array extends Ref, Map extends Re
     assert.deepEqual(names.snapshot(), ["Grace"])
   })
 
-  test("creates a string array, edits children, inserts, and retrieves", (context) => {
-    const store = createStore(context)
+  test("creates a string array, edits children, inserts, and retrieves", () => {
+    const store = getStore()
     const namesSchema = schema.array(schema.string())
     const root = store.attach(namesSchema.create(store, ["Ada", "Linus"] as const))
     const names = namesSchema.bind(store, root)
@@ -101,8 +90,8 @@ function registerSchemaTests<Cell extends Ref, Array extends Ref, Map extends Re
     assert.equal(names.at(0).get(), "Katherine")
   })
 
-  test("inserts into empty arrays and at beginning, middle, and end", (context) => {
-    const store = createStore(context)
+  test("inserts into empty arrays and at beginning, middle, and end", () => {
+    const store = getStore()
     const namesSchema = schema.array(schema.string())
     const root = store.attach(namesSchema.create(store, []))
     const names = namesSchema.bind(store, root)
@@ -116,8 +105,8 @@ function registerSchemaTests<Cell extends Ref, Array extends Ref, Map extends Re
     assert.deepEqual(names.snapshot(), ["Ada", "Alan", "Grace", "Linus"])
   })
 
-  test("retained child handles follow nodes, not shifted indices", (context) => {
-    const store = createStore(context)
+  test("retained child handles follow nodes, not shifted indices", () => {
+    const store = getStore()
     const namesSchema = schema.array(schema.string())
     const root = store.attach(namesSchema.create(store, ["Ada", "Ada"]))
     const names = namesSchema.bind(store, root)
@@ -131,8 +120,8 @@ function registerSchemaTests<Cell extends Ref, Array extends Ref, Map extends Re
     assert.equal(names.at(1).get(), "Ada", "Equal initial values have distinct cells")
   })
 
-  test("composes nested arrays and inserts fresh child graphs", (context) => {
-    const store = createStore(context)
+  test("composes nested arrays and inserts fresh child graphs", () => {
+    const store = getStore()
     const rowsSchema = schema.array(schema.array(schema.string()))
     const root = store.attach(rowsSchema.create(store, [["Ada"], [], ["Ada"]]))
     const rows = rowsSchema.bind(store, root)
@@ -147,8 +136,8 @@ function registerSchemaTests<Cell extends Ref, Array extends Ref, Map extends Re
     assert.deepEqual(rowsSchema.bind(store, root).snapshot(), rows.snapshot())
   })
 
-  test("throws RangeError when requested child index is absent", (context) => {
-    const store = createStore(context)
+  test("throws RangeError when requested child index is absent", () => {
+    const store = getStore()
     const namesSchema = schema.array(schema.string())
     const root = store.attach(namesSchema.create(store, []))
     const names = namesSchema.bind(store, root)
@@ -162,8 +151,8 @@ function registerSchemaTests<Cell extends Ref, Array extends Ref, Map extends Re
     assert.deepEqual(names.snapshot(), ["Ada"])
   })
 
-  test("binds plain refs and preserves inferred string handle types", (context) => {
-    const store = createStore(context)
+  test("binds plain refs and preserves inferred string handle types", () => {
+    const store = getStore()
     const namesSchema = schema.array(schema.string())
     const ref = namesSchema.create(store, ["Ada"])
     store.attach(ref)
@@ -185,10 +174,4 @@ function registerSchemaTests<Cell extends Ref, Array extends Ref, Map extends Re
     }
     void invalidUsage
   })
-}
-
-function createYjsNodeStore(context: TestContext): YjsNodeStore {
-  const doc = new Y.Doc()
-  context.after(() => doc.destroy())
-  return new YjsNodeStore(doc)
 }
