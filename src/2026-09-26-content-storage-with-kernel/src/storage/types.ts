@@ -11,7 +11,7 @@ export interface NodeRefs {
 
 export type NodeKind = keyof NodeRefs
 
-export interface NodeStore<Refs extends NodeRefs, TransactionContext> {
+export interface NodeStore<Refs extends NodeRefs = NodeRefs, TransactionContext = unknown> {
   readonly cell: CellStore<Refs["cell"], TransactionContext>
   readonly array: ArrayStore<Refs[NodeKind], Refs["array"], TransactionContext>
   readonly map: MapStore<Refs[NodeKind], Refs["map"], TransactionContext>
