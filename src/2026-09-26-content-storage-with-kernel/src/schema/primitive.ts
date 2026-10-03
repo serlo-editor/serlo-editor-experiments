@@ -1,8 +1,12 @@
+import { isString } from "../utils/guard.ts"
+import type { Guard } from "../utils/guard.ts"
 import type { Primitive } from "../utils/index.ts"
 import type { Handle, Schema } from "./types.ts"
 
+export type { Guard } from "../utils/guard.ts"
+
 export function string() {
-  return primitive("string", (value): value is string => typeof value === "string")
+  return primitive("string", isString)
 }
 
 function primitive<Value extends Primitive>(
@@ -40,5 +44,3 @@ interface PrimitiveHandle<Value extends Primitive> extends Handle<Value> {
   get(): Value
   set(value: Value): void
 }
-
-type Guard<Value> = (value: unknown) => value is Value
