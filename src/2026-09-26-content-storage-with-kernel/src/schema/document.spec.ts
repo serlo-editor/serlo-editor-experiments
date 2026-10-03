@@ -1,12 +1,11 @@
 import assert from "node:assert/strict"
-import test from "node:test"
 
-import { FlatNodeStore } from "../storage/index.ts"
+import { testWithStores } from "../test-utils/test-with-stores.ts"
 import type { JSONValue } from "../utils/index.ts"
 import { createDocument } from "./document.ts"
 import type { Handle, Schema } from "./types.ts"
 
-test("exposes a root handle and snapshots its current state", () => {
+testWithStores("exposes a root handle and snapshots its current state", (store) => {
   const schema: Schema<JSONValue, Handle<JSONValue> & { set(value: JSONValue): void }, "cell"> = {
     create(store, snapshot) {
       return store.cell.create(snapshot)
@@ -20,7 +19,7 @@ test("exposes a root handle and snapshots its current state", () => {
       }
     },
   }
-  const document = createDocument(new FlatNodeStore(), schema, "Initial")
+  const document = createDocument(store, schema, "Initial")
   const root = document.root
 
   assert.equal(root.snapshot(), "Initial")
