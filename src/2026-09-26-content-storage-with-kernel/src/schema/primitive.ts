@@ -1,9 +1,6 @@
-import { isString } from "../utils/guard.ts"
-import type { Guard } from "../utils/guard.ts"
-import type { Primitive } from "../utils/index.ts"
+import { isString } from "../utils/index.ts"
+import type { Guard, Primitive } from "../utils/index.ts"
 import type { Handle, Schema } from "./types.ts"
-
-export type { Guard } from "../utils/guard.ts"
 
 export function string() {
   return primitive("string", isString)
