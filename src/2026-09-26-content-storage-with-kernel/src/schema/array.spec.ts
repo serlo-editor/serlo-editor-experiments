@@ -10,6 +10,7 @@ describeWithStores("array schemas", (getStore) => {
   test("creates, reads, maps, inserts, and removes children", () => {
     const { root } = createDocument(getStore(), array(string()), ["Ada", "Grace"])
 
+    assert.equal(root.length, 2)
     assert.deepEqual(root.snapshot(), ["Ada", "Grace"])
     assert.deepEqual(
       root.children().map((child) => child.get()),
@@ -21,9 +22,11 @@ describeWithStores("array schemas", (getStore) => {
     )
 
     root.insert(1, "Lin")
+    assert.equal(root.length, 3)
     assert.deepEqual(root.snapshot(), ["Ada", "Lin", "Grace"])
 
     root.remove(0)
+    assert.equal(root.length, 2)
     assert.deepEqual(root.snapshot(), ["Lin", "Grace"])
   })
 })
