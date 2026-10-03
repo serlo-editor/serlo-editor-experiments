@@ -19,15 +19,14 @@ describeWithStores("primitive schemas", (getStore) => {
   })
 
   test("creates and edits boolean documents", () => {
-    const document = createDocument(getStore(), boolean(), false)
+    const root = createDocument(getStore(), boolean(), false).root
 
-    assert.equal(document.root.get(), false)
-    assert.equal(document.root.snapshot(), false)
-    assert.equal(document.snapshot(), false)
+    assert.equal(root.get(), false)
+    assert.equal(root.snapshot(), false)
 
-    document.root.set(true)
+    root.set(true)
 
-    assert.equal(document.root.get(), true)
-    assert.equal(document.snapshot(), true)
+    assert.equal(root.get(), true)
+    assert.equal(root.snapshot(), true)
   })
 })
