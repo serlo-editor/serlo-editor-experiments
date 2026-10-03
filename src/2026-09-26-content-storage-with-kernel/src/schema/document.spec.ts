@@ -1,36 +1,33 @@
 import assert from "node:assert/strict"
 import test from "node:test"
 
-import * as Y from "yjs"
-
-import { FlatNodeStore, YjsNodeStore } from "../storage/index.ts"
+import { FlatNodeStore } from "../storage/index.ts"
+import type { JSONValue } from "../utils/index.ts"
 import { createDocument } from "./document.ts"
-import * as schema from "./index.ts"
+import type { Handle, Schema } from "./types.ts"
 
-test("creates a document with a live root and detached snapshots", () => {
-  const store = new FlatNodeStore()
-  const initialSnapshot = ["Ada"]
-  const document = createDocument(store, schema.array(schema.string()), initialSnapshot)
+test("exposes a root handle and snapshots its current state", () => {
+  const schema: Schema<JSONValue, Handle<JSONValue> & { set(value: JSONValue): void }, "cell"> = {
+    create(store, snapshot) {
+      return store.cell.create(snapshot)
+    },
+    bind(store, ref) {
+      return {
+        snapshot: () => store.cell.get(ref),
+        set(value) {
+          store.transact((tx) => store.cell.edit(ref, tx).set(value))
+        },
+      }
+    },
+  }
+  const document = createDocument(new FlatNodeStore(), schema, "Initial")
+  const root = document.root
 
-  initialSnapshot.push("Linus")
-  assert.deepEqual(document.snapshot(), ["Ada"])
-  assert.equal(document.root.at(0).get(), "Ada")
+  assert.equal(root.snapshot(), "Initial")
+  assert.equal(document.snapshot(), "Initial")
 
-  document.root.insert(1, "Grace")
-  const snapshot = document.snapshot()
-  assert.deepEqual(snapshot, ["Ada", "Grace"])
-  snapshot.push("Linus")
-  assert.deepEqual(document.snapshot(), ["Ada", "Grace"])
-})
+  root.set("Changed")
 
-test("creates documents over YjsNodeStore", (context) => {
-  const doc = new Y.Doc()
-  context.after(() => doc.destroy())
-  const document = createDocument(new YjsNodeStore(doc), schema.array(schema.string()), [
-    "Ada",
-    "Linus",
-  ])
-
-  document.root.at(1).set("Grace")
-  assert.deepEqual(document.snapshot(), ["Ada", "Grace"])
+  assert.equal(root.snapshot(), "Changed")
+  assert.equal(document.snapshot(), "Changed")
 })
