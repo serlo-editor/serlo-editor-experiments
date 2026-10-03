@@ -10,6 +10,11 @@ export function boolean() {
   return primitive("boolean", isBoolean)
 }
 
+interface PrimitiveHandle<Value extends Primitive> extends Handle<Value> {
+  get(): Value
+  set(value: Value): void
+}
+
 function primitive<Value extends Primitive>(
   expected: string,
   isValue: Guard<Value>,
@@ -39,9 +44,4 @@ function primitive<Value extends Primitive>(
       }
     },
   }
-}
-
-interface PrimitiveHandle<Value extends Primitive> extends Handle<Value> {
-  get(): Value
-  set(value: Value): void
 }
