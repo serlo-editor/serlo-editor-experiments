@@ -7,16 +7,15 @@ import { boolean, string } from "./primitives.ts"
 
 describeWithStores("primitive schemas", (getStore) => {
   test("creates and edits string documents", () => {
-    const document = createDocument(getStore(), string(), "Ada")
+    const root = createDocument(getStore(), string(), "Ada").root
 
-    assert.equal(document.root.get(), "Ada")
-    assert.equal(document.root.snapshot(), "Ada")
-    assert.equal(document.snapshot(), "Ada")
+    assert.equal(root.get(), "Ada")
+    assert.equal(root.snapshot(), "Ada")
 
-    document.root.set("Grace")
+    root.set("Grace")
 
-    assert.equal(document.root.get(), "Grace")
-    assert.equal(document.snapshot(), "Grace")
+    assert.equal(root.get(), "Grace")
+    assert.equal(root.snapshot(), "Grace")
   })
 
   test("creates and edits boolean documents", () => {
