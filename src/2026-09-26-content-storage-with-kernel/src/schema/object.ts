@@ -13,7 +13,7 @@ export function object<Schemas extends SchemaMap>(
         Object.fromEntries(
           Object.entries(schemas).map(([key, schema]) => [
             key,
-            schema.create(store, snapshot[key]!),
+            schema.create(store, snapshot[key]),
           ]),
         ),
       )
