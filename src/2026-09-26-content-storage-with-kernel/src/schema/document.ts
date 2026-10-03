@@ -11,7 +11,7 @@ export function createDocument<
   Snapshot extends JSONValue,
   Root extends Handle<Snapshot>,
   Kind extends NodeKind,
-  Store extends NodeStore,
+  Store extends NodeStore<any, any>,
 >(
   store: Store,
   schema: Schema<Snapshot, Root, Kind>,
