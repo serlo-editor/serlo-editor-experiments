@@ -4,8 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "bun index.ts",
-    "dev": "bun --watch index.ts"
+    "test": "bun test"
   },
   "devDependencies": {
     "typescript": "^7.0.2"
