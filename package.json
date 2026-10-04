@@ -15,7 +15,7 @@
     "check:lint": "oxlint",
     "check:tsc": "tsc --noEmit",
     "new": "bun scripts/create-experiment.ts",
-    "fix": "bun run check:behavior && bun run fix:format && bun run fix:lint",
+    "fix": "bun run fix:lint && bun run fix:format && bun run check",
     "fix:format": "oxfmt",
     "fix:lint": "oxlint --fix",
     "test": "bun test"

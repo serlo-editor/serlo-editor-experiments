@@ -16,6 +16,16 @@ Templates currently include `react` and `ts`.
 
 Names must be kebab-case.
 
+## Check and fix
+
+```bash
+bun run check
+bun run fix
+bun run test
+```
+
+`fix` applies lint and formatting fixes, then runs checks.
+
 ## Run
 
 ```bash
