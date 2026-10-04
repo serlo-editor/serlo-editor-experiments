@@ -4,7 +4,8 @@
   "description": "Experiments for the Serlo Editor",
   "license": "MIT",
   "workspaces": [
-    "src/*"
+    "src/*",
+    "templates/*"
   ],
   "type": "module",
   "scripts": {
