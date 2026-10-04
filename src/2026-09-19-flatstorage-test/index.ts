@@ -49,7 +49,7 @@ interface FlatNodeValues {
 type FlatNodeKind = keyof FlatNodeValues
 type FlatNodeValue<Kind extends FlatNodeKind> = FlatNodeValues[Kind]
 
-class FlatStorage {
+export class FlatStorage {
   private readonly buckets = new Buckets<FlatNodeValues>()
 
   create<Kind extends FlatNodeKind>(
