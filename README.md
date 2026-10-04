@@ -1,6 +1,6 @@
 # Serlo Editor experiments
 
-Small Vite/React/TypeScript experiments in one pnpm workspace for creating the Serlo Editor.
+Small Vite/React/TypeScript experiments in one Bun workspace for creating the Serlo Editor.
 
 ## Learnings
 
@@ -9,7 +9,7 @@ Design notes and learnings from experiments live in [`learnings/`](./learnings/)
 ## Create
 
 ```bash
-pnpm new <template> <name-of-experiment>
+bun run new <template> <name-of-experiment>
 ```
 
 Templates currently include `react` and `ts`.
@@ -19,13 +19,13 @@ Names must be kebab-case.
 ## Run
 
 ```bash
-pnpm --dir src/<name> dev
+bun --cwd src/<name> run dev
 ```
 
 ## Build
 
 ```bash
-pnpm --dir src/<name> build
+bun --cwd src/<name> run build
 ```
 
 ## GitHub Pages

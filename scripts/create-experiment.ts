@@ -3,7 +3,7 @@ import { access, cp, mkdir, readFile, rm, writeFile } from "node:fs/promises"
 import { dirname, join, relative, resolve, sep } from "node:path"
 import { fileURLToPath } from "node:url"
 
-const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm"
+const bunCommand = process.platform === "win32" ? "bun.exe" : "bun"
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const namePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
@@ -40,17 +40,16 @@ async function main() {
     await copyTemplate(templateDir, finalDir)
     await updatePackageName(finalDir, experimentDirName)
 
-    await runPnpm({
-      args: ["--dir", finalDirRelative, "install"],
+    await runBun({
+      args: ["install"],
       cwd: repoRoot,
       label: "Dependency installation",
     })
 
     console.log(`Created ${finalDirRelative}`)
     console.log(`Next:`)
-    console.log(`  pnpm --dir ${finalDirRelative} dev`)
-    console.log(`  pnpm --filter ${experimentDirName} dev`)
-    console.log(`  pnpm --dir ${finalDirRelative} build`)
+    console.log(`  bun --cwd ${finalDirRelative} run dev`)
+    console.log(`  bun --cwd ${finalDirRelative} run build`)
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
 
@@ -113,8 +112,16 @@ function validateName(nameArg: string | undefined) {
   return nameArg
 }
 
-async function runPnpm({ args, cwd, label }: { args: string[]; cwd: string; label: string }) {
-  const child = spawn(pnpmCommand, args, {
+async function runBun({
+  args,
+  cwd = repoRoot,
+  label,
+}: {
+  args: string[]
+  cwd?: string
+  label: string
+}) {
+  const child = spawn(bunCommand, args, {
     cwd,
     env: {
       ...process.env,
@@ -138,7 +145,7 @@ async function runPnpm({ args, cwd, label }: { args: string[]; cwd: string; labe
       if (error.code === "ENOENT") {
         rejectPromise(
           new Error(
-            `Missing pnpm executable (${pnpmCommand}). Please ensure pnpm is installed and available on PATH.`,
+            `Missing Bun executable (${bunCommand}). Please ensure Bun is installed and available on PATH.`,
           ),
         )
         return

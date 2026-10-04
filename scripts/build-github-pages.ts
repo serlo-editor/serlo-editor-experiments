@@ -3,7 +3,7 @@ import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises"
 import { dirname, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
-const pnpmCommand = process.platform === "win32" ? "pnpm.cmd" : "pnpm"
+const bunCommand = process.platform === "win32" ? "bun.exe" : "bun"
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
 const sourceDir = join(repoRoot, "src")
 const outputDir = join(repoRoot, ".pages")
@@ -56,10 +56,9 @@ async function findReactExperiments() {
 
 async function buildExperiment(experiment: Experiment, basePath: string) {
   console.log(`Building ${experiment.name}`)
-  await run(pnpmCommand, ["--ignore-workspace", "install", "--frozen-lockfile"], experiment.dir)
   await run(
-    pnpmCommand,
-    ["--ignore-workspace", "build", "--base", `${basePath}${experiment.name}/`],
+    bunCommand,
+    ["run", "build", "--base", `${basePath}${experiment.name}/`],
     experiment.dir,
   )
   await cp(join(experiment.dir, "dist"), join(outputDir, experiment.name), { recursive: true })

@@ -5,12 +5,12 @@
   "type": "module",
   "scripts": {
     "build": "tsc -b && vite build",
-    "check": "pnpm run check:tsc && pnpm run check:format && pnpm run check:lint",
+    "check": "bun run check:tsc && bun run check:format && bun run check:lint",
     "check:format": "oxfmt --check",
     "check:lint": "oxlint",
     "check:tsc": "tsc --noEmit",
     "dev": "vite",
-    "fix": "pnpm run fix:format && pnpm run fix:lint && pnpm run check:tsc",
+    "fix": "bun run fix:format && bun run fix:lint && bun run check:tsc",
     "fix:format": "oxfmt",
     "fix:lint": "oxlint --fix",
     "preview": "vite preview"

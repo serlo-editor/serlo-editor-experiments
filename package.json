@@ -3,15 +3,18 @@
   "private": true,
   "description": "Experiments for the Serlo Editor",
   "license": "MIT",
+  "workspaces": [
+    "src/*"
+  ],
   "type": "module",
   "scripts": {
-    "check": "pnpm run check:tsc && pnpm run check:format && pnpm run check:lint",
+    "check": "bun run check:tsc && bun run check:format && bun run check:lint",
     "check:format": "oxfmt --check",
     "check:lint": "oxlint",
     "check:tsc": "tsc --noEmit",
-    "new": "node --experimental-strip-types scripts/create-experiment.ts",
-    "pages:build": "node --experimental-strip-types scripts/build-github-pages.ts",
-    "fix": "pnpm run fix:format && pnpm run fix:lint && pnpm run check:tsc",
+    "new": "bun scripts/create-experiment.ts",
+    "pages:build": "bun scripts/build-github-pages.ts",
+    "fix": "bun run fix:format && bun run fix:lint && bun run check:tsc",
     "fix:format": "oxfmt",
     "fix:lint": "oxlint --fix"
   },
@@ -20,9 +23,5 @@
     "oxfmt": "^0.63.0",
     "oxlint": "^1.78.0",
     "typescript": "^7.0.2"
-  },
-  "engines": {
-    "node": "26.7.0"
-  },
-  "packageManager": "pnpm@11.22.0"
+  }
 }
