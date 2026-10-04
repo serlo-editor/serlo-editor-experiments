@@ -8,6 +8,7 @@ const sourceDir = join(repoRoot, "src")
 const outputDir = join(repoRoot, ".pages")
 
 interface PackageJson {
+  scripts?: Record<string, string>
   dependencies?: Record<string, string>
   devDependencies?: Record<string, string>
 }
@@ -19,19 +20,20 @@ interface Experiment {
 
 async function main() {
   const basePath = getBasePath()
-  const experiments = await findReactExperiments()
+  const experiments = await findBuildableProjects()
 
   await rm(outputDir, { force: true, recursive: true })
   await mkdir(outputDir, { recursive: true })
 
+  const pages: Experiment[] = []
   for (const experiment of experiments) {
-    await buildExperiment(experiment, basePath)
+    if (await buildExperiment(experiment, basePath)) pages.push(experiment)
   }
 
-  await writeIndex(experiments, basePath)
+  await writeIndex(pages, basePath)
 }
 
-async function findReactExperiments() {
+async function findBuildableProjects() {
   const entries = await readdir(sourceDir, { withFileTypes: true })
   const experiments = await Promise.all(
     entries
@@ -42,11 +44,13 @@ async function findReactExperiments() {
           await readFile(join(dir, "package.json"), "utf8"),
         ) as PackageJson
 
-        if (!packageJson.dependencies?.react || !packageJson.devDependencies?.vite) {
-          return undefined
-        }
+        if (!packageJson.scripts?.build) return undefined
 
-        return { dir, name: entry.name }
+        return {
+          dir,
+          name: entry.name,
+          isVite: Boolean(packageJson.dependencies?.vite || packageJson.devDependencies?.vite),
+        }
       }),
   )
 
@@ -55,9 +59,12 @@ async function findReactExperiments() {
     .sort((left, right) => left.name.localeCompare(right.name))
 }
 
-async function buildExperiment({ dir, name }: Experiment, basePath: string) {
+async function buildExperiment(
+  { dir, name, isVite }: Experiment & { isVite: boolean },
+  basePath: string,
+) {
   console.log(`Building ${name}`)
-  const args = ["run", "build", "--base", `${basePath}${name}/`]
+  const args = ["run", "build", ...(isVite ? ["--base", `${basePath}${name}/`] : [])]
   await new Promise<void>((resolvePromise, rejectPromise) => {
     const child = spawn(bunCommand, args, { cwd: dir, stdio: "inherit" })
 
@@ -71,7 +78,13 @@ async function buildExperiment({ dir, name }: Experiment, basePath: string) {
       rejectPromise(new Error(`${bunCommand} ${args.join(" ")} failed with exit code ${code}`))
     })
   })
-  await cp(join(dir, "dist"), join(outputDir, name), { recursive: true })
+  try {
+    await cp(join(dir, "dist"), join(outputDir, name), { recursive: true })
+    return true
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "ENOENT") return false
+    throw error
+  }
 }
 
 async function writeIndex(experiments: Experiment[], basePath: string) {
