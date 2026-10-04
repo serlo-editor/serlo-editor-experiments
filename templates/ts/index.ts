@@ -1,1 +1,3 @@
-console.log("Hello from the ts template")
+export function add(left: number, right: number) {
+  return left + right
+}
