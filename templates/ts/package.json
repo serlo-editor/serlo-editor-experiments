@@ -4,10 +4,21 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "check": "bun run check:behavior && bun run check:format && bun run check:lint",
+    "check:behavior": "bun run check:tsc && bun run test",
+    "check:format": "oxfmt --check",
+    "check:lint": "oxlint",
+    "check:tsc": "tsc --noEmit",
+    "fix": "bun run check:behavior && bun run fix:format && bun run fix:lint",
+    "fix:format": "oxfmt",
+    "fix:lint": "oxlint --fix",
     "test": "bun test"
   },
   "devDependencies": {
     "@tsconfig/bun": "^1.0.11",
+    "@types/bun": "^1.4.2",
+    "oxfmt": "^0.71.0",
+    "oxlint": "^1.86.0",
     "typescript": "^7.0.2"
   }
 }
