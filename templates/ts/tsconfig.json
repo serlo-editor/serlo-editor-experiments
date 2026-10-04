@@ -4,5 +4,5 @@
   "compilerOptions": {
     "lib": ["esnext"]
   },
-  "include": ["index.ts"]
+  "include": ["src/**/*.ts"]
 }
