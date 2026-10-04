@@ -2,10 +2,7 @@
 
 - Read `README.md` to understand repository purpose and structure.
 - Experiments are independent of each other and should only be read for a task if the user explicitly asks for this or links them in the conversation.
-- Create experiments with `bun run new <template> <name>`.
-- The `templates/react` and `templates/ts` directories are the current templates for newly generated experiments.
-- Name experiments in the format `src/YYYY-MM-DD-<name>`.
-- Valid names must be kebab-case.
-- Prefer simple implementations: be a lazy developer, follow KISS, and remember that the best code is code not added.
+- Create experiments with `bun run new <template> <name>` with possible values "ts" and "react" for `<template>`.
+- Name experiments in the format `src/YYYY-MM-DD-<name>`. Valid names must be kebab-case.
 - Order code from general to concrete: start with the most abstract function, then the functions it calls, and so on.
 - Use `bun run fix` to test your code formatting and linting.
