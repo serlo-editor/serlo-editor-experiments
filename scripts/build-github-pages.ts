@@ -1,10 +1,9 @@
 import { spawn } from "node:child_process"
 import { cp, mkdir, readFile, readdir, rm, writeFile } from "node:fs/promises"
-import { dirname, join, resolve } from "node:path"
-import { fileURLToPath } from "node:url"
+import { join, resolve } from "node:path"
 
 const bunCommand = process.platform === "win32" ? "bun.exe" : "bun"
-const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
+const repoRoot = resolve(import.meta.dirname, "..")
 const sourceDir = join(repoRoot, "src")
 const outputDir = join(repoRoot, ".pages")
 
@@ -39,7 +38,9 @@ async function findReactExperiments() {
       .filter((entry) => entry.isDirectory())
       .map(async (entry) => {
         const dir = join(sourceDir, entry.name)
-        const packageJson = await readPackageJson(dir)
+        const packageJson = JSON.parse(
+          await readFile(join(dir, "package.json"), "utf8"),
+        ) as PackageJson
 
         if (!packageJson.dependencies?.react || !packageJson.devDependencies?.vite) {
           return undefined
@@ -50,18 +51,27 @@ async function findReactExperiments() {
   )
 
   return experiments
-    .filter((experiment): experiment is Experiment => experiment !== undefined)
+    .filter((experiment) => experiment !== undefined)
     .sort((left, right) => left.name.localeCompare(right.name))
 }
 
-async function buildExperiment(experiment: Experiment, basePath: string) {
-  console.log(`Building ${experiment.name}`)
-  await run(
-    bunCommand,
-    ["run", "build", "--base", `${basePath}${experiment.name}/`],
-    experiment.dir,
-  )
-  await cp(join(experiment.dir, "dist"), join(outputDir, experiment.name), { recursive: true })
+async function buildExperiment({ dir, name }: Experiment, basePath: string) {
+  console.log(`Building ${name}`)
+  const args = ["run", "build", "--base", `${basePath}${name}/`]
+  await new Promise<void>((resolvePromise, rejectPromise) => {
+    const child = spawn(bunCommand, args, { cwd: dir, stdio: "inherit" })
+
+    child.on("error", rejectPromise)
+    child.on("close", (code) => {
+      if (code === 0) {
+        resolvePromise()
+        return
+      }
+
+      rejectPromise(new Error(`${bunCommand} ${args.join(" ")} failed with exit code ${code}`))
+    })
+  })
+  await cp(join(dir, "dist"), join(outputDir, name), { recursive: true })
 }
 
 async function writeIndex(experiments: Experiment[], basePath: string) {
@@ -95,49 +105,22 @@ ${links}
 function getBasePath() {
   const configuredBasePath = process.env.PAGES_BASE_PATH
   if (configuredBasePath) {
-    return normalizeBasePath(configuredBasePath)
+    return `/${configuredBasePath.replace(/^\/+|\/+$/g, "")}/`
   }
 
   const repositoryName = process.env.GITHUB_REPOSITORY?.split("/")[1]
   return repositoryName ? `/${repositoryName}/` : "/"
 }
 
-function normalizeBasePath(basePath: string) {
-  return `/${basePath.replace(/^\/+|\/+$/g, "")}/`
-}
-
-async function readPackageJson(dir: string) {
-  const content = await readFile(join(dir, "package.json"), "utf8")
-  return JSON.parse(content) as PackageJson
-}
-
-async function run(command: string, args: string[], cwd: string) {
-  await new Promise<void>((resolvePromise, rejectPromise) => {
-    const child = spawn(command, args, { cwd, stdio: "inherit" })
-
-    child.on("error", rejectPromise)
-    child.on("close", (code) => {
-      if (code === 0) {
-        resolvePromise()
-        return
-      }
-
-      rejectPromise(new Error(`${command} ${args.join(" ")} failed with exit code ${code}`))
-    })
-  })
-}
-
 function escapeHtml(value: string) {
-  return value.replace(/[&<>"']/g, (character) => {
-    const entities: Record<string, string> = {
-      '"': "&quot;",
-      "&": "&amp;",
-      "'": "&#39;",
-      "<": "&lt;",
-      ">": "&gt;",
-    }
-    return entities[character] ?? character
-  })
+  const entities: Record<string, string> = {
+    '"': "&quot;",
+    "&": "&amp;",
+    "'": "&#39;",
+    "<": "&lt;",
+    ">": "&gt;",
+  }
+  return value.replace(/[&<>"']/g, (character) => entities[character] ?? character)
 }
 
 void main()

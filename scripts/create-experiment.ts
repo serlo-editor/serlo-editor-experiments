@@ -1,50 +1,41 @@
 import { spawn } from "node:child_process"
 import { access, cp, mkdir, readFile, rm, writeFile } from "node:fs/promises"
 import { dirname, join, relative, resolve, sep } from "node:path"
-import { fileURLToPath } from "node:url"
 
 const bunCommand = process.platform === "win32" ? "bun.exe" : "bun"
-const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..")
+const repoRoot = resolve(import.meta.dirname, "..")
 const namePattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
-class UserError extends Error {}
-
 async function main() {
-  let finalDirRelative = ""
-  let finalDir = ""
-  let shouldCleanupFinalDir = false
+  let cleanupDir: string | undefined
   try {
     const templateName = process.argv[2]
     const name = validateName(process.argv[3])
-    const experimentDirName = createExperimentDirName(name)
-    finalDirRelative = join("src", experimentDirName)
-    finalDir = join(repoRoot, finalDirRelative)
+    const experimentDirName = `${formatLocalDate(new Date())}-${name}`
+    const finalDirRelative = join("src", experimentDirName)
+    const finalDir = join(repoRoot, finalDirRelative)
 
     if (!templateName) {
-      throw new UserError("Missing template name.")
+      throw new Error("Missing template name.")
     }
 
     const templateDir = resolve(repoRoot, "templates", templateName)
 
     if (!(await exists(templateDir))) {
-      throw new UserError(`Unknown template: ${templateName}`)
+      throw new Error(`Unknown template: ${templateName}`)
     }
 
     if (await exists(finalDir)) {
-      throw new UserError(`Experiment already exists: ${finalDirRelative}`)
+      throw new Error(`Experiment already exists: ${finalDirRelative}`)
     }
 
     await mkdir(dirname(finalDir), { recursive: true })
-    shouldCleanupFinalDir = true
+    cleanupDir = finalDir
 
     await copyTemplate(templateDir, finalDir)
     await updatePackageName(finalDir, experimentDirName)
 
-    await runBun({
-      args: ["install"],
-      cwd: repoRoot,
-      label: "Dependency installation",
-    })
+    await installDependencies()
 
     console.log(`Created ${finalDirRelative}`)
     console.log(`Next:`)
@@ -53,11 +44,11 @@ async function main() {
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
 
-    if (shouldCleanupFinalDir && finalDir) {
+    if (cleanupDir) {
       try {
-        await rm(finalDir, { recursive: true, force: true })
+        await rm(cleanupDir, { recursive: true, force: true })
       } catch {
-        console.error(`Warning: Error while cleaning up ${finalDir}`)
+        console.error(`Warning: Error while cleaning up ${cleanupDir}`)
       }
     }
 
@@ -88,11 +79,6 @@ function isNodeModulesPath(templateDir: string, source: string) {
   return relativePath === "node_modules" || relativePath.startsWith(`node_modules${sep}`)
 }
 
-function createExperimentDirName(name: string) {
-  const date = formatLocalDate(new Date())
-  return `${date}-${name}`
-}
-
 function formatLocalDate(date: Date) {
   const year = date.getFullYear()
   const month = String(date.getMonth() + 1).padStart(2, "0")
@@ -102,27 +88,19 @@ function formatLocalDate(date: Date) {
 
 function validateName(nameArg: string | undefined) {
   if (!nameArg) {
-    throw new UserError("Missing experiment name.")
+    throw new Error("Missing experiment name.")
   }
 
   if (!namePattern.test(nameArg)) {
-    throw new UserError(`Invalid experiment name: ${nameArg}. Use kebab-case like chat-streaming.`)
+    throw new Error(`Invalid experiment name: ${nameArg}. Use kebab-case like chat-streaming.`)
   }
 
   return nameArg
 }
 
-async function runBun({
-  args,
-  cwd = repoRoot,
-  label,
-}: {
-  args: string[]
-  cwd?: string
-  label: string
-}) {
-  const child = spawn(bunCommand, args, {
-    cwd,
+function installDependencies() {
+  const child = spawn(bunCommand, ["install"], {
+    cwd: repoRoot,
     env: {
       ...process.env,
       CI: "1",
@@ -140,7 +118,7 @@ async function runBun({
     stderr += chunk.toString()
   })
 
-  return await new Promise<void>((resolvePromise, rejectPromise) => {
+  return new Promise<void>((resolvePromise, rejectPromise) => {
     child.on("error", (error: NodeJS.ErrnoException) => {
       if (error.code === "ENOENT") {
         rejectPromise(
@@ -151,7 +129,7 @@ async function runBun({
         return
       }
 
-      rejectPromise(new Error(`${label} failed to start: ${error.message}`))
+      rejectPromise(new Error(`Dependency installation failed to start: ${error.message}`))
     })
 
     child.on("close", (code: number | null) => {
@@ -163,7 +141,7 @@ async function runBun({
       const details = [stderr.trim(), stdout.trim()].filter(Boolean).join("\n")
       rejectPromise(
         new Error(
-          `${label} failed${code === null ? "" : ` with exit code ${code}`}.${details ? `\n${details}` : ""}`,
+          `Dependency installation failed${code === null ? "" : ` with exit code ${code}`}.${details ? `\n${details}` : ""}`,
         ),
       )
     })
@@ -175,18 +153,12 @@ async function exists(path: string) {
     await access(path)
     return true
   } catch (error) {
-    if (isMissingFileError(error)) {
+    if (error instanceof Error && "code" in error && error.code === "ENOENT") {
       return false
     }
 
     throw error
   }
-}
-
-function isMissingFileError(error: unknown) {
-  return (
-    error instanceof Error && "code" in error && (error as NodeJS.ErrnoException).code === "ENOENT"
-  )
 }
 
 void main()
