@@ -5,10 +5,10 @@ import { tmpdir } from "node:os"
 import { delimiter, join } from "node:path"
 import { test } from "node:test"
 
-// Run with: bun test scripts/scripts.test.ts
+// Run with: bun test scripts/create-experiment.spec.ts
 // Executable Bun stub uses a POSIX shebang; no installs or real experiments touched.
 test(
-  "experiment creation, rollback, and Pages output",
+  "experiment creation, validation, and rollback",
   { skip: process.platform === "win32" },
   async () => {
     const root = await mkdtemp(join(tmpdir(), "experiment-scripts-"))
@@ -23,8 +23,7 @@ test(
     const env = {
       ...process.env,
       PATH: `${bin}${delimiter}${process.env.PATH}`,
-      PAGES_BASE_PATH: "",
-      GITHUB_REPOSITORY: "",
+      FAIL_BUN: "",
     }
     const run = (script: string, args: string[] = [], overrides: NodeJS.ProcessEnv = {}) =>
       spawnSync(process.execPath, [join(root, "scripts", script), ...args], {
@@ -34,7 +33,11 @@ test(
       })
 
     try {
-      await cp(import.meta.dirname, join(root, "scripts"), { recursive: true })
+      await mkdir(join(root, "scripts"))
+      await cp(
+        join(import.meta.dirname, "create-experiment.ts"),
+        join(root, "scripts", "create-experiment.ts"),
+      )
       await mkdir(bin)
       await mkdir(source)
       await mkdir(join(template, "node_modules"), { recursive: true })
@@ -43,18 +46,13 @@ test(
       await writeFile(
         join(bin, "bun"),
         `#!${process.execPath}
-import { mkdirSync, writeFileSync } from "node:fs";
 if (process.env.FAIL_BUN) {
   console.log("install stdout");
   console.error("install stderr");
   process.exit(7);
 }
-if (process.argv[2] === "install") {
-  if (process.env.CI !== "1" || process.cwd() !== ${JSON.stringify(root)}) process.exit(8);
-} else {
-  mkdirSync("dist", { recursive: true });
-  writeFileSync("dist/index.html", process.argv.slice(2).join(" "));
-}
+if (process.argv.slice(2).join(" ") !== "install" ||
+    process.env.CI !== "1" || process.cwd() !== ${JSON.stringify(root)}) process.exit(8);
 `,
         { mode: 0o755 },
       )
@@ -105,43 +103,6 @@ if (process.argv[2] === "install") {
         "Missing Bun executable (bun). Please ensure Bun is installed and available on PATH.",
       )
       assert.deepEqual(await readdir(source), [name])
-
-      await mkdir(join(source, "ts-only"))
-      await writeFile(join(source, "ts-only", "package.json"), "{}")
-      await writeFile(join(source, "ignored-file"), "not an experiment")
-      const specialName = "a&<\"' experiment"
-      await mkdir(join(source, specialName))
-      await writeFile(join(source, specialName, "package.json"), JSON.stringify(reactPackage))
-
-      for (const [overrides, base] of [
-        [{}, "/"],
-        [{ GITHUB_REPOSITORY: "owner/repo" }, "/repo/"],
-        [{ PAGES_BASE_PATH: "///custom///", GITHUB_REPOSITORY: "owner/repo" }, "/custom/"],
-        [{ PAGES_BASE_PATH: "/" }, "//"],
-      ] as const) {
-        const pages = run("build-github-pages.ts", [], overrides)
-        assert.equal(pages.status, 0, pages.stderr)
-        assert.equal(pages.stdout, `Building ${name}\nBuilding ${specialName}\n`)
-        const index = await readFile(join(root, ".pages", "index.html"), "utf8")
-        assert.ok(
-          index.includes(
-            `href="${base}${encodeURIComponent(specialName)}/">a&amp;&lt;&quot;&#39; experiment</a>`,
-          ),
-        )
-        assert.deepEqual(
-          (await readdir(join(root, ".pages"))).sort(),
-          [name, specialName, "index.html"].sort(),
-        )
-        assert.equal(
-          await readFile(join(root, ".pages", name, "index.html"), "utf8"),
-          `run build --base ${base}${name}/`,
-        )
-      }
-
-      const failedBuild = run("build-github-pages.ts", [], { FAIL_BUN: "1" })
-      assert.notEqual(failedBuild.status, 0)
-      assert.match(failedBuild.stderr, /failed with exit code 7/)
-      assert.deepEqual(await readdir(join(root, ".pages")), [])
     } finally {
       await rm(root, { recursive: true, force: true })
     }
