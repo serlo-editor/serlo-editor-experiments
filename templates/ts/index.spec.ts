@@ -1,8 +1,7 @@
-import assert from "node:assert/strict"
-import { test } from "node:test"
+import { expect, test } from "bun:test"
 
 import { add } from "./index.js"
 
 test("add sums two numbers", () => {
-  assert.equal(add(2, 3), 5)
+  expect(add(2, 3)).toBe(5)
 })
