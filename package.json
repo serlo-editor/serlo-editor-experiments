@@ -8,15 +8,17 @@
   ],
   "type": "module",
   "scripts": {
-    "check": "bun run check:tsc && bun run check:format && bun run check:lint",
+    "check": "bun run check:behavior && bun run check:format && bun run check:lint",
+    "check:behavior": "bun run check:tsc && bun run test",
     "check:format": "oxfmt --check",
     "check:lint": "oxlint",
     "check:tsc": "tsc --noEmit",
     "new": "bun scripts/create-experiment.ts",
     "pages:build": "bun scripts/build-github-pages.ts",
-    "fix": "bun run fix:format && bun run fix:lint && bun run check:tsc",
+    "fix": "bun run check:behavior && bun run fix:format && bun run fix:lint",
     "fix:format": "oxfmt",
-    "fix:lint": "oxlint --fix"
+    "fix:lint": "oxlint --fix",
+    "test": "bun test"
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
