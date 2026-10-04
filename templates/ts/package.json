@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "node --experimental-strip-types index.ts",
-    "dev": "node --watch --experimental-strip-types index.ts"
+    "build": "bun index.ts",
+    "dev": "bun --watch index.ts"
   },
   "devDependencies": {
     "typescript": "^7.0.2"
