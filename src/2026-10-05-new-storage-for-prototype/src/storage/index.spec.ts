@@ -26,7 +26,7 @@ describeWithStores("NodeStore", (getStore) => {
     ]
     const cells = values.map((value) => ({ ref: nodeStore.cell.create(value), value }))
     const rootRef = nodeStore.array.create(cells.map(({ ref }) => ref))
-    nodeStore.attach(rootRef)
+    nodeStore.transact((tx) => nodeStore.attach(rootRef, tx))
 
     expect(nodeStore.array.get(rootRef)).toEqual(cells.map(({ ref }) => ref))
     for (const { ref, value } of cells) {
@@ -39,15 +39,23 @@ describeWithStores("NodeStore", (getStore) => {
     const nodeStore = getStore()
     const ref = nodeStore.cell.create("Standalone")
 
-    expect(nodeStore.attach(ref)).toBe(ref)
+    expect(nodeStore.transact((tx) => nodeStore.attach(ref, tx))).toBe(ref)
     expect(nodeStore.cell.get(ref)).toBe("Standalone")
+  })
+
+  test("rejects attach with an expired transaction", () => {
+    const nodeStore = getStore()
+    const ref = nodeStore.cell.create("Standalone")
+    const expired = nodeStore.transact((tx) => tx)
+
+    expect(() => nodeStore.attach(ref, expired)).toThrow("Invalid transaction.")
   })
 
   test("attaches and reads an empty root array", () => {
     const nodeStore = getStore()
     const ref = nodeStore.array.create([])
 
-    expect(nodeStore.attach(ref)).toBe(ref)
+    expect(nodeStore.transact((tx) => nodeStore.attach(ref, tx))).toBe(ref)
     expect(nodeStore.array.get(ref)).toEqual([])
     expect(nodeStore.array.get(ref)).toEqual([])
   })
@@ -56,7 +64,7 @@ describeWithStores("NodeStore", (getStore) => {
     const nodeStore = getStore()
     const ref = nodeStore.map.create({})
 
-    expect(nodeStore.attach(ref)).toBe(ref)
+    expect(nodeStore.transact((tx) => nodeStore.attach(ref, tx))).toBe(ref)
     expect(nodeStore.map.get(ref)).toEqual({})
     expect(nodeStore.map.get(ref)).toEqual({})
   })
@@ -72,7 +80,7 @@ describeWithStores("NodeStore", (getStore) => {
     const fields = { title: titleRef, branch: branchRef }
     const rootRef = nodeStore.map.create(fields)
 
-    expect(nodeStore.attach(rootRef)).toBe(rootRef)
+    expect(nodeStore.transact((tx) => nodeStore.attach(rootRef, tx))).toBe(rootRef)
     expect(nodeStore.map.get(rootRef)).toEqual(fields)
     expect(nodeStore.map.get(rootRef)).toEqual(fields, "Repeated reads preserve references")
     expect(nodeStore.map.get(rootRef).title).toBe(titleRef)
@@ -91,7 +99,7 @@ describeWithStores("NodeStore", (getStore) => {
   test("sets and replaces map fields inside and after transactions", () => {
     const nodeStore = getStore()
     const rootRef = nodeStore.map.create({})
-    nodeStore.attach(rootRef)
+    nodeStore.transact((tx) => nodeStore.attach(rootRef, tx))
     const cellRef = nodeStore.cell.create(false)
     const nestedCellRef = nodeStore.cell.create("Nested")
     const arrayRef = nodeStore.array.create([nestedCellRef])
@@ -123,7 +131,7 @@ describeWithStores("NodeStore", (getStore) => {
     const keys = ["", "世界 👋", "__proto__", "constructor", "toString"]
     const fields = Object.fromEntries(keys.map((key) => [key, nodeStore.cell.create(key)]))
     const rootRef = nodeStore.map.create(fields)
-    nodeStore.attach(rootRef)
+    nodeStore.transact((tx) => nodeStore.attach(rootRef, tx))
 
     expect(nodeStore.map.get(rootRef)).toEqual(fields)
     const replacements = Object.fromEntries(
@@ -146,7 +154,7 @@ describeWithStores("NodeStore", (getStore) => {
     const store = getStore()
     const keys = ["", "世界 👋", "__proto__", "constructor", "toString"]
     const fields = Object.fromEntries(keys.map((key) => [key, store.cell.create(key)]))
-    const ref = store.attach(store.map.create(fields))
+    const ref = store.transact((tx) => store.attach(store.map.create(fields), tx))
     const previous = store.map.get(ref)
     store.transact((tx) => {
       const editor = store.map.edit(ref, tx)
@@ -171,7 +179,7 @@ describeWithStores("NodeStore", (getStore) => {
     const rootRef = nodeStore.array.create([])
     const cellRef = nodeStore.cell.create("Nested")
     const mapRef = nodeStore.map.create({ content: cellRef })
-    nodeStore.attach(rootRef)
+    nodeStore.transact((tx) => nodeStore.attach(rootRef, tx))
 
     nodeStore.transact((tx) => {
       nodeStore.array.edit(rootRef, tx).insert(0, mapRef)
@@ -192,7 +200,7 @@ describeWithStores("NodeStore", (getStore) => {
     const branchRef = nodeStore.array.create([emptyRef, leafRef, flagRef])
     const rootRef = nodeStore.array.create([titleRef, branchRef])
 
-    expect(nodeStore.attach(rootRef)).toBe(rootRef)
+    expect(nodeStore.transact((tx) => nodeStore.attach(rootRef, tx))).toBe(rootRef)
     expect(nodeStore.array.get(rootRef)).toEqual([titleRef, branchRef])
     expect(nodeStore.array.get(branchRef)).toEqual([emptyRef, leafRef, flagRef])
     expect(nodeStore.array.get(emptyRef)).toEqual([])
@@ -214,7 +222,7 @@ describeWithStores("NodeStore", (getStore) => {
     const secondMapRef = nodeStore.map.create({})
     const refs = [firstRef, secondRef, firstArrayRef, secondArrayRef, firstMapRef, secondMapRef]
     const rootRef = nodeStore.array.create(refs)
-    nodeStore.attach(rootRef)
+    nodeStore.transact((tx) => nodeStore.attach(rootRef, tx))
 
     expect(new Set([...refs, rootRef]).size).toBe(7)
     nodeStore.transact((tx) => {
@@ -234,7 +242,7 @@ describeWithStores("NodeStore", (getStore) => {
   test("reads replacements inside and after transactions, including type changes", () => {
     const nodeStore = getStore()
     const ref = nodeStore.cell.create("Draft")
-    nodeStore.attach(ref)
+    nodeStore.transact((tx) => nodeStore.attach(ref, tx))
     const replacements: readonly JSONValue[] = [
       { title: "Published" },
       [1, null],
@@ -264,7 +272,7 @@ describeWithStores("NodeStore", (getStore) => {
     const nestedCellRef = nodeStore.cell.create("Nested")
     const nestedRef = nodeStore.array.create([nestedCellRef])
     const rootRef = nodeStore.array.create([])
-    nodeStore.attach(rootRef)
+    nodeStore.transact((tx) => nodeStore.attach(rootRef, tx))
 
     nodeStore.transact((tx) => {
       const editor = nodeStore.array.edit(rootRef, tx)
@@ -298,7 +306,7 @@ describeWithStores("NodeStore", (getStore) => {
   test("propagates callback errors and permits subsequent transactions", () => {
     const nodeStore = getStore()
     const ref = nodeStore.cell.create("Draft")
-    nodeStore.attach(ref)
+    nodeStore.transact((tx) => nodeStore.attach(ref, tx))
     const error = new Error("Transaction failed")
 
     let caught: unknown
@@ -324,8 +332,10 @@ test("FlatNodeStore keeps references distinct across stores and node kinds", () 
 
   expect(new Set([...firstRefs, ...secondRefs]).size).toBe(6)
   for (const ref of firstRefs) {
-    expect(first.attach(ref)).toBe(ref)
-    expect(() => second.attach(ref)).toThrow(`Reference with key ${ref} does not exist.`)
+    expect(first.transact((tx) => first.attach(ref, tx))).toBe(ref)
+    expect(() => second.transact((tx) => second.attach(ref, tx))).toThrow(
+      `Reference with key ${ref} does not exist.`,
+    )
   }
 })
 
@@ -373,7 +383,7 @@ test("FlatNodeStore editors require an active transaction from their own store",
 test("YjsNodeStore rejects cells missing their value", () => {
   const doc = new Y.Doc()
   const store = new YjsNodeStore(doc)
-  const ref = store.attach(store.cell.create("Draft"))
+  const ref = store.transact((tx) => store.attach(store.cell.create("Draft"), tx))
   store.transact(() => ref.delete("value"))
 
   expect(() => store.cell.get(ref)).toThrow("Cell value absent.")

@@ -72,7 +72,10 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     }),
   }
 
-  attach<Ref extends YjsNodeRef>(ref: Ref): Ref & RootRef {
+  attach<Ref extends YjsNodeRef>(ref: Ref, tx: Y.Transaction): Ref & RootRef {
+    if (tx.doc !== this.doc || this.doc._transaction !== tx) {
+      throw new Error("Invalid transaction.")
+    }
     this.doc.getMap("root").set("root", ref)
     return ref as Ref & RootRef
   }

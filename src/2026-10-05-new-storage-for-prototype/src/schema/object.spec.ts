@@ -157,7 +157,7 @@ describeWithStores("object schemas", (getStore) => {
     }).toThrow("Undefined field: name.")
 
     const store = getStore()
-    const ref = store.attach(schema.create(store, { name: "Ada" }))
+    const ref = store.transact((tx) => store.attach(schema.create(store, { name: "Ada" }), tx))
     const root = schema.bind(store, ref)
     store.transact((tx) => store.map.edit(ref, tx).remove("name"))
     expect(() => root.field("name")).toThrow("Missing required field: name.")
