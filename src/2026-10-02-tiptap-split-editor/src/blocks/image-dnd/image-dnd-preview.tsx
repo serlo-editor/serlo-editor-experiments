@@ -249,13 +249,12 @@ export function ImageDndPreview({
           isOver && "ring-2 ring-indigo-400 ring-offset-1",
         )}
       >
-        {state.zonesVisible &&
-          zone.title && (
-            // the fill is faint now, so the title carries its own backdrop
-            <span className="m-1 self-start whitespace-nowrap rounded bg-white/90 px-1.5 py-0.5 text-xs font-bold leading-tight text-neutral-800">
-              {zone.title}
-            </span>
-          )}
+        {state.zonesVisible && zone.title && (
+          // the fill is faint now, so the title carries its own backdrop
+          <span className="m-1 self-start whitespace-nowrap rounded bg-white/90 px-1.5 py-0.5 text-xs font-bold leading-tight text-neutral-800">
+            {zone.title}
+          </span>
+        )}
         <div className="flex flex-wrap content-start gap-1 p-1">
           {inside.map((chip) => (
             <span
