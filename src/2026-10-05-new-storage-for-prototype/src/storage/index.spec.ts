@@ -43,12 +43,17 @@ describeWithStores("NodeStore", (getStore) => {
     expect(nodeStore.cell.get(ref)).toBe("Standalone")
   })
 
-  test("rejects attach with an expired transaction", () => {
+  test("rejects attach and editors with an expired transaction", () => {
     const nodeStore = getStore()
-    const ref = nodeStore.cell.create("Standalone")
+    const cell = nodeStore.cell.create("Standalone")
+    const array = nodeStore.array.create([])
+    const map = nodeStore.map.create({})
     const expired = nodeStore.transact((tx) => tx)
 
-    expect(() => nodeStore.attach(ref, expired)).toThrow("Invalid transaction.")
+    expect(() => nodeStore.attach(cell, expired)).toThrow("Invalid transaction.")
+    expect(() => nodeStore.cell.edit(cell, expired)).toThrow("Invalid transaction.")
+    expect(() => nodeStore.array.edit(array, expired)).toThrow("Invalid transaction.")
+    expect(() => nodeStore.map.edit(map, expired)).toThrow("Invalid transaction.")
   })
 
   test("attaches and reads an empty root array", () => {
