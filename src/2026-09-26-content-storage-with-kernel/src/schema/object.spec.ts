@@ -1,5 +1,5 @@
+import { test } from "bun:test"
 import assert from "node:assert/strict"
-import test from "node:test"
 
 import * as Y from "yjs"
 
@@ -232,13 +232,9 @@ describeWithStores("object schemas", (getStore) => {
   })
 })
 
-test("optional fields observe remote Yjs changes and converge after concurrent add/remove", (context) => {
+test("optional fields observe remote Yjs changes and converge after concurrent add/remove", () => {
   const firstDoc = new Y.Doc()
   const secondDoc = new Y.Doc()
-  context.after(() => {
-    firstDoc.destroy()
-    secondDoc.destroy()
-  })
   type YjsRefs = { [Kind in NodeKind]: ReturnType<YjsNodeStore[Kind]["create"]> }
   const firstStore: NodeStore<YjsRefs, Y.Transaction> = new YjsNodeStore(firstDoc)
   const secondStore: NodeStore<YjsRefs, Y.Transaction> = new YjsNodeStore(secondDoc)
@@ -267,4 +263,6 @@ test("optional fields observe remote Yjs changes and converge after concurrent a
   assert.deepEqual(first.snapshot(), second.snapshot())
   const bio = first.field("bio")
   assert.ok(bio === undefined || bio.get() === "Concurrent replacement")
+  firstDoc.destroy()
+  secondDoc.destroy()
 })

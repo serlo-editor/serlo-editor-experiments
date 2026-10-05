@@ -1,5 +1,5 @@
+import { test } from "bun:test"
 import assert from "node:assert/strict"
-import test from "node:test"
 
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import type { JSONValue } from "../utils/index.ts"

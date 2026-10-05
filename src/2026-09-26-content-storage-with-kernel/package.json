@@ -11,7 +11,7 @@
     "fix": "pnpm run fix:format && pnpm run fix:lint && pnpm run check:tsc && pnpm run test",
     "fix:format": "oxfmt",
     "fix:lint": "oxlint --fix",
-    "test": "node --experimental-strip-types --test src/**/*.spec.ts"
+    "test": "bun test"
   },
   "dependencies": {
     "yjs": "^13.6.33"

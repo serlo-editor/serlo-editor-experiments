@@ -1,4 +1,4 @@
-import test from "node:test"
+import { afterEach, beforeEach, describe } from "bun:test"
 
 import * as Y from "yjs"
 
@@ -9,25 +9,25 @@ export function describeWithStores(
   name: string,
   callback: <Refs extends NodeRefs, Tx>(getStore: () => NodeStore<Refs, Tx>) => void,
 ): void {
-  test.describe(name, () => {
-    test.describe("FlatNodeStore", () => {
+  describe(name, () => {
+    describe("FlatNodeStore", () => {
       let store!: StoreContract<FlatNodeStore>
 
-      test.beforeEach(() => {
+      beforeEach(() => {
         store = new FlatNodeStore()
       })
       callback(() => store)
     })
 
-    test.describe("YjsNodeStore", () => {
+    describe("YjsNodeStore", () => {
       let store!: StoreContract<YjsNodeStore>
       let doc!: Y.Doc
 
-      test.beforeEach(() => {
+      beforeEach(() => {
         doc = new Y.Doc()
         store = new YjsNodeStore(doc)
       })
-      test.afterEach(() => doc.destroy())
+      afterEach(() => doc.destroy())
       callback(() => store)
     })
   })

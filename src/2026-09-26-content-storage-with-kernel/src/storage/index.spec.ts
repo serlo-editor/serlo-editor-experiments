@@ -1,5 +1,5 @@
+import { test } from "bun:test"
 import assert from "node:assert/strict"
-import test from "node:test"
 
 import * as Y from "yjs"
 
@@ -383,12 +383,12 @@ test("FlatNodeStore editors require an active transaction from their own store",
   checkEditors(failed, false)
 })
 
-test("YjsNodeStore rejects cells missing their value", (context) => {
+test("YjsNodeStore rejects cells missing their value", () => {
   const doc = new Y.Doc()
-  context.after(() => doc.destroy())
   const store = new YjsNodeStore(doc)
   const ref = store.attach(store.cell.create("Draft"))
   store.transact(() => ref.delete("value"))
 
   assert.throws(() => store.cell.get(ref), { message: "Cell value absent." })
+  doc.destroy()
 })

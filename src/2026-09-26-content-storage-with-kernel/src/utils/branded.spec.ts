@@ -1,4 +1,4 @@
-import test from "node:test"
+import { test } from "bun:test"
 
 import type { Branded } from "./branded.ts"
 
