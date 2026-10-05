@@ -9,7 +9,6 @@ Relevant files: `src/storage/types.ts`, `src/storage/yjs.ts`,
 - [ ] Define local transaction origin compatible with prototype transport, or
       change transport to distinguish local and received transactions explicitly.
       Backend edits with null origin currently get dropped by prototype helper.
-- [ ] Cover root attachment and all schema mutations, not only cell updates.
 - [ ] Preserve grouped/nested editor operations and return values; observers must
       see completed operations rather than partially attached content.
 - [ ] Specify error semantics. Existing stores do not provide rollback; do not
