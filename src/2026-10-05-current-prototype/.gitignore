@@ -1,0 +1,17 @@
+# Playwright
+test-results/
+
+# Local
+.DS_Store
+*.local
+*.log*
+
+# Dist
+node_modules
+dist/
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+.idea
+package-lock.json

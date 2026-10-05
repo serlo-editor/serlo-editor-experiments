@@ -1,0 +1,232 @@
+@import "prosekit/basic/style.css";
+@import "prosekit/basic/typography.css";
+@import "prosekit/extensions/yjs/style.css";
+
+@font-face {
+  font-family: "Inter";
+  src: url("../assets/inter.woff2") format("woff2");
+  font-style: normal;
+  font-display: swap;
+}
+
+:root {
+  --font-sans: "Inter", sans-serif;
+
+  --color-page-bg: #f7f6f3;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #fafaf9;
+  --color-border: #e7e5e4;
+  --color-text: #2f3437;
+  --color-text-muted: #6b7280;
+  --color-accent: #2f76ff;
+  --color-accent-contrast: #ffffff;
+  --color-fill-blank: #c9a800;
+  --color-multiple-choice: #2f76ff;
+
+  --space-1: 0.5rem;
+  --space-2: 1rem;
+  --space-3: 1.5rem;
+  --space-4: 2rem;
+
+  --radius-1: 0.5rem;
+  --radius-2: 0.75rem;
+  --radius-3: 1rem;
+
+  --shadow-1: 0 10px 24px rgba(15, 23, 42, 0.08);
+
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  background: var(--color-page-bg);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-3);
+  box-shadow: var(--shadow-1);
+}
+
+.surface {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2);
+}
+
+.editor-card {
+  flex: 1 1 24rem;
+  width: 100%;
+  min-width: 24rem;
+  max-width: 48rem;
+}
+
+.editor-card__title {
+  margin: 0;
+  font-size: 1.125rem;
+}
+
+.editor-card__accent {
+  display: inline-block;
+  width: 0.7rem;
+  height: 0.7rem;
+  margin: 0 var(--space-1);
+  background: var(--accent-color);
+  border-radius: 50%;
+}
+
+.editor-frame {
+  overflow: hidden;
+  background: var(--color-surface-subtle);
+}
+
+.editor-toolbar-shell {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: #ffffff;
+}
+
+.toolbar {
+  display: flex;
+  gap: 0.3rem;
+  padding: 0.3rem 0.45rem;
+  background: #ffffff;
+  border-bottom: 1px solid #e0e3e7;
+}
+
+.toolbar__button {
+  min-width: 2.25rem;
+  padding: 0.3rem 0.5rem;
+  font: inherit;
+  color: var(--color-text);
+  cursor: pointer;
+  background: #ffffff;
+  border: 1px solid #dadce0;
+  border-radius: var(--radius-1);
+}
+
+.toolbar__button--enabled:hover:not(:disabled) {
+  opacity: 0.6;
+}
+
+.toolbar__button--active {
+  color: var(--color-accent-contrast);
+  background: var(--editor-accent, var(--color-accent));
+  border-color: transparent;
+}
+
+.toolbar__button--disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.toolbar__button:focus-visible {
+  outline: 2px solid var(--editor-accent, var(--color-accent));
+  outline-offset: 2px;
+}
+
+.editor-content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-2);
+  font-size: 1rem;
+  line-height: 1.5;
+}
+
+.editor-rich-text {
+  outline: none;
+}
+
+.editor-rich-text--inline {
+  display: inline;
+}
+
+/* ── Exercises ─────────────────────────────────────────────── */
+.exercise {
+  padding: var(--space-2) var(--space-3);
+  line-height: 1.6;
+  background: #fffef7;
+  border: 1.5px solid #e2d89a;
+  border-radius: var(--radius-2);
+}
+
+.exercise > p:first-child {
+  margin: 0 0 var(--space-1);
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #8a7a30;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.exercise--fill-blank {
+  background: #fffef5;
+  border-left: 4px solid var(--color-fill-blank);
+}
+
+.ProseMirror .gap-mark {
+  display: inline-block;
+  min-width: 3rem;
+  padding: 0 0.35rem;
+  margin: 0 0.1rem;
+  font-weight: 600;
+  vertical-align: baseline;
+  color: #7a5c00;
+  background: rgba(201, 168, 0, 0.1);
+  border-bottom: 2px solid var(--color-fill-blank);
+}
+
+.exercise--multiple-choice {
+  background: #f8fbff;
+  border-left: 4px solid var(--color-multiple-choice);
+}
+
+.exercise--multiple-choice > p:first-child {
+  color: #1a52c2;
+}
+
+.multiple-choice-options {
+  padding: 0;
+  margin: var(--space-1) 0 0;
+  list-style: none;
+  counter-reset: mc-option;
+}
+
+.multiple-choice-options li {
+  display: flex;
+  gap: 0.6rem;
+  align-items: baseline;
+  padding: 0.45rem 0.6rem;
+  margin-bottom: 0.4rem;
+  counter-increment: mc-option;
+  background: var(--color-surface);
+  border: 1px solid #d6e4ff;
+  border-radius: var(--radius-1);
+}
+
+.multiple-choice-options li::before {
+  flex-shrink: 0;
+  min-width: 1.4rem;
+  font-weight: 600;
+  color: var(--color-multiple-choice);
+  content: counter(mc-option, upper-alpha) ".";
+}

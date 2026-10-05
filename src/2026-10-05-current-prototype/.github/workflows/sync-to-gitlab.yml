@@ -1,0 +1,15 @@
+name: Sync to GitLab
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: kulla/sync-to-gitlab@v1
+        with:
+          owner: stephan_kulla
+          repository_name: 2025-12-12-editor
+          token: ${{ secrets.GITLAB_TOKEN }}
