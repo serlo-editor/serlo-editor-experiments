@@ -73,14 +73,18 @@ export class YjsNodeStore implements YjsNodeStoreContract {
   }
 
   attach<Ref extends YjsNodeRef>(ref: Ref, tx: Y.Transaction): Ref & RootRef {
-    if (tx.doc !== this.doc || this.doc._transaction !== tx) {
-      throw new Error("Invalid transaction.")
-    }
+    this.assertActiveTransaction(tx)
     this.doc.getMap("root").set("root", ref)
     return ref as Ref & RootRef
   }
 
   transact<T>(callback: (tx: Y.Transaction) => T): T {
     return this.doc.transact(callback)
+  }
+
+  private assertActiveTransaction(tx: Y.Transaction): void {
+    if (tx.doc !== this.doc || this.doc._transaction !== tx) {
+      throw new Error("Invalid transaction.")
+    }
   }
 }
