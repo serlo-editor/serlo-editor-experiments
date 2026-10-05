@@ -1,8 +1,5 @@
 # 4. Transactions and synchronization
 
-Stage 1: Prepare backend. [Task index](../TASKS.md).
-Paths below are relative to experiment root unless marked as prototype paths.
-
 Relevant files: `src/storage/types.ts`, `src/storage/yjs.ts`,
 `src/storage/flat.ts`, and prototype's `src/demo/sync-cdrts.ts`.
 
