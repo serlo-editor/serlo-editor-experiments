@@ -17,6 +17,7 @@ export interface NodeStore<Refs extends NodeRefs = NodeRefs, TransactionContext 
   readonly map: MapStore<Refs[NodeKind], Refs["map"], TransactionContext>
 
   attach<Ref extends Refs[NodeKind]>(ref: Ref, tx: TransactionContext): Ref & RootRef
+  /** Errors propagate, but transaction changes are not rolled back. */
   transact<Result>(callback: (tx: TransactionContext) => Result): Result
 }
 
