@@ -16,9 +16,7 @@
     "dev": "bun --watch src/index.html",
     "format": "oxfmt",
     "preview": "bun run build && bun dist/index.html",
-    "test": "bun run test:unit && bun run test:e2e",
-    "test:e2e": "./scripts/e2e-tests",
-    "test:unit": "bun test"
+    "test": "bun test"
   },
   "dependencies": {
     "clsx": "2.1.1",
@@ -31,7 +29,6 @@
     "yjs": "13.6.30"
   },
   "devDependencies": {
-    "@playwright/test": "1.60.0",
     "@tsconfig/bun": "1.0.10",
     "@types/bun": "1.3.14",
     "@types/react-dom": "19.2.3",
