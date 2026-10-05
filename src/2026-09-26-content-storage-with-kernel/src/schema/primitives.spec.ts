@@ -1,5 +1,4 @@
-import { test } from "bun:test"
-import assert from "node:assert/strict"
+import { expect, test } from "bun:test"
 
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import { createDocument } from "./document.ts"
@@ -9,36 +8,36 @@ describeWithStores("primitive schemas", (getStore) => {
   test("creates and edits string documents", () => {
     const { root } = createDocument(getStore(), string(), "Ada")
 
-    assert.equal(root.get(), "Ada")
-    assert.equal(root.snapshot(), "Ada")
+    expect(root.get()).toBe("Ada")
+    expect(root.snapshot()).toBe("Ada")
 
     root.set("Grace")
 
-    assert.equal(root.get(), "Grace")
-    assert.equal(root.snapshot(), "Grace")
+    expect(root.get()).toBe("Grace")
+    expect(root.snapshot()).toBe("Grace")
   })
 
   test("creates and edits boolean documents", () => {
     const { root } = createDocument(getStore(), boolean(), false)
 
-    assert.equal(root.get(), false)
-    assert.equal(root.snapshot(), false)
+    expect(root.get()).toBe(false)
+    expect(root.snapshot()).toBe(false)
 
     root.set(true)
 
-    assert.equal(root.get(), true)
-    assert.equal(root.snapshot(), true)
+    expect(root.get()).toBe(true)
+    expect(root.snapshot()).toBe(true)
   })
 
   test("creates and edits number documents", () => {
     const { root } = createDocument(getStore(), number(), 1)
 
-    assert.equal(root.get(), 1)
-    assert.equal(root.snapshot(), 1)
+    expect(root.get()).toBe(1)
+    expect(root.snapshot()).toBe(1)
 
     root.set(2)
 
-    assert.equal(root.get(), 2)
-    assert.equal(root.snapshot(), 2)
+    expect(root.get()).toBe(2)
+    expect(root.snapshot()).toBe(2)
   })
 })

@@ -1,5 +1,4 @@
-import { test } from "bun:test"
-import assert from "node:assert/strict"
+import { expect, test } from "bun:test"
 
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import type { JSONValue } from "../utils/index.ts"
@@ -25,12 +24,12 @@ describeWithStores("Document", (getStore) => {
     const document = createDocument(store, schema, "Initial")
     const root = document.root
 
-    assert.equal(root.snapshot(), "Initial")
-    assert.equal(document.snapshot(), "Initial")
+    expect(root.snapshot()).toBe("Initial")
+    expect(document.snapshot()).toBe("Initial")
 
     root.set("Changed")
 
-    assert.equal(root.snapshot(), "Changed")
-    assert.equal(document.snapshot(), "Changed")
+    expect(root.snapshot()).toBe("Changed")
+    expect(document.snapshot()).toBe("Changed")
   })
 })

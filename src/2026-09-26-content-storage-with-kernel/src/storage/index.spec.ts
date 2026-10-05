@@ -1,5 +1,4 @@
-import { test } from "bun:test"
-import assert from "node:assert/strict"
+import { expect, test } from "bun:test"
 
 import * as Y from "yjs"
 
@@ -29,13 +28,10 @@ describeWithStores("NodeStore", (getStore) => {
     const rootRef = nodeStore.array.create(cells.map(({ ref }) => ref))
     nodeStore.attach(rootRef)
 
-    assert.deepEqual(
-      nodeStore.array.get(rootRef),
-      cells.map(({ ref }) => ref),
-    )
+    expect(nodeStore.array.get(rootRef)).toEqual(cells.map(({ ref }) => ref))
     for (const { ref, value } of cells) {
-      assert.deepEqual(nodeStore.cell.get(ref), value)
-      assert.deepEqual(nodeStore.cell.get(ref), value, "Repeated reads preserve values")
+      expect(nodeStore.cell.get(ref)).toEqual(value)
+      expect(nodeStore.cell.get(ref)).toEqual(value, "Repeated reads preserve values")
     }
   })
 
@@ -43,26 +39,26 @@ describeWithStores("NodeStore", (getStore) => {
     const nodeStore = getStore()
     const ref = nodeStore.cell.create("Standalone")
 
-    assert.equal(nodeStore.attach(ref), ref)
-    assert.equal(nodeStore.cell.get(ref), "Standalone")
+    expect(nodeStore.attach(ref)).toBe(ref)
+    expect(nodeStore.cell.get(ref)).toBe("Standalone")
   })
 
   test("attaches and reads an empty root array", () => {
     const nodeStore = getStore()
     const ref = nodeStore.array.create([])
 
-    assert.equal(nodeStore.attach(ref), ref)
-    assert.deepEqual(nodeStore.array.get(ref), [])
-    assert.deepEqual(nodeStore.array.get(ref), [])
+    expect(nodeStore.attach(ref)).toBe(ref)
+    expect(nodeStore.array.get(ref)).toEqual([])
+    expect(nodeStore.array.get(ref)).toEqual([])
   })
 
   test("attaches and reads an empty root map", () => {
     const nodeStore = getStore()
     const ref = nodeStore.map.create({})
 
-    assert.equal(nodeStore.attach(ref), ref)
-    assert.deepEqual(nodeStore.map.get(ref), {})
-    assert.deepEqual(nodeStore.map.get(ref), {})
+    expect(nodeStore.attach(ref)).toBe(ref)
+    expect(nodeStore.map.get(ref)).toEqual({})
+    expect(nodeStore.map.get(ref)).toEqual({})
   })
 
   test("reads maps containing cells, arrays, and nested maps", () => {
@@ -76,20 +72,20 @@ describeWithStores("NodeStore", (getStore) => {
     const fields = { title: titleRef, branch: branchRef }
     const rootRef = nodeStore.map.create(fields)
 
-    assert.equal(nodeStore.attach(rootRef), rootRef)
-    assert.deepEqual(nodeStore.map.get(rootRef), fields)
-    assert.deepEqual(nodeStore.map.get(rootRef), fields, "Repeated reads preserve references")
-    assert.equal(nodeStore.map.get(rootRef).title, titleRef)
-    assert.deepEqual(nodeStore.map.get(branchRef), { items: arrayRef })
-    assert.deepEqual(nodeStore.array.get(arrayRef), [emptyRef, leafRef])
-    assert.deepEqual(nodeStore.map.get(emptyRef), {})
-    assert.deepEqual(nodeStore.map.get(leafRef), { body: bodyRef })
-    assert.equal(nodeStore.cell.get(titleRef), "Title")
-    assert.deepEqual(nodeStore.cell.get(bodyRef), { text: "Body" })
+    expect(nodeStore.attach(rootRef)).toBe(rootRef)
+    expect(nodeStore.map.get(rootRef)).toEqual(fields)
+    expect(nodeStore.map.get(rootRef)).toEqual(fields, "Repeated reads preserve references")
+    expect(nodeStore.map.get(rootRef).title).toBe(titleRef)
+    expect(nodeStore.map.get(branchRef)).toEqual({ items: arrayRef })
+    expect(nodeStore.array.get(arrayRef)).toEqual([emptyRef, leafRef])
+    expect(nodeStore.map.get(emptyRef)).toEqual({})
+    expect(nodeStore.map.get(leafRef)).toEqual({ body: bodyRef })
+    expect(nodeStore.cell.get(titleRef)).toBe("Title")
+    expect(nodeStore.cell.get(bodyRef)).toEqual({ text: "Body" })
 
     nodeStore.transact((tx) => nodeStore.cell.edit(bodyRef, tx).set({ text: "Changed" }))
-    assert.deepEqual(nodeStore.map.get(leafRef), { body: bodyRef })
-    assert.deepEqual(nodeStore.cell.get(bodyRef), { text: "Changed" })
+    expect(nodeStore.map.get(leafRef)).toEqual({ body: bodyRef })
+    expect(nodeStore.cell.get(bodyRef)).toEqual({ text: "Changed" })
   })
 
   test("sets and replaces map fields inside and after transactions", () => {
@@ -104,9 +100,9 @@ describeWithStores("NodeStore", (getStore) => {
     for (const ref of [cellRef, arrayRef, mapRef]) {
       nodeStore.transact((tx) => {
         nodeStore.map.edit(rootRef, tx).set("content", ref)
-        assert.deepEqual(nodeStore.map.get(rootRef), { content: ref })
+        expect(nodeStore.map.get(rootRef)).toEqual({ content: ref })
       })
-      assert.deepEqual(nodeStore.map.get(rootRef), { content: ref })
+      expect(nodeStore.map.get(rootRef)).toEqual({ content: ref })
     }
 
     const titleRef = nodeStore.cell.create("Title")
@@ -114,12 +110,12 @@ describeWithStores("NodeStore", (getStore) => {
     nodeStore.transact((tx) => {
       nodeStore.map.edit(rootRef, tx).set("title", titleRef)
       nodeStore.map.edit(mapRef, tx).set("flag", flagRef)
-      assert.deepEqual(nodeStore.map.get(rootRef), { content: mapRef, title: titleRef })
+      expect(nodeStore.map.get(rootRef)).toEqual({ content: mapRef, title: titleRef })
     })
-    assert.deepEqual(nodeStore.map.get(rootRef), { content: mapRef, title: titleRef })
-    assert.equal(nodeStore.cell.get(titleRef), "Title")
-    assert.deepEqual(nodeStore.map.get(mapRef), { flag: flagRef })
-    assert.equal(nodeStore.cell.get(flagRef), false)
+    expect(nodeStore.map.get(rootRef)).toEqual({ content: mapRef, title: titleRef })
+    expect(nodeStore.cell.get(titleRef)).toBe("Title")
+    expect(nodeStore.map.get(mapRef)).toEqual({ flag: flagRef })
+    expect(nodeStore.cell.get(flagRef)).toBe(false)
   })
 
   test("preserves empty, Unicode, and object-prototype field names", () => {
@@ -129,7 +125,7 @@ describeWithStores("NodeStore", (getStore) => {
     const rootRef = nodeStore.map.create(fields)
     nodeStore.attach(rootRef)
 
-    assert.deepEqual(nodeStore.map.get(rootRef), fields)
+    expect(nodeStore.map.get(rootRef)).toEqual(fields)
     const replacements = Object.fromEntries(
       keys.map((key) => [key, nodeStore.cell.create(`Changed ${key}`)]),
     )
@@ -138,11 +134,11 @@ describeWithStores("NodeStore", (getStore) => {
       for (const [key, ref] of Object.entries(replacements)) {
         editor.set(key, ref)
       }
-      assert.deepEqual(nodeStore.map.get(rootRef), replacements)
+      expect(nodeStore.map.get(rootRef)).toEqual(replacements)
     })
-    assert.deepEqual(nodeStore.map.get(rootRef), replacements)
+    expect(nodeStore.map.get(rootRef)).toEqual(replacements)
     for (const [key, ref] of Object.entries(replacements)) {
-      assert.equal(nodeStore.cell.get(ref), `Changed ${key}`)
+      expect(nodeStore.cell.get(ref)).toBe(`Changed ${key}`)
     }
   })
 
@@ -157,17 +153,17 @@ describeWithStores("NodeStore", (getStore) => {
       for (const key of keys) {
         editor.remove(key)
         editor.remove(key)
-        assert.equal(Object.hasOwn(store.map.get(ref), key), false)
+        expect(Object.hasOwn(store.map.get(ref), key)).toBe(false)
       }
       editor.remove("missing")
-      assert.deepEqual(store.map.get(ref), {})
+      expect(store.map.get(ref)).toEqual({})
     })
-    assert.deepEqual(store.map.get(ref), {})
-    assert.deepEqual(previous, fields)
+    expect(store.map.get(ref)).toEqual({})
+    expect(previous).toEqual(fields)
 
     const child = store.cell.create("Again")
     store.transact((tx) => store.map.edit(ref, tx).set("__proto__", child))
-    assert.deepEqual(store.map.get(ref), { ["__proto__"]: child })
+    expect(store.map.get(ref)).toEqual({ ["__proto__"]: child })
   })
 
   test("inserts maps into arrays", () => {
@@ -179,11 +175,11 @@ describeWithStores("NodeStore", (getStore) => {
 
     nodeStore.transact((tx) => {
       nodeStore.array.edit(rootRef, tx).insert(0, mapRef)
-      assert.deepEqual(nodeStore.array.get(rootRef), [mapRef])
+      expect(nodeStore.array.get(rootRef)).toEqual([mapRef])
     })
-    assert.deepEqual(nodeStore.array.get(rootRef), [mapRef])
-    assert.deepEqual(nodeStore.map.get(mapRef), { content: cellRef })
-    assert.equal(nodeStore.cell.get(cellRef), "Nested")
+    expect(nodeStore.array.get(rootRef)).toEqual([mapRef])
+    expect(nodeStore.map.get(mapRef)).toEqual({ content: cellRef })
+    expect(nodeStore.cell.get(cellRef)).toBe("Nested")
   })
 
   test("reads ordered mixed arrays and their nested references", () => {
@@ -196,16 +192,16 @@ describeWithStores("NodeStore", (getStore) => {
     const branchRef = nodeStore.array.create([emptyRef, leafRef, flagRef])
     const rootRef = nodeStore.array.create([titleRef, branchRef])
 
-    assert.equal(nodeStore.attach(rootRef), rootRef)
-    assert.deepEqual(nodeStore.array.get(rootRef), [titleRef, branchRef])
-    assert.deepEqual(nodeStore.array.get(branchRef), [emptyRef, leafRef, flagRef])
-    assert.deepEqual(nodeStore.array.get(emptyRef), [])
-    assert.deepEqual(nodeStore.array.get(leafRef), [bodyRef])
-    assert.equal(nodeStore.array.get(rootRef)[0], titleRef)
-    assert.equal(nodeStore.array.get(rootRef)[1], branchRef)
-    assert.equal(nodeStore.cell.get(titleRef), "Title")
-    assert.deepEqual(nodeStore.cell.get(bodyRef), { text: "Body" })
-    assert.equal(nodeStore.cell.get(flagRef), false)
+    expect(nodeStore.attach(rootRef)).toBe(rootRef)
+    expect(nodeStore.array.get(rootRef)).toEqual([titleRef, branchRef])
+    expect(nodeStore.array.get(branchRef)).toEqual([emptyRef, leafRef, flagRef])
+    expect(nodeStore.array.get(emptyRef)).toEqual([])
+    expect(nodeStore.array.get(leafRef)).toEqual([bodyRef])
+    expect(nodeStore.array.get(rootRef)[0]).toBe(titleRef)
+    expect(nodeStore.array.get(rootRef)[1]).toBe(branchRef)
+    expect(nodeStore.cell.get(titleRef)).toBe("Title")
+    expect(nodeStore.cell.get(bodyRef)).toEqual({ text: "Body" })
+    expect(nodeStore.cell.get(flagRef)).toBe(false)
   })
 
   test("creates distinct references for equal values and edits them independently", () => {
@@ -220,19 +216,19 @@ describeWithStores("NodeStore", (getStore) => {
     const rootRef = nodeStore.array.create(refs)
     nodeStore.attach(rootRef)
 
-    assert.equal(new Set([...refs, rootRef]).size, 7)
+    expect(new Set([...refs, rootRef]).size).toBe(7)
     nodeStore.transact((tx) => {
       nodeStore.cell.edit(firstRef, tx).set("Changed")
       nodeStore.array.edit(firstArrayRef, tx).insert(0, nodeStore.cell.create("Added"))
       nodeStore.map.edit(firstMapRef, tx).set("added", nodeStore.cell.create("Added"))
     })
 
-    assert.equal(nodeStore.cell.get(firstRef), "Changed")
-    assert.equal(nodeStore.cell.get(secondRef), "Same")
-    assert.equal(nodeStore.array.get(firstArrayRef).length, 1)
-    assert.deepEqual(nodeStore.array.get(secondArrayRef), [])
-    assert.deepEqual(Object.keys(nodeStore.map.get(firstMapRef)), ["added"])
-    assert.deepEqual(nodeStore.map.get(secondMapRef), {})
+    expect(nodeStore.cell.get(firstRef)).toBe("Changed")
+    expect(nodeStore.cell.get(secondRef)).toBe("Same")
+    expect(nodeStore.array.get(firstArrayRef).length).toBe(1)
+    expect(nodeStore.array.get(secondArrayRef)).toEqual([])
+    expect(Object.keys(nodeStore.map.get(firstMapRef))).toEqual(["added"])
+    expect(nodeStore.map.get(secondMapRef)).toEqual({})
   })
 
   test("reads replacements inside and after transactions, including type changes", () => {
@@ -251,12 +247,12 @@ describeWithStores("NodeStore", (getStore) => {
     for (const value of replacements) {
       const result = nodeStore.transact((tx) => {
         nodeStore.cell.edit(ref, tx).set(value)
-        assert.deepEqual(nodeStore.cell.get(ref), value)
+        expect(nodeStore.cell.get(ref)).toEqual(value)
         return value
       })
 
-      assert.deepEqual(result, value)
-      assert.deepEqual(nodeStore.cell.get(ref), value)
+      expect(result).toEqual(value)
+      expect(nodeStore.cell.get(ref)).toEqual(value)
     }
   })
 
@@ -273,39 +269,30 @@ describeWithStores("NodeStore", (getStore) => {
     nodeStore.transact((tx) => {
       const editor = nodeStore.array.edit(rootRef, tx)
       editor.insert(0, secondRef)
-      assert.deepEqual(nodeStore.array.get(rootRef), [secondRef])
+      expect(nodeStore.array.get(rootRef)).toEqual([secondRef])
       editor.insert(0, firstRef)
-      assert.deepEqual(nodeStore.array.get(rootRef), [firstRef, secondRef])
+      expect(nodeStore.array.get(rootRef)).toEqual([firstRef, secondRef])
       editor.insert(1, nestedRef)
-      assert.deepEqual(nodeStore.array.get(rootRef), [firstRef, nestedRef, secondRef])
+      expect(nodeStore.array.get(rootRef)).toEqual([firstRef, nestedRef, secondRef])
       editor.insert(3, thirdRef)
-      assert.deepEqual(nodeStore.array.get(rootRef), [firstRef, nestedRef, secondRef, thirdRef])
+      expect(nodeStore.array.get(rootRef)).toEqual([firstRef, nestedRef, secondRef, thirdRef])
     })
 
-    assert.deepEqual(nodeStore.array.get(rootRef), [firstRef, nestedRef, secondRef, thirdRef])
-    assert.deepEqual(nodeStore.array.get(nestedRef), [nestedCellRef])
-    assert.equal(nodeStore.cell.get(nestedCellRef), "Nested")
-    assert.equal(nodeStore.cell.get(firstRef), "First")
-    assert.equal(nodeStore.cell.get(secondRef), "Second")
-    assert.equal(nodeStore.cell.get(thirdRef), "Third")
+    expect(nodeStore.array.get(rootRef)).toEqual([firstRef, nestedRef, secondRef, thirdRef])
+    expect(nodeStore.array.get(nestedRef)).toEqual([nestedCellRef])
+    expect(nodeStore.cell.get(nestedCellRef)).toBe("Nested")
+    expect(nodeStore.cell.get(firstRef)).toBe("First")
+    expect(nodeStore.cell.get(secondRef)).toBe("Second")
+    expect(nodeStore.cell.get(thirdRef)).toBe("Third")
   })
 
   test("returns callback results even when they are unrelated to stored values", () => {
     const nodeStore = getStore()
     const result = { status: "Done" }
 
-    assert.equal(
-      nodeStore.transact(() => result),
-      result,
-    )
-    assert.equal(
-      nodeStore.transact(() => 0),
-      0,
-    )
-    assert.equal(
-      nodeStore.transact(() => undefined),
-      undefined,
-    )
+    expect(nodeStore.transact(() => result)).toBe(result)
+    expect(nodeStore.transact(() => 0)).toBe(0)
+    expect(nodeStore.transact(() => undefined)).toBe(undefined)
   })
 
   test("propagates callback errors and permits subsequent transactions", () => {
@@ -314,16 +301,18 @@ describeWithStores("NodeStore", (getStore) => {
     nodeStore.attach(ref)
     const error = new Error("Transaction failed")
 
-    assert.throws(
-      () =>
-        nodeStore.transact(() => {
-          throw error
-        }),
-      (caught) => caught === error,
-    )
+    let caught: unknown
+    try {
+      nodeStore.transact(() => {
+        throw error
+      })
+    } catch (thrown) {
+      caught = thrown
+    }
+    expect(caught).toBe(error)
     nodeStore.transact((tx) => nodeStore.cell.edit(ref, tx).set("Recovered"))
 
-    assert.equal(nodeStore.cell.get(ref), "Recovered")
+    expect(nodeStore.cell.get(ref)).toBe("Recovered")
   })
 })
 
@@ -333,12 +322,10 @@ test("FlatNodeStore keeps references distinct across stores and node kinds", () 
   const firstRefs = [first.cell.create(null), first.array.create([]), first.map.create({})]
   const secondRefs = [second.cell.create(null), second.array.create([]), second.map.create({})]
 
-  assert.equal(new Set([...firstRefs, ...secondRefs]).size, 6)
+  expect(new Set([...firstRefs, ...secondRefs]).size).toBe(6)
   for (const ref of firstRefs) {
-    assert.equal(first.attach(ref), ref)
-    assert.throws(() => second.attach(ref), {
-      message: `Reference with key ${ref} does not exist.`,
-    })
+    expect(first.attach(ref)).toBe(ref)
+    expect(() => second.attach(ref)).toThrow(`Reference with key ${ref} does not exist.`)
   }
 })
 
@@ -354,9 +341,9 @@ test("FlatNodeStore editors require an active transaction from their own store",
       () => store.map.edit(map, tx),
     ]) {
       if (valid) {
-        assert.doesNotThrow(edit)
+        expect(edit).not.toThrow()
       } else {
-        assert.throws(edit, { message: "Invalid transaction." })
+        expect(edit).toThrow("Invalid transaction.")
       }
     }
   }
@@ -374,12 +361,12 @@ test("FlatNodeStore editors require an active transaction from their own store",
   new FlatNodeStore().transact((tx) => checkEditors(tx, false))
 
   let failed = expired
-  assert.throws(() =>
+  expect(() =>
     store.transact((tx) => {
       failed = tx
       throw new Error("Transaction failed")
     }),
-  )
+  ).toThrow()
   checkEditors(failed, false)
 })
 
@@ -389,6 +376,6 @@ test("YjsNodeStore rejects cells missing their value", () => {
   const ref = store.attach(store.cell.create("Draft"))
   store.transact(() => ref.delete("value"))
 
-  assert.throws(() => store.cell.get(ref), { message: "Cell value absent." })
+  expect(() => store.cell.get(ref)).toThrow("Cell value absent.")
   doc.destroy()
 })

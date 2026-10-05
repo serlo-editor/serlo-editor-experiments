@@ -1,5 +1,4 @@
-import { test } from "bun:test"
-import assert from "node:assert/strict"
+import { expect, test } from "bun:test"
 
 import * as Y from "yjs"
 
@@ -30,16 +29,16 @@ describeWithStores("object schemas", (getStore) => {
       initial,
     )
 
-    assert.deepEqual(root.snapshot(), initial)
-    assert.equal(root.field("name").get() satisfies string, "Ada")
-    assert.equal(root.field("active").get() satisfies boolean, false)
+    expect(root.snapshot()).toEqual(initial)
+    expect(root.field("name").get() satisfies string).toBe("Ada")
+    expect(root.field("active").get() satisfies boolean).toBe(false)
 
     root.field("name").set("Grace")
     root.field("active").set(true)
     root.field("tags").insert(1, "code")
     root.field("profile").field("bio").set("Updated")
 
-    assert.deepEqual(root.snapshot(), {
+    expect(root.snapshot()).toEqual({
       name: "Grace",
       active: true,
       tags: ["math", "code"],
@@ -47,13 +46,13 @@ describeWithStores("object schemas", (getStore) => {
     })
 
     // @ts-expect-error Object handles expose field(), not get().
-    assert.equal(root.get, undefined)
+    expect(root.get).toBe(undefined)
     // @ts-expect-error Fields are edited through child handles, not replaced.
-    assert.equal(root.set, undefined)
-    assert.throws(() => {
+    expect(root.set).toBe(undefined)
+    expect(() => {
       // @ts-expect-error Unknown fields are rejected.
       root.field("missing")
-    })
+    }).toThrow()
   })
 
   test("adds, edits, replaces, removes, and re-adds optional fields", () => {
@@ -61,65 +60,49 @@ describeWithStores("object schemas", (getStore) => {
     const document = createDocument(getStore(), schema, { name: "Ada" })
     const root = document.root
 
-    assert.equal(root.field("name").get() satisfies string, "Ada")
-    assert.equal(
-      root.field("bio") satisfies HandleOf<ReturnType<typeof string>> | undefined,
+    expect(root.field("name").get() satisfies string).toBe("Ada")
+    expect(root.field("bio") satisfies HandleOf<ReturnType<typeof string>> | undefined).toBe(
       undefined,
     )
-    assert.deepEqual(document.snapshot(), { name: "Ada" })
-    assert.equal(Object.hasOwn(document.snapshot(), "bio"), false)
+    expect(document.snapshot()).toEqual({ name: "Ada" })
+    expect(Object.hasOwn(document.snapshot(), "bio")).toBe(false)
 
     root.removeOptional("bio")
     root.setOptional("bio", "Hello")
     const bio = root.field("bio")!
-    assert.equal(bio.get(), "Hello")
+    expect(bio.get()).toBe("Hello")
     bio.set("Updated")
-    assert.deepEqual(document.snapshot(), { name: "Ada", bio: "Updated" })
+    expect(document.snapshot()).toEqual({ name: "Ada", bio: "Updated" })
 
     root.setOptional("bio", "Replacement")
-    assert.equal(root.field("bio")!.get(), "Replacement")
+    expect(root.field("bio")!.get()).toBe("Replacement")
     root.removeOptional("bio")
     root.removeOptional("bio")
-    assert.equal(root.field("bio"), undefined)
-    assert.deepEqual(root.snapshot(), { name: "Ada" })
+    expect(root.field("bio")).toBe(undefined)
+    expect(root.snapshot()).toEqual({ name: "Ada" })
     root.setOptional("bio", "Again")
-    assert.deepEqual(root.snapshot(), { name: "Ada", bio: "Again" })
+    expect(root.snapshot()).toEqual({ name: "Ada", bio: "Again" })
 
-    assert.throws(
-      () => {
-        // @ts-expect-error Required fields cannot be replaced through setOptional().
-        root.setOptional("name", "Grace")
-      },
-      { message: "Field is not optional: name." },
-    )
-    assert.throws(
-      () => {
-        // @ts-expect-error Required fields cannot be removed.
-        root.removeOptional("name")
-      },
-      { message: "Field is not optional: name." },
-    )
-    assert.throws(
-      () => {
-        // @ts-expect-error Undefined is not an optional field value.
-        root.setOptional("bio", undefined)
-      },
-      { message: "Undefined field: bio." },
-    )
-    assert.throws(
-      () => {
-        // @ts-expect-error Unknown fields cannot be added.
-        root.setOptional("missing", "value")
-      },
-      { message: "Unknown field: missing." },
-    )
-    assert.throws(
-      () => {
-        // @ts-expect-error Unknown fields cannot be removed.
-        root.removeOptional("missing")
-      },
-      { message: "Unknown field: missing." },
-    )
+    expect(() => {
+      // @ts-expect-error Required fields cannot be replaced through setOptional().
+      root.setOptional("name", "Grace")
+    }).toThrow("Field is not optional: name.")
+    expect(() => {
+      // @ts-expect-error Required fields cannot be removed.
+      root.removeOptional("name")
+    }).toThrow("Field is not optional: name.")
+    expect(() => {
+      // @ts-expect-error Undefined is not an optional field value.
+      root.setOptional("bio", undefined)
+    }).toThrow("Undefined field: bio.")
+    expect(() => {
+      // @ts-expect-error Unknown fields cannot be added.
+      root.setOptional("missing", "value")
+    }).toThrow("Unknown field: missing.")
+    expect(() => {
+      // @ts-expect-error Unknown fields cannot be removed.
+      root.removeOptional("missing")
+    }).toThrow("Unknown field: missing.")
 
     // @ts-expect-error Optional fields require an undefined check.
     const requiredHandle: HandleOf<ReturnType<typeof string>> = root.field("bio")
@@ -142,11 +125,11 @@ describeWithStores("object schemas", (getStore) => {
     })
     const initial = { bio: "", active: false, count: 0, tags: [], profile: { title: "" } }
     const { root } = createDocument(getStore(), schema, initial)
-    assert.deepEqual(root.snapshot(), initial)
+    expect(root.snapshot()).toEqual(initial)
 
     root.field("tags")!.insert(0, "math")
     root.field("profile")!.setOptional("note", "Hello")
-    assert.deepEqual(root.snapshot(), {
+    expect(root.snapshot()).toEqual({
       ...initial,
       tags: ["math"],
       profile: { title: "", note: "Hello" },
@@ -155,39 +138,30 @@ describeWithStores("object schemas", (getStore) => {
     root.setOptional("profile", { title: "New" })
     root.removeOptional("tags")
     root.setOptional("tags", [])
-    assert.deepEqual(root.snapshot(), { ...initial, profile: { title: "New" } })
+    expect(root.snapshot()).toEqual({ ...initial, profile: { title: "New" } })
   })
 
   test("rejects missing required and explicitly undefined initial fields", () => {
     const schema = object({ name: string(), bio: optional(string()) })
-    assert.throws(
-      () => {
-        // @ts-expect-error Required fields must be present.
-        schema.create(getStore(), {})
-      },
-      { message: "Missing required field: name." },
-    )
-    assert.throws(
-      () => {
-        // @ts-expect-error Explicit undefined is not absence.
-        schema.create(getStore(), { name: "Ada", bio: undefined })
-      },
-      { message: "Undefined field: bio." },
-    )
-    assert.throws(
-      () => {
-        // @ts-expect-error Required values cannot be undefined either.
-        schema.create(getStore(), { name: undefined })
-      },
-      { message: "Undefined field: name." },
-    )
+    expect(() => {
+      // @ts-expect-error Required fields must be present.
+      schema.create(getStore(), {})
+    }).toThrow("Missing required field: name.")
+    expect(() => {
+      // @ts-expect-error Explicit undefined is not absence.
+      schema.create(getStore(), { name: "Ada", bio: undefined })
+    }).toThrow("Undefined field: bio.")
+    expect(() => {
+      // @ts-expect-error Required values cannot be undefined either.
+      schema.create(getStore(), { name: undefined })
+    }).toThrow("Undefined field: name.")
 
     const store = getStore()
     const ref = store.attach(schema.create(store, { name: "Ada" }))
     const root = schema.bind(store, ref)
     store.transact((tx) => store.map.edit(ref, tx).remove("name"))
-    assert.throws(() => root.field("name"), { message: "Missing required field: name." })
-    assert.throws(() => root.snapshot(), { message: "Missing required field: name." })
+    expect(() => root.field("name")).toThrow("Missing required field: name.")
+    expect(() => root.snapshot()).toThrow("Missing required field: name.")
   })
 
   test("handles optional prototype field names without inherited properties", () => {
@@ -199,36 +173,30 @@ describeWithStores("object schemas", (getStore) => {
     const { root } = createDocument(getStore(), schema, { constructor: "ctor", toString: "text" })
     root.removeOptional("constructor")
     root.removeOptional("toString")
-    assert.equal(root.field("__proto__"), undefined)
-    assert.equal(root.field("constructor"), undefined)
-    assert.equal(root.field("toString"), undefined)
-    assert.deepEqual(root.snapshot(), {})
+    expect(root.field("__proto__")).toBe(undefined)
+    expect(root.field("constructor")).toBe(undefined)
+    expect(root.field("toString")).toBe(undefined)
+    expect(root.snapshot()).toEqual({})
     root.setOptional("__proto__", "value")
-    assert.deepEqual(root.snapshot(), { ["__proto__"]: "value" })
+    expect(root.snapshot()).toEqual({ ["__proto__"]: "value" })
     root.removeOptional("__proto__")
-    assert.deepEqual(root.snapshot(), {})
+    expect(root.snapshot()).toEqual({})
 
     const required = object({ constructor: string() })
-    assert.throws(
-      () => {
-        // @ts-expect-error Object.prototype.constructor is not a required field value.
-        required.create(getStore(), {})
-      },
-      { message: "Missing required field: constructor." },
-    )
-    assert.throws(
-      () => {
-        // @ts-expect-error Inherited schema properties are not declared fields.
-        root.field("hasOwnProperty")
-      },
-      { message: "Unknown field: hasOwnProperty." },
-    )
+    expect(() => {
+      // @ts-expect-error Object.prototype.constructor is not a required field value.
+      required.create(getStore(), {})
+    }).toThrow("Missing required field: constructor.")
+    expect(() => {
+      // @ts-expect-error Inherited schema properties are not declared fields.
+      root.field("hasOwnProperty")
+    }).toThrow("Unknown field: hasOwnProperty.")
   })
 
   test("supports empty objects", () => {
     const { root } = createDocument(getStore(), object({}), {})
 
-    assert.deepEqual(root.snapshot(), {})
+    expect(root.snapshot()).toEqual({})
   })
 })
 
@@ -246,11 +214,11 @@ test("optional fields observe remote Yjs changes and converge after concurrent a
 
   first.setOptional("bio", "Hello")
   Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
-  assert.equal(second.field("bio")!.get(), "Hello")
+  expect(second.field("bio")!.get()).toBe("Hello")
   first.removeOptional("bio")
   Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
-  assert.equal(second.field("bio"), undefined)
-  assert.deepEqual(second.snapshot(), { name: "Ada" })
+  expect(second.field("bio")).toBe(undefined)
+  expect(second.snapshot()).toEqual({ name: "Ada" })
 
   first.setOptional("bio", "Existing")
   Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
@@ -260,9 +228,9 @@ test("optional fields observe remote Yjs changes and converge after concurrent a
   const secondUpdate = Y.encodeStateAsUpdate(secondDoc)
   Y.applyUpdate(firstDoc, secondUpdate)
   Y.applyUpdate(secondDoc, firstUpdate)
-  assert.deepEqual(first.snapshot(), second.snapshot())
+  expect(first.snapshot()).toEqual(second.snapshot())
   const bio = first.field("bio")
-  assert.ok(bio === undefined || bio.get() === "Concurrent replacement")
+  expect(bio === undefined || bio.get() === "Concurrent replacement").toBeTruthy()
   firstDoc.destroy()
   secondDoc.destroy()
 })
