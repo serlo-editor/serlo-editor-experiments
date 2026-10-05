@@ -1,12 +1,8 @@
 {
+  "$schema": "https://www.schemastore.org/tsconfig",
+  "extends": "@tsconfig/bun/tsconfig.json",
   "compilerOptions": {
-    "module": "nodenext",
-    "target": "esnext",
-    "types": ["node"],
-    "strict": true,
-    "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
-    "skipLibCheck": true
+    "lib": ["esnext"]
   },
   "include": ["scripts/**/*.ts"]
 }

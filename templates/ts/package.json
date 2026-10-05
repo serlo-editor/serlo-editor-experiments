@@ -1,4 +1,5 @@
 {
+  "name": "template-ts",
   "private": true,
   "type": "module",
   "scripts": {
