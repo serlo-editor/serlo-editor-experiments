@@ -8,8 +8,6 @@ Relevant files: `src/storage/types.ts`, `src/storage/yjs.ts`,
       Backend edits with null origin currently get dropped by prototype helper.
 - [ ] Preserve grouped/nested editor operations and return values; observers must
       see completed operations rather than partially attached content.
-- [ ] Specify error semantics. Existing stores do not provide rollback; do not
-      promise it merely because API is called `transact`.
 - [ ] Add two-document checks for initialization, cell changes, array insertion/
       removal, and object edits using same forwarding rules as consumer.
 
