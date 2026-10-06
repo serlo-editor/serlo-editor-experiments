@@ -74,9 +74,10 @@ and object schemas alone cannot represent all prototype behavior.
   point for consumer imports.
 - Backend and prototype request different Yjs versions. Separate runtime copies
   break shared-type constructor checks; integration must use one resolved copy.
-- Backend transactions have null origin, while prototype's sync helper forwards
-  only non-null origins. Direct backend edits therefore do not propagate through
-  that helper.
+- `YjsNodeStore` uses its instance as the non-null origin for its transactions,
+  so direct backend edits propagate through prototype's current sync helper.
+  Transactions nested in an outer Yjs transaction retain the outer origin; a
+  null-origin outer transaction is still dropped by that helper.
 - No public API retrieves and opens existing root. Calling `createDocument()` on
   receiving peer would create a replacement instead of opening synced content.
 - Handles expose snapshots but no stable node identity. Existing keyed lookup and

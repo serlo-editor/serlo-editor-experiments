@@ -88,7 +88,7 @@ export class YjsNodeStore implements YjsNodeStoreContract {
   }
 
   transact<T>(callback: (tx: Y.Transaction) => T): T {
-    return this.doc.transact(callback)
+    return this.doc.transact(callback, this)
   }
 
   private assertActiveTransaction(tx: Y.Transaction): void {

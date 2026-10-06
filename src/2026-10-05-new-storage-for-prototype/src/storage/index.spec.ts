@@ -385,6 +385,120 @@ test("FlatNodeStore editors require an active transaction from their own store",
   checkEditors(failed, false)
 })
 
+test("YjsNodeStore uses store origin and groups nested transactions", () => {
+  const doc = new Y.Doc()
+  const store = new YjsNodeStore(doc)
+  const ref = store.cell.create("Initial")
+  store.transact((tx) => store.attach(ref, tx))
+  const updates: unknown[] = []
+  const observedValues: JSONValue[] = []
+  doc.on("update", (_update, origin) => {
+    updates.push(origin)
+    observedValues.push(store.cell.get(ref))
+  })
+
+  const result = store.transact((tx) => {
+    store.cell.edit(ref, tx).set("Outer")
+    expect(
+      store.transact((nestedTx) => {
+        store.cell.edit(ref, nestedTx).set("Complete")
+        return "nested result"
+      }),
+    ).toBe("nested result")
+    return "outer result"
+  })
+
+  expect(result).toBe("outer result")
+  expect(store.cell.get(ref)).toBe("Complete")
+  expect(updates).toEqual([store])
+  expect(observedValues).toEqual(["Complete"])
+  doc.destroy()
+})
+
+test("YjsNodeStore syncs local edits between documents without echoing received updates", () => {
+  const doc1 = new Y.Doc()
+  const doc2 = new Y.Doc()
+  const store1 = new YjsNodeStore(doc1)
+  const store2 = new YjsNodeStore(doc2)
+  let forwarded1 = 0
+  let forwarded2 = 0
+
+  doc1.on("update", (update, origin) => {
+    if (origin != null) {
+      forwarded1 += 1
+      Y.applyUpdate(doc2, update)
+    }
+  })
+  doc2.on("update", (update, origin) => {
+    if (origin != null) {
+      forwarded2 += 1
+      Y.applyUpdate(doc1, update)
+    }
+  })
+
+  const cell1 = store1.cell.create("Initial")
+  const arrayCell1 = store1.cell.create("Array child")
+  const objectCell1 = store1.cell.create("Object child")
+  const array1 = store1.array.create([arrayCell1])
+  const object1 = store1.map.create({ child: objectCell1 })
+  const root1 = store1.map.create({ cell: cell1, array: array1, object: object1 })
+  store1.transact((tx) => store1.attach(root1, tx))
+
+  const root2 = doc2.getMap("root").get("root") as ReturnType<typeof store2.map.create>
+  const cell2 = root2.get("cell") as ReturnType<typeof store2.cell.create>
+  const array2 = root2.get("array") as ReturnType<typeof store2.array.create>
+  const object2 = root2.get("object") as ReturnType<typeof store2.map.create>
+  expect(store2.cell.get(cell2)).toBe("Initial")
+  expect(
+    store2.array
+      .get(array2)
+      .map((ref) => store2.cell.get(ref as ReturnType<typeof store2.cell.create>)),
+  ).toEqual(["Array child"])
+  expect(
+    Object.values(store2.map.get(object2)).map((ref) =>
+      store2.cell.get(ref as ReturnType<typeof store2.cell.create>),
+    ),
+  ).toEqual(["Object child"])
+  expect(forwarded1).toBe(1)
+  expect(forwarded2).toBe(0)
+
+  store2.transact((tx) => store2.cell.edit(cell2, tx).set("Changed"))
+  expect(store1.cell.get(cell1)).toBe("Changed")
+
+  const insertedCell2 = store2.cell.create("Inserted")
+  store2.transact((tx) => store2.array.edit(array2, tx).insert(1, insertedCell2))
+  expect(
+    store1.array
+      .get(array1)
+      .map((ref) => store1.cell.get(ref as ReturnType<typeof store1.cell.create>)),
+  ).toEqual(["Array child", "Inserted"])
+  store1.transact((tx) => store1.array.edit(array1, tx).remove(1))
+  expect(
+    store2.array
+      .get(array2)
+      .map((ref) => store2.cell.get(ref as ReturnType<typeof store2.cell.create>)),
+  ).toEqual(["Array child"])
+
+  const objectChild1 = store1.cell.create("Object edit")
+  store1.transact((tx) => store1.map.edit(object1, tx).set("new", objectChild1))
+  expect(
+    Object.values(store2.map.get(object2)).map((ref) =>
+      store2.cell.get(ref as ReturnType<typeof store2.cell.create>),
+    ),
+  ).toEqual(["Object child", "Object edit"])
+  store2.transact((tx) => store2.map.edit(object2, tx).remove("child"))
+  expect(
+    Object.values(store1.map.get(object1)).map((ref) =>
+      store1.cell.get(ref as ReturnType<typeof store1.cell.create>),
+    ),
+  ).toEqual(["Object edit"])
+
+  expect(forwarded1).toBe(3)
+  expect(forwarded2).toBe(3)
+  doc1.destroy()
+  doc2.destroy()
+})
+
 test("YjsNodeStore rejects cells missing their value", () => {
   const doc = new Y.Doc()
   const store = new YjsNodeStore(doc)
