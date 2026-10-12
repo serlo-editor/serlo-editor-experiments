@@ -31,7 +31,7 @@ describeWithStores("NodeStore", (getStore) => {
     expect(nodeStore.array.get(rootRef)).toEqual(cells.map(({ ref }) => ref))
     for (const { ref, value } of cells) {
       expect(nodeStore.cell.get(ref)).toEqual(value)
-      expect(nodeStore.cell.get(ref)).toEqual(value, "Repeated reads preserve values")
+      expect(nodeStore.cell.get(ref), "Repeated reads preserve values").toEqual(value)
     }
   })
 
@@ -39,7 +39,7 @@ describeWithStores("NodeStore", (getStore) => {
     const nodeStore = getStore()
     const ref = nodeStore.cell.create("Standalone")
 
-    expect(nodeStore.transact((tx) => nodeStore.attach(ref, tx))).toBe(ref)
+    expect(ref).toBe(nodeStore.transact((tx) => nodeStore.attach(ref, tx)))
     expect(nodeStore.cell.get(ref)).toBe("Standalone")
   })
 
@@ -60,7 +60,7 @@ describeWithStores("NodeStore", (getStore) => {
     const nodeStore = getStore()
     const ref = nodeStore.array.create([])
 
-    expect(nodeStore.transact((tx) => nodeStore.attach(ref, tx))).toBe(ref)
+    expect(ref).toBe(nodeStore.transact((tx) => nodeStore.attach(ref, tx)))
     expect(nodeStore.array.get(ref)).toEqual([])
     expect(nodeStore.array.get(ref)).toEqual([])
   })
@@ -69,7 +69,7 @@ describeWithStores("NodeStore", (getStore) => {
     const nodeStore = getStore()
     const ref = nodeStore.map.create({})
 
-    expect(nodeStore.transact((tx) => nodeStore.attach(ref, tx))).toBe(ref)
+    expect(ref).toBe(nodeStore.transact((tx) => nodeStore.attach(ref, tx)))
     expect(nodeStore.map.get(ref)).toEqual({})
     expect(nodeStore.map.get(ref)).toEqual({})
   })
@@ -85,9 +85,9 @@ describeWithStores("NodeStore", (getStore) => {
     const fields = { title: titleRef, branch: branchRef }
     const rootRef = nodeStore.map.create(fields)
 
-    expect(nodeStore.transact((tx) => nodeStore.attach(rootRef, tx))).toBe(rootRef)
+    expect(rootRef).toBe(nodeStore.transact((tx) => nodeStore.attach(rootRef, tx)))
     expect(nodeStore.map.get(rootRef)).toEqual(fields)
-    expect(nodeStore.map.get(rootRef)).toEqual(fields, "Repeated reads preserve references")
+    expect(nodeStore.map.get(rootRef), "Repeated reads preserve references").toEqual(fields)
     expect(nodeStore.map.get(rootRef).title).toBe(titleRef)
     expect(nodeStore.map.get(branchRef)).toEqual({ items: arrayRef })
     expect(nodeStore.array.get(arrayRef)).toEqual([emptyRef, leafRef])
@@ -205,7 +205,7 @@ describeWithStores("NodeStore", (getStore) => {
     const branchRef = nodeStore.array.create([emptyRef, leafRef, flagRef])
     const rootRef = nodeStore.array.create([titleRef, branchRef])
 
-    expect(nodeStore.transact((tx) => nodeStore.attach(rootRef, tx))).toBe(rootRef)
+    expect(rootRef).toBe(nodeStore.transact((tx) => nodeStore.attach(rootRef, tx)))
     expect(nodeStore.array.get(rootRef)).toEqual([titleRef, branchRef])
     expect(nodeStore.array.get(branchRef)).toEqual([emptyRef, leafRef, flagRef])
     expect(nodeStore.array.get(emptyRef)).toEqual([])
@@ -337,7 +337,7 @@ test("FlatNodeStore keeps references distinct across stores and node kinds", () 
 
   expect(new Set([...firstRefs, ...secondRefs]).size).toBe(6)
   for (const ref of firstRefs) {
-    expect(first.transact((tx) => first.attach(ref, tx))).toBe(ref)
+    expect(ref).toBe(first.transact((tx) => first.attach(ref, tx)))
     expect(() => second.transact((tx) => second.attach(ref, tx))).toThrow(
       `Reference with key ${ref} does not exist.`,
     )

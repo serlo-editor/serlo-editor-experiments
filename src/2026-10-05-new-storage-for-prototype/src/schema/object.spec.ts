@@ -176,11 +176,11 @@ describeWithStores("object schemas", (getStore) => {
     expect(root.field("__proto__")).toBe(undefined)
     expect(root.field("constructor")).toBe(undefined)
     expect(root.field("toString")).toBe(undefined)
-    expect(root.snapshot()).toEqual({})
+    expect(Object.entries(root.snapshot())).toEqual([])
     root.setOptional("__proto__", "value")
-    expect(root.snapshot()).toEqual({ ["__proto__"]: "value" })
+    expect(Object.entries(root.snapshot())).toEqual([["__proto__", "value"]])
     root.removeOptional("__proto__")
-    expect(root.snapshot()).toEqual({})
+    expect(Object.entries(root.snapshot())).toEqual([])
 
     const required = object({ constructor: string() })
     expect(() => {
