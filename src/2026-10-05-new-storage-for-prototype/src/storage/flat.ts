@@ -10,6 +10,7 @@ type FlatNodeStoreContract = NodeStore<FlatNodeRefs, TransactionToken>
 
 export class FlatNodeStore implements FlatNodeStoreContract {
   private readonly activeTransactions = new Set<TransactionToken>()
+  private root: (FlatNodeRef & RootRef) | undefined
 
   private readonly cellTable = new ReferenceTable<"cell", JSONValue>()
   private readonly arrayTable = new ReferenceTable<"array", readonly FlatNodeRef[]>()
@@ -72,11 +73,16 @@ export class FlatNodeStore implements FlatNodeStoreContract {
     },
   }
 
+  getRoot(): (FlatNodeRef & RootRef) | undefined {
+    return this.root
+  }
+
   attach<Ref extends FlatNodeRef>(ref: Ref, tx: TransactionToken): Ref & RootRef {
     this.assertActiveTransaction(tx)
     if (!this.cellTable.has(ref) && !this.arrayTable.has(ref) && !this.mapTable.has(ref)) {
       throw new Error(`Reference with key ${ref} does not exist.`)
     }
+    this.root = ref as FlatNodeRef & RootRef
     return ref as Ref & RootRef
   }
 

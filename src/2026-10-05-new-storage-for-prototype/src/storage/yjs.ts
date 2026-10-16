@@ -81,6 +81,10 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     },
   }
 
+  getRoot(): (YjsNodeRef & RootRef) | undefined {
+    return this.doc.getMap<YjsNodeRef & RootRef>("root").get("root")
+  }
+
   attach<Ref extends YjsNodeRef>(ref: Ref, tx: Y.Transaction): Ref & RootRef {
     this.assertActiveTransaction(tx)
     this.doc.getMap("root").set("root", ref)

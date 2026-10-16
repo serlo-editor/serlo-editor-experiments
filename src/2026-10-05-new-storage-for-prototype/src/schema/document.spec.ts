@@ -32,4 +32,19 @@ describeWithStores("Document", (getStore) => {
     expect(root.snapshot()).toBe("Changed")
     expect(document.snapshot()).toBe("Changed")
   })
+
+  test("opens existing content and ignores the initial snapshot", () => {
+    const store = getStore()
+    const schema: Schema<JSONValue, Handle<JSONValue>, "cell"> = {
+      create: (store, snapshot) => store.cell.create(snapshot),
+      bind: (store, ref) => ({ snapshot: () => store.cell.get(ref) }),
+    }
+
+    const first = createDocument(store, schema, "First")
+    const second = createDocument(store, schema, "Ignored")
+
+    expect(second.snapshot()).toBe("First")
+    expect(second.root.snapshot()).toBe("First")
+    expect(first.snapshot()).toBe("First")
+  })
 })

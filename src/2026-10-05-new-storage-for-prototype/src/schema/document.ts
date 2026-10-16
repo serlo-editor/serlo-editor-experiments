@@ -18,9 +18,15 @@ export function createDocument<
   schema: Schema<Snapshot, Root, Kind>,
   initialSnapshot: Snapshot,
 ): Document<Snapshot, Root> {
-  const ref = store.transact((tx) =>
-    store.attach(schema.create(store, structuredClone(initialSnapshot)), tx),
-  )
+  const ref = store.transact((tx) => {
+    const existingRoot = store.getRoot()
+
+    if (existingRoot !== undefined) {
+      return existingRoot
+    }
+
+    return store.attach(schema.create(store, structuredClone(initialSnapshot)), tx)
+  })
 
   return {
     get root() {
