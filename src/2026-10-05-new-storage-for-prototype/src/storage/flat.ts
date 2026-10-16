@@ -73,7 +73,7 @@ export class FlatNodeStore implements FlatNodeStoreContract {
     },
   }
 
-  getRoot(): (FlatNodeRef & RootRef) | undefined {
+  getRoot() {
     return this.root
   }
 

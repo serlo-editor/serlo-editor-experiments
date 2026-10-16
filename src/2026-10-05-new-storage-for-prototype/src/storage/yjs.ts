@@ -81,7 +81,7 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     },
   }
 
-  getRoot(): (YjsNodeRef & RootRef) | undefined {
+  getRoot() {
     return this.doc.getMap<YjsNodeRef & RootRef>("root").get("root")
   }
 
