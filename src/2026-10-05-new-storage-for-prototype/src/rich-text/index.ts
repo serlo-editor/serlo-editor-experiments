@@ -1,7 +1,6 @@
 export {
   richText,
   type BlockConfig,
-  type HeadingLevel,
   type InlineConfig,
   type Marks,
   type RichTextDefinition,

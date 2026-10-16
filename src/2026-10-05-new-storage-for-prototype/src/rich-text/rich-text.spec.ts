@@ -15,6 +15,26 @@ test("creates a local inline editor with default content and no collaboration ad
   editor.unmount()
 })
 
+test("includes only configured heading and list extensions", () => {
+  const editor = createRichTextEditor({
+    definition: richText.block({
+      blocks: { paragraph: true, heading: true, orderedList: true },
+    }),
+  })
+
+  expect(editor.schema.nodes.heading).toBeDefined()
+  expect(editor.schema.nodes.list).toBeDefined()
+  expect(editor.schema.nodes.bulletList).toBeUndefined()
+  editor.unmount()
+
+  const plain = createRichTextEditor({
+    definition: richText.block({ blocks: { paragraph: true } }),
+  })
+  expect(plain.schema.nodes.heading).toBeUndefined()
+  expect(plain.schema.nodes.list).toBeUndefined()
+  plain.unmount()
+})
+
 test("appends custom ProseKit extensions to rich-text schema", () => {
   const editor = createRichTextEditor({
     definition: richText.block({ blocks: { paragraph: true } }),

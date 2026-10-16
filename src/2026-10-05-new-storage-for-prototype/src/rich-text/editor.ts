@@ -7,11 +7,7 @@ import {
   union,
 } from "prosekit/core"
 
-import {
-  defineRichTextExtension,
-  type RichTextDefinition,
-  validateRichTextContent,
-} from "./definition.ts"
+import { defineRichTextExtension, type RichTextDefinition } from "./definition.ts"
 
 /** Creates a ProseKit editor; collaboration is supplied through extensions. */
 export function createRichTextEditor({
@@ -29,7 +25,7 @@ export function createRichTextEditor({
   if (defaultContent !== undefined) {
     const schema = definitionExtension.schema
     if (!schema) throw new Error("Rich-text definition did not produce a schema.")
-    validateRichTextContent(schema.nodeFromJSON(defaultContent), definition)
+    schema.nodeFromJSON(defaultContent).check()
   }
 
   return createEditor({

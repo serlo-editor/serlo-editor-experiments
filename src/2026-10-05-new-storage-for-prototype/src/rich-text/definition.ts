@@ -5,7 +5,6 @@ import {
   defineMarkSpec,
   defineNodeAttr,
   defineNodeSpec,
-  definePlugin,
   type Extension,
   toggleMark,
   union,
@@ -16,11 +15,6 @@ import { defineItalic } from "prosekit/extensions/italic"
 import { defineList } from "prosekit/extensions/list"
 import { defineParagraph } from "prosekit/extensions/paragraph"
 import { defineText } from "prosekit/extensions/text"
-import type { ProseMirrorNode } from "prosekit/pm/model"
-import { Plugin } from "prosekit/pm/state"
-
-export type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6
-
 export interface Marks {
   readonly bold?: boolean
   readonly italic?: boolean
@@ -36,8 +30,9 @@ export interface BlockConfig {
   readonly marks?: Marks
   readonly blocks: {
     readonly paragraph: true
-    readonly heading?: { readonly levels: readonly [HeadingLevel, ...HeadingLevel[]] }
-    readonly list?: { readonly ordered?: boolean; readonly bullet?: boolean }
+    readonly heading?: boolean
+    readonly orderedList?: boolean
+    readonly bulletList?: boolean
   }
 }
 
@@ -50,13 +45,6 @@ export const richText = {
     return { mode: "inline", config }
   },
   block(config: BlockConfig): RichTextDefinition {
-    if (config.blocks.heading && config.blocks.heading.levels.length === 0) {
-      throw new Error("Enable at least one heading level.")
-    }
-    const list = config.blocks.list
-    if (list && !list.ordered && !list.bullet) {
-      throw new Error("Enable at least one list kind.")
-    }
     return { mode: "block", config }
   },
 }
@@ -84,24 +72,20 @@ export function defineRichTextExtension(definition: RichTextDefinition): Extensi
     )
   } else {
     extensions.push(defineParagraph())
-    const { heading, list } = definition.config.blocks
+    const { heading, orderedList, bulletList } = definition.config.blocks
     if (heading) {
       extensions.push(
         defineHeading(),
-        defineNodeAttr({
-          type: "heading",
-          attr: "level",
-          default: heading.levels[0],
-        }),
+        defineNodeAttr({ type: "heading", attr: "level", default: 1 }),
       )
     }
-    if (list) {
+    if (orderedList || bulletList) {
       extensions.push(
         defineList(),
         defineNodeAttr({
           type: "list",
           attr: "kind",
-          default: list.bullet ? "bullet" : "ordered",
+          default: bulletList ? "bullet" : "ordered",
         }),
       )
     }
@@ -112,51 +96,7 @@ export function defineRichTextExtension(definition: RichTextDefinition): Extensi
   if (marks?.italic) extensions.push(defineItalic())
   if (marks?.gap) extensions.push(defineGap())
 
-  // Attribute validators can throw while commands build transactions.
-  // Filter unsupported capabilities here instead, before edits reach Yjs.
-  extensions.push(
-    definePlugin(
-      new Plugin({
-        filterTransaction(transaction) {
-          if (!transaction.docChanged) return true
-          try {
-            // ponytail: full-document check; validate changed ranges if large documents demand it.
-            validateRichTextContent(transaction.doc, definition)
-            return true
-          } catch {
-            return false
-          }
-        },
-      }),
-    ),
-  )
   return union(extensions)
-}
-
-/** Shared validation for editing, import, and export. */
-export function validateRichTextContent(
-  node: ProseMirrorNode,
-  definition: RichTextDefinition,
-): void {
-  node.check()
-  if (definition.mode !== "block") return
-
-  const { heading, list } = definition.config.blocks
-  node.descendants((child) => {
-    if (
-      child.type.name === "heading" &&
-      !heading?.levels.some((level) => level === child.attrs.level)
-    ) {
-      throw new RangeError(`Heading level ${child.attrs.level} is not enabled.`)
-    }
-    if (
-      child.type.name === "list" &&
-      !(child.attrs.kind === "bullet" && list?.bullet) &&
-      !(child.attrs.kind === "ordered" && list?.ordered)
-    ) {
-      throw new RangeError(`List kind ${child.attrs.kind} is not enabled.`)
-    }
-  })
 }
 
 function defineGap(): Extension {
