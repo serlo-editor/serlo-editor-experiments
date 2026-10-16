@@ -11,7 +11,7 @@ This copy is where replacement work happens; original experiment remains unchang
 Replacement must preserve prototype behavior: schema-driven content, collaborative
 rich-text editing, checkbox updates, formatting controls, remote cursors, JSON
 export, and debug views. Current implementation is a foundation, not yet a
-drop-in replacement. Implementation checklist lives in [TASKS.md](./TASKS.md).
+drop-in replacement. Remaining integration work is tracked in `tasks/`.
 
 ## Current structure
 
@@ -25,8 +25,9 @@ drop-in replacement. Implementation checklist lives in [TASKS.md](./TASKS.md).
 | `src/utils/`           | JSON types, guards, and branded types                       |
 
 Schemas currently support strings, numbers, booleans, arrays, objects, and optional
-object fields. `createDocument()` creates and attaches a new root; handles read
-and edit content and produce snapshots.
+object fields. `createDocument()` creates and attaches a root when store has none;
+otherwise it binds existing root and ignores supplied initial snapshot. Handles
+read and edit content and produce snapshots.
 
 ## Target integration
 
@@ -78,8 +79,6 @@ and object schemas alone cannot represent all prototype behavior.
   so direct backend edits propagate through prototype's current sync helper.
   Transactions nested in an outer Yjs transaction retain the outer origin; a
   null-origin outer transaction is still dropped by that helper.
-- No public API retrieves and opens existing root. Calling `createDocument()` on
-  receiving peer would create a replacement instead of opening synced content.
 - Handles expose snapshots but no stable node identity. Existing keyed lookup and
   debug traversal need an integration contract.
 - Backend has no subscription/revision contract. Prototype's React hook depends
@@ -89,9 +88,9 @@ and object schemas alone cannot represent all prototype behavior.
 
 ## Scope
 
-Prepare backend and demonstrate compatibility before migrating prototype. Consumer
-changes are listed separately in [TASKS.md](./TASKS.md); this README does not imply
-prototype already uses new storage.
+Prepare backend and demonstrate compatibility before migrating prototype.
+Remaining work is listed in `tasks/`; this README does not imply prototype already
+uses new storage.
 
 Out of scope for first replacement: durable persistence, network transport,
 legacy Yjs document migration, global undo redesign, and generic plugin systems.

@@ -1,6 +1,6 @@
 # 2. Define node identity and traversal contract
 
-Stage 1: Prepare backend. [Task index](../TASKS.md).
+Stage 1: Prepare backend.
 Paths below are relative to experiment root unless marked as prototype paths.
 
 Relevant files: `src/storage/types.ts`, `src/schema/types.ts`, and prototype's

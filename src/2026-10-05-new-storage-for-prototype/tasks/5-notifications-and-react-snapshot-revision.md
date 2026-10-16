@@ -1,6 +1,6 @@
 # 5. Notifications and React snapshot revision
 
-Stage 1: Prepare backend. [Task index](../TASKS.md).
+Stage 1: Prepare backend.
 Paths below are relative to experiment root unless marked as prototype paths.
 
 Relevant files: storage contract/implementations and prototype's

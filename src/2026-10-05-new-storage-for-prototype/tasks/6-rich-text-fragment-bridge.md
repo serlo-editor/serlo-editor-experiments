@@ -1,6 +1,6 @@
 # 6. Rich-text fragment bridge
 
-Stage 1: Prepare backend. [Task index](../TASKS.md).
+Stage 1: Prepare backend.
 Paths below are relative to experiment root unless marked as prototype paths.
 
 Relevant prototype files: `src/editor/rich-text/create-editor.ts`,
