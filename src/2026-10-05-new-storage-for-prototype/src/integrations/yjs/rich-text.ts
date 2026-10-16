@@ -6,7 +6,7 @@ import {
   defineRichTextExtension,
   type RichTextDefinition,
   validateRichTextContent,
-} from "./definition.ts"
+} from "../../rich-text/definition.ts"
 
 export function getRichTextFragment(doc: Y.Doc, id: string): Y.XmlFragment {
   if (!id) throw new Error("Rich-text ID must not be empty.")
