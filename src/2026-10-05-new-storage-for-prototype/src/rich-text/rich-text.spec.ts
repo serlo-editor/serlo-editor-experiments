@@ -6,6 +6,7 @@ import { TextSelection } from "prosekit/pm/state"
 import { applyAwarenessUpdate, Awareness, encodeAwarenessUpdate } from "y-protocols/awareness"
 import * as Y from "yjs"
 
+import { defineRichTextExtension } from "./definition.ts"
 import { createEditorAwareness } from "./editor.ts"
 import {
   createRichTextEditor,
@@ -74,7 +75,10 @@ describe("rich-text definitions and JSON", () => {
     }
 
     initializeRichText({ definition, fragment, content })
-    expect(exportRichText({ definition, fragment })).toEqual(content)
+    // ProseMirror orders marks by schema rank, not their input JSON order.
+    const schema = defineRichTextExtension(definition).schema
+    if (!schema) throw new Error("Missing rich-text schema")
+    expect(exportRichText({ definition, fragment })).toEqual(schema.nodeFromJSON(content).toJSON())
   })
 
   test("round-trips configured headings and nested flat lists", () => {

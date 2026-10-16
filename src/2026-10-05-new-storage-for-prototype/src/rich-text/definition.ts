@@ -16,6 +16,7 @@ import { defineItalic } from "prosekit/extensions/italic"
 import { defineList } from "prosekit/extensions/list"
 import { defineParagraph } from "prosekit/extensions/paragraph"
 import { defineText } from "prosekit/extensions/text"
+import type { ProseMirrorNode } from "prosekit/pm/model"
 import { Plugin } from "prosekit/pm/state"
 
 export type HeadingLevel = 1 | 2 | 3 | 4 | 5 | 6
@@ -91,11 +92,6 @@ export function defineRichTextExtension(definition: RichTextDefinition): Extensi
           type: "heading",
           attr: "level",
           default: heading.levels[0],
-          validate(value: unknown) {
-            if (!heading.levels.some((level) => level === value)) {
-              throw new RangeError(`Heading level ${value} is not enabled.`)
-            }
-          },
         }),
       )
     }
@@ -106,11 +102,6 @@ export function defineRichTextExtension(definition: RichTextDefinition): Extensi
           type: "list",
           attr: "kind",
           default: list.bullet ? "bullet" : "ordered",
-          validate(value: unknown) {
-            if (!(value === "bullet" && list.bullet) && !(value === "ordered" && list.ordered)) {
-              throw new RangeError(`List kind ${value} is not enabled.`)
-            }
-          },
         }),
       )
     }
@@ -121,7 +112,8 @@ export function defineRichTextExtension(definition: RichTextDefinition): Extensi
   if (marks?.italic) extensions.push(defineItalic())
   if (marks?.gap) extensions.push(defineGap())
 
-  // ProseMirror commands do not run attribute validators themselves.
+  // Attribute validators can throw while commands build transactions.
+  // Filter unsupported capabilities here instead, before edits reach Yjs.
   extensions.push(
     definePlugin(
       new Plugin({
@@ -129,7 +121,7 @@ export function defineRichTextExtension(definition: RichTextDefinition): Extensi
           if (!transaction.docChanged) return true
           try {
             // ponytail: full-document check; validate changed ranges if large documents demand it.
-            transaction.doc.check()
+            validateRichTextContent(transaction.doc, definition)
             return true
           } catch {
             return false
@@ -139,6 +131,32 @@ export function defineRichTextExtension(definition: RichTextDefinition): Extensi
     ),
   )
   return union(extensions)
+}
+
+/** Shared validation for editing, import, and export. */
+export function validateRichTextContent(
+  node: ProseMirrorNode,
+  definition: RichTextDefinition,
+): void {
+  node.check()
+  if (definition.mode !== "block") return
+
+  const { heading, list } = definition.config.blocks
+  node.descendants((child) => {
+    if (
+      child.type.name === "heading" &&
+      !heading?.levels.some((level) => level === child.attrs.level)
+    ) {
+      throw new RangeError(`Heading level ${child.attrs.level} is not enabled.`)
+    }
+    if (
+      child.type.name === "list" &&
+      !(child.attrs.kind === "bullet" && list?.bullet) &&
+      !(child.attrs.kind === "ordered" && list?.ordered)
+    ) {
+      throw new RangeError(`List kind ${child.attrs.kind} is not enabled.`)
+    }
+  })
 }
 
 function defineGap(): Extension {

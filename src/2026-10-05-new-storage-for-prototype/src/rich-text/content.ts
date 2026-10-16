@@ -2,7 +2,11 @@ import type { NodeJSON } from "prosekit/core"
 import { prosemirrorToYXmlFragment, yXmlFragmentToProseMirrorRootNode } from "y-prosemirror"
 import type * as Y from "yjs"
 
-import { defineRichTextExtension, type RichTextDefinition } from "./definition.ts"
+import {
+  defineRichTextExtension,
+  type RichTextDefinition,
+  validateRichTextContent,
+} from "./definition.ts"
 
 export function getRichTextFragment(doc: Y.Doc, id: string): Y.XmlFragment {
   if (!id) throw new Error("Rich-text ID must not be empty.")
@@ -32,7 +36,7 @@ export function initializeRichText({
   const schema = getSchema(definition)
   const node = schema.nodeFromJSON(content)
   if (node.type !== schema.topNodeType) throw new Error("Expected a rich-text document.")
-  node.check()
+  validateRichTextContent(node, definition)
 
   doc.transact(() => {
     prosemirrorToYXmlFragment(node, fragment)
@@ -48,7 +52,7 @@ export function exportRichText({
   fragment: Y.XmlFragment
 }): NodeJSON {
   const node = yXmlFragmentToProseMirrorRootNode(fragment, getSchema(definition))
-  node.check()
+  validateRichTextContent(node, definition)
   return node.toJSON()
 }
 
