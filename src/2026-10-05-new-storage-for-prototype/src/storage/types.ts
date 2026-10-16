@@ -16,7 +16,13 @@ export interface NodeStore<Refs extends NodeRefs = NodeRefs, TransactionContext 
   readonly array: ArrayStore<Refs[NodeKind], Refs["array"], TransactionContext>
   readonly map: MapStore<Refs[NodeKind], Refs["map"], TransactionContext>
 
+  // TODO: Merge those functions together so that there is a common implementation
+  // for both storage types.
+  //
+  // TODO: Find a good way that getRoot() does not return undefined
+  // => it should mimic the lifecycle
   getRoot(): (Refs[NodeKind] & RootRef) | undefined
+  // TODO: Maybe rename to save()
   attach<Ref extends Refs[NodeKind]>(ref: Ref, tx: TransactionContext): Ref & RootRef
   /** Errors propagate, but transaction changes are not rolled back. */
   transact<Result>(callback: (tx: TransactionContext) => Result): Result
