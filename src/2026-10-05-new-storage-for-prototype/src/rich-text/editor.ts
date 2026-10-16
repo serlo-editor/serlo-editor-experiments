@@ -21,17 +21,10 @@ export function createRichTextEditor({
   extensions?: readonly Extension[]
   onViewUpdate?: UpdateHandler
 }) {
-  const definitionExtension = defineRichTextExtension(definition)
-  if (defaultContent !== undefined) {
-    const schema = definitionExtension.schema
-    if (!schema) throw new Error("Rich-text definition did not produce a schema.")
-    schema.nodeFromJSON(defaultContent).check()
-  }
-
   return createEditor({
     ...(defaultContent === undefined ? {} : { defaultContent }),
     extension: union(
-      definitionExtension,
+      defineRichTextExtension(definition),
       ...extensions,
       ...(onViewUpdate ? [defineUpdateHandler(onViewUpdate)] : []),
     ),
