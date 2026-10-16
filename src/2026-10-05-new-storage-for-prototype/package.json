@@ -14,9 +14,13 @@
     "test": "bun test"
   },
   "dependencies": {
+    "prosekit": "0.20.2",
+    "y-prosemirror": "1.3.7",
+    "y-protocols": "1.0.7",
     "yjs": "^13.6.33"
   },
   "devDependencies": {
+    "happy-dom": "^20.0.0",
     "oxfmt": "^0.63.0",
     "oxlint": "^1.78.0",
     "typescript": "^7.0.2"
