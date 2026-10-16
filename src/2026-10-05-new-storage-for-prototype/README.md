@@ -81,8 +81,8 @@ and object schemas alone cannot represent all prototype behavior.
   null-origin outer transaction is still dropped by that helper.
 - Handles expose snapshots but no stable node identity. Existing keyed lookup and
   debug traversal need an integration contract.
-- Backend has no subscription/revision contract. Prototype's React hook depends
-  on legacy `updateCount`, which backend edits do not change.
+- Prototype's React hook still depends on legacy `updateCount`; editor adapter
+  must bridge storage revisions, rich-text changes, and local UI state.
 - Prototype creates and reads `Y.Array<Key>` / `Y.Map<Key>` directly. Its value
   types and traversal must migrate along with storage implementation.
 
