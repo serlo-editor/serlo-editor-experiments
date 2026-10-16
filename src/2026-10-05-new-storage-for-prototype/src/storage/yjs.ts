@@ -17,9 +17,11 @@ type YjsNodeStoreContract = NodeStore<YjsNodeRefs, Y.Transaction>
 
 export class YjsNodeStore implements YjsNodeStoreContract {
   private readonly doc: Y.Doc
+  private readonly revisions: Y.Array<null>
 
   constructor(doc: Y.Doc) {
     this.doc = doc
+    this.revisions = doc.getArray("storage:revisions")
   }
 
   readonly cell: YjsNodeStoreContract["cell"] = {
@@ -85,6 +87,15 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     return this.doc.getMap<YjsNodeRef & RootRef>("root").get("root")
   }
 
+  getRevision(): number {
+    return this.revisions.length
+  }
+
+  subscribe(listener: () => void): () => void {
+    this.revisions.observeDeep(listener)
+    return () => this.revisions.unobserveDeep(listener)
+  }
+
   attach<Ref extends YjsNodeRef>(ref: Ref, tx: Y.Transaction): Ref & RootRef {
     this.assertActiveTransaction(tx)
     this.doc.getMap("root").set("root", ref)
@@ -92,7 +103,13 @@ export class YjsNodeStore implements YjsNodeStoreContract {
   }
 
   transact<T>(callback: (tx: Y.Transaction) => T): T {
-    return this.doc.transact(callback, this)
+    return this.doc.transact((tx) => {
+      try {
+        return callback(tx)
+      } finally {
+        this.revisions.push([null])
+      }
+    }, this)
   }
 
   private assertActiveTransaction(tx: Y.Transaction): void {

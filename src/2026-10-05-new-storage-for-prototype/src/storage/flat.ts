@@ -10,7 +10,9 @@ type FlatNodeStoreContract = NodeStore<FlatNodeRefs, TransactionToken>
 
 export class FlatNodeStore implements FlatNodeStoreContract {
   private readonly activeTransactions = new Set<TransactionToken>()
+  private readonly listeners = new Set<() => void>()
   private root: (FlatNodeRef & RootRef) | undefined
+  private revision = 0
 
   private readonly cellTable = new ReferenceTable<"cell", JSONValue>()
   private readonly arrayTable = new ReferenceTable<"array", readonly FlatNodeRef[]>()
@@ -77,6 +79,15 @@ export class FlatNodeStore implements FlatNodeStoreContract {
     return this.root
   }
 
+  getRevision(): number {
+    return this.revision
+  }
+
+  subscribe(listener: () => void): () => void {
+    this.listeners.add(listener)
+    return () => this.listeners.delete(listener)
+  }
+
   attach<Ref extends FlatNodeRef>(ref: Ref, tx: TransactionToken): Ref & RootRef {
     this.assertActiveTransaction(tx)
     if (!this.cellTable.has(ref) && !this.arrayTable.has(ref) && !this.mapTable.has(ref)) {
@@ -93,6 +104,11 @@ export class FlatNodeStore implements FlatNodeStoreContract {
       return callback(tx)
     } finally {
       this.activeTransactions.delete(tx)
+      this.revision += 1
+
+      if (this.activeTransactions.size === 0) {
+        this.listeners.forEach((listener) => listener())
+      }
     }
   }
 

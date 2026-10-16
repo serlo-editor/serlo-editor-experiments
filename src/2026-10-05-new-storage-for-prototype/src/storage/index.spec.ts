@@ -7,6 +7,25 @@ import type { JSONValue } from "../utils/index.ts"
 import { FlatNodeStore, YjsNodeStore } from "./index.ts"
 
 describeWithStores("NodeStore", (getStore) => {
+  test("increments revision and notifies subscribers after transactions", () => {
+    const store = getStore()
+    const notifications: number[] = []
+    const unsubscribe = store.subscribe(() => notifications.push(store.getRevision()))
+
+    expect(store.getRevision()).toBe(0)
+    store.transact(() => {
+      expect(notifications).toEqual([])
+    })
+
+    expect(store.getRevision()).toBe(1)
+    expect(notifications).toEqual([1])
+
+    unsubscribe()
+    store.transact(() => {})
+    expect(store.getRevision()).toBe(2)
+    expect(notifications).toEqual([1])
+  })
+
   test("reads every JSON value kind without losing empty or falsy values", () => {
     const nodeStore = getStore()
     const values: readonly JSONValue[] = [

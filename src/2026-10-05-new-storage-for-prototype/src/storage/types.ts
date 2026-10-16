@@ -22,6 +22,8 @@ export interface NodeStore<Refs extends NodeRefs = NodeRefs, TransactionContext 
   // TODO: Find a good way that getRoot() does not return undefined
   // => it should mimic the lifecycle
   getRoot(): (Refs[NodeKind] & RootRef) | undefined
+  getRevision(): number
+  subscribe(listener: () => void): () => void
   // TODO: Maybe rename to save()
   attach<Ref extends Refs[NodeKind]>(ref: Ref, tx: TransactionContext): Ref & RootRef
   /** Errors propagate, but transaction changes are not rolled back. */
