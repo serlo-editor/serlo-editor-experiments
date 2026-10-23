@@ -181,10 +181,10 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     return () => this.doc.off("afterTransaction", onTransaction)
   }
 
-  attach<Ref extends YjsNodeRef>(ref: Ref, tx: Y.Transaction): Ref & RootRef {
+  attach(ref: YjsNodeRef, tx: Y.Transaction): YjsNodeRef & RootRef {
     this.assertActiveTransaction(tx)
     this.doc.getMap("root").set("root", ref)
-    return ref as Ref & RootRef
+    return ref as YjsNodeRef & RootRef
   }
 
   transact<T>(callback: (tx: Y.Transaction) => T): T {

@@ -36,7 +36,7 @@ export interface NodeStore<Refs extends NodeRefs = NodeRefs, TransactionContext 
   getRevision(): number
   subscribe(listener: () => void): () => void
   // TODO: Maybe rename to save()
-  attach<Ref extends Refs[NodeKind]>(ref: Ref, tx: TransactionContext): Ref & RootRef
+  attach(ref: Refs[NodeKind], tx: TransactionContext): Refs[NodeKind] & RootRef
   /** Errors propagate, but transaction changes are not rolled back. */
   transact<Result>(callback: (tx: TransactionContext) => Result): Result
 }
