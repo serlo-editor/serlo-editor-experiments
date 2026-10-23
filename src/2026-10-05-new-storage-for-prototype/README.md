@@ -21,7 +21,6 @@ drop-in replacement. Remaining integration work is tracked in `tasks/`.
 | `src/storage/flat.ts`  | In-memory storage using string refs                         |
 | `src/storage/yjs.ts`   | Collaborative storage using nested Yjs shared types         |
 | `src/schema/`          | Typed schemas, bound handles, and document snapshots        |
-| `src/react/`           | React unit rendering adapter, separate from storage         |
 | `src/test-utils/`      | Shared tests against both storage implementations           |
 | `src/utils/`           | JSON types, guards, and branded types                       |
 
@@ -100,8 +99,7 @@ Yjs stores only content and metadata using existing map/cell storage.
 
 ```tsx
 import { createDocument } from "./src/schema/document.ts"
-import { array, childUnit, createUnit, string, unit } from "./src/schema/index.ts"
-import { UnitView } from "./src/react/index.ts"
+import { array, childUnit, createUnit, string, unit, UnitView } from "./src/schema/index.ts"
 
 const exercise = unit({
   type: "exercise",
@@ -151,7 +149,7 @@ transactions still do not roll back on errors. Duplicate-ID validation, copy/pas
 recursive schemas, unit lookup/indexes, and identity for ordinary objects are
 intentionally deferred.
 
-`UnitView` mounts renderers as React components, so hooks work. Renderer elements
+`UnitView`, exported from `src/schema/index.ts`, mounts renderers as React components, so hooks work. Renderer elements
 are keyed by unit ID. Automatic React subscriptions are deferred: parents must
 schedule rerenders after content changes.
 

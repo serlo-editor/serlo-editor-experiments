@@ -6,6 +6,7 @@ export {
   unit,
   createUnit,
   childUnit,
+  UnitView,
   type UnitDefinition,
   type UnitHandle,
   type UnitSnapshot,

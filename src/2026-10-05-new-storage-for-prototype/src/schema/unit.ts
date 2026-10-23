@@ -1,4 +1,4 @@
-import type { ReactNode } from "react"
+import { createElement, type ReactNode } from "react"
 
 import { isObject } from "../utils/guard.ts"
 import { object, type ObjectHandle, type ObjectSnapshot, type SchemaMap } from "./object.ts"
@@ -29,6 +29,14 @@ export interface UnitDefinition<Type extends string, Fields extends SchemaMap> e
   readonly fields: Fields
   render(props: { handle: UnitHandle<Type, Fields> }): ReactNode
   validate(snapshot: unknown): void
+}
+
+// Parent owns rerender scheduling until subscription support is added.
+//
+// TODO: Add subscription support to allow child units to rerender themselves
+// when their state changes to avoid rerenderiing the entire app.
+export function UnitView({ handle }: { handle: UnitHandle<string, SchemaMap> }) {
+  return createElement(handle.definition.render, { handle, key: handle.id })
 }
 
 /** Object schema with immutable identity, discriminator, and local renderer metadata. */

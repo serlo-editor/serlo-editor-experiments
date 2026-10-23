@@ -6,10 +6,9 @@ import { flushSync } from "react-dom"
 import { createRoot } from "react-dom/client"
 import { renderToStaticMarkup } from "react-dom/server"
 
-import { createDocument } from "../schema/document.ts"
-import { array, childUnit, createUnit, object, string, unit } from "../schema/index.ts"
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
-import { UnitView } from "./index.ts"
+import { createDocument } from "./document.ts"
+import { array, childUnit, createUnit, object, string, unit, UnitView } from "./index.ts"
 
 describeWithStores("UnitView", (getStore) => {
   test("remounts renderer state when a same-type child is replaced", async () => {
