@@ -4,7 +4,6 @@ export { object, optional } from "./object.ts"
 export { richText } from "./rich-text.ts"
 export {
   unit,
-  createUnit,
   childUnit,
   UnitView,
   type UnitDefinition,

@@ -27,6 +27,8 @@ export interface UnitDefinition<Type extends string, Fields extends SchemaMap> e
 > {
   readonly type: Type
   readonly fields: Fields
+  /** Builds a detached snapshot with fresh identity; create(store, snapshot) preserves IDs. */
+  createUnit(fields: ObjectSnapshot<Fields>): UnitSnapshot<Type, Fields>
   render(props: { handle: UnitHandle<Type, Fields> }): ReactNode
 }
 
@@ -59,6 +61,10 @@ export function unit<const Type extends string, Fields extends SchemaMap>({
     type,
     fields,
     render,
+
+    createUnit(content) {
+      return { ...structuredClone(content), id: crypto.randomUUID(), type }
+    },
 
     create(store, snapshot) {
       if (!isObject(snapshot)) throw new TypeError("Expected unit snapshot.")
@@ -94,14 +100,6 @@ export function unit<const Type extends string, Fields extends SchemaMap>({
     },
   }
   return definition
-}
-
-/** New units receive fresh IDs. Loading complete snapshots does not regenerate them. */
-export function createUnit<Type extends string, Fields extends SchemaMap>(
-  definition: UnitDefinition<Type, Fields>,
-  fields: NoInfer<ObjectSnapshot<Fields>>,
-): UnitSnapshot<Type, Fields> {
-  return { ...structuredClone(fields), id: crypto.randomUUID(), type: definition.type }
 }
 
 type AnyUnitDefinition = UnitDefinition<any, any>

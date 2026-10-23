@@ -99,7 +99,7 @@ Yjs stores only content and metadata using existing map/cell storage.
 
 ```tsx
 import { createDocument } from "./src/schema/document.ts"
-import { array, childUnit, createUnit, string, unit, UnitView } from "./src/schema/index.ts"
+import { array, childUnit, string, unit, UnitView } from "./src/schema/index.ts"
 
 const exercise = unit({
   type: "exercise",
@@ -117,8 +117,8 @@ const lesson = unit({
   },
 })
 
-const initial = createUnit(lesson, {
-  exercises: [createUnit(exercise, { question: "Why?" })],
+const initial = lesson.createUnit({
+  exercises: [exercise.createUnit({ question: "Why?" })],
 })
 // initial: { id, type: "lesson", exercises: [{ id, type: "exercise", question: "Why?" }] }
 // Given a NodeStore named store:
@@ -126,9 +126,11 @@ const document = createDocument(store, lesson, initial)
 const view = <UnitView handle={document.root} />
 ```
 
-`createUnit(definition, fields)` creates a detached snapshot with a fresh UUID and
-cloned fields. Supply already-created child snapshots for nested units. Loading a
-complete snapshot with `createDocument()` preserves supplied unit IDs; reopening
+`definition.createUnit(fields)` creates a detached snapshot with a fresh UUID,
+fixed type, and cloned fields. Supply already-created child snapshots for nested
+units. `definition.create(store, snapshot)` stores complete snapshots without
+regenerating IDs. Loading a complete snapshot with `createDocument()` also preserves
+supplied unit IDs; reopening
 an existing root still ignores initial snapshots. Field edits, sibling edits, and
 synchronization retain identity. `id` and `type` cannot be edited through handles.
 
@@ -140,7 +142,7 @@ Edit object fields through child handles. Optional fields support `setOptional()
 and `removeOptional()`; arrays support `insert()` and `remove()`. Direct replacement
 of required fields and atomic array replacement are not provided.
 
-`createUnit()` only builds snapshots; field handling remains with existing schemas
+`definition.createUnit()` only builds snapshots; field handling remains with existing schemas
 when content is stored. Unit creation checks IDs, type discriminators, and unknown
 unit fields. There is no whole-tree validation preflight or schema validation hook.
 Transactions do not roll back on errors, so failed imports can leave unused content

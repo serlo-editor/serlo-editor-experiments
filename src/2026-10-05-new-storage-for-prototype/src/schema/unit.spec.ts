@@ -7,17 +7,7 @@ import { richText as definition } from "../rich-text/index.ts"
 import { YjsNodeStore } from "../storage/index.ts"
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import { createDocument } from "./document.ts"
-import {
-  array,
-  boolean,
-  childUnit,
-  createUnit,
-  object,
-  optional,
-  richText,
-  string,
-  unit,
-} from "./index.ts"
+import { array, boolean, childUnit, object, optional, richText, string, unit } from "./index.ts"
 import type { HandleOf, SnapshotOf } from "./types.ts"
 
 function definitions() {
@@ -48,15 +38,15 @@ describeWithStores("unit schemas", (getStore) => {
   test("creates flat snapshots with fresh IDs and typed object handles", () => {
     const { choice } = definitions()
     const fields = choiceFields()
-    const initial = createUnit(choice, fields)
-    const other = createUnit(choice, fields)
+    const initial = choice.createUnit(fields)
+    const other = choice.createUnit(fields)
     expect(initial.id).not.toBe(other.id)
     expect(initial).toEqual({ id: expect.any(String), type: "choice", ...fields })
     fields.answers[0]!.text = "Caller changed"
     expect(initial.answers[0]!.text).toBe("First")
 
     const suppliedMetadata = { ...choiceFields(), id: "caller", type: "other" }
-    const fresh = createUnit(choice, suppliedMetadata)
+    const fresh = choice.createUnit(suppliedMetadata)
     expect(fresh.id).not.toBe("caller")
     expect(fresh.type).toBe("choice")
 
@@ -99,15 +89,34 @@ describeWithStores("unit schemas", (getStore) => {
     const wrongQuestion: SnapshotOf<typeof choice> = { ...initial, question: false }
     // @ts-expect-error Required content fields remain required.
     const missingFields: SnapshotOf<typeof choice> = { id: "missing", type: "choice" }
-    void [wrongType, wrongQuestion, missingFields]
+    // @ts-expect-error Snapshot creation requires declared content fields.
+    const missingCreationFields: Parameters<typeof choice.createUnit>[0] = {}
+    const wrongCreationFields: Parameters<typeof choice.createUnit>[0] = {
+      ...choiceFields(),
+      // @ts-expect-error Snapshot creation retains declared field types.
+      question: false,
+    }
+    const metadataCreationFields: Parameters<typeof choice.createUnit>[0] = {
+      ...choiceFields(),
+      // @ts-expect-error ID is generated, not a declared creation field.
+      id: "provided",
+    }
+    void [
+      wrongType,
+      wrongQuestion,
+      missingFields,
+      missingCreationFields,
+      wrongCreationFields,
+      metadataCreationFields,
+    ]
   })
 
   test("loading and reopening preserve IDs instead of creating new units", () => {
     const store = getStore()
     const { choice } = definitions()
-    const loaded = { ...createUnit(choice, choiceFields()), id: "previously-saved-id" }
+    const loaded = { ...choice.createUnit(choiceFields()), id: "previously-saved-id" }
     const first = createDocument(store, choice, loaded)
-    const second = createDocument(store, choice, createUnit(choice, choiceFields("Ignored")))
+    const second = createDocument(store, choice, choice.createUnit(choiceFields("Ignored")))
     expect(first.root.id).toBe(loaded.id)
     expect(second.root.id).toBe(loaded.id)
     expect(second.snapshot()).toEqual(loaded)
@@ -116,8 +125,8 @@ describeWithStores("unit schemas", (getStore) => {
   test("child unions narrow handles and support existing optional-field operations", () => {
     const store = getStore()
     const { choice, forensic, exercise } = definitions()
-    const initial = createUnit(choice, choiceFields())
-    const note = createUnit(choice, choiceFields("Note"))
+    const initial = choice.createUnit(choiceFields())
+    const note = choice.createUnit(choiceFields("Note"))
     const schema = object({ exercise, note: optional(exercise) })
     const { root } = createDocument(store, schema, { exercise: initial, note })
     const required = root.field("exercise")
@@ -132,7 +141,7 @@ describeWithStores("unit schemas", (getStore) => {
       throw new Error("Expected choice.")
     }
     const oldNote = root.field("note")!
-    const replacement = createUnit(forensic, { caseId: "case-42" })
+    const replacement = forensic.createUnit({ caseId: "case-42" })
     root.setOptional("note", replacement)
     const current = root.field("note")!
     expect(current.id).toBe(replacement.id)
@@ -149,7 +158,7 @@ describeWithStores("unit schemas", (getStore) => {
     const excluded = unit({ type: "excluded", fields: {}, render: () => null })
     expect(() => {
       // @ts-expect-error Only explicitly allowed unit types can occupy this child field.
-      root.setOptional("note", createUnit(excluded, {}))
+      root.setOptional("note", excluded.createUnit({}))
     }).toThrow("Unknown child unit type: excluded.")
     root.removeOptional("note")
     expect(root.field("note")).toBeUndefined()
@@ -157,8 +166,8 @@ describeWithStores("unit schemas", (getStore) => {
 
   test("sibling insertions and removals preserve unchanged IDs", () => {
     const { choice, forensic, exercise } = definitions()
-    const kept = createUnit(choice, choiceFields("Kept"))
-    const inserted = createUnit(forensic, { caseId: "inserted" })
+    const kept = choice.createUnit(choiceFields("Kept"))
+    const inserted = forensic.createUnit({ caseId: "inserted" })
     const { root } = createDocument(getStore(), array(exercise), [kept])
     root.insert(0, inserted)
     expect(root.length).toBe(2)
@@ -173,7 +182,7 @@ describeWithStores("unit schemas", (getStore) => {
 
   test("rejects invalid unit metadata and missing fields during insertion", () => {
     const { choice, exercise } = definitions()
-    const initial = createUnit(choice, choiceFields())
+    const initial = choice.createUnit(choiceFields())
     const { root } = createDocument(getStore(), array(exercise), [initial])
     for (const invalid of [
       null,
@@ -208,7 +217,7 @@ describeWithStores("unit schemas", (getStore) => {
       render: () => null,
     })
     const body = { type: "doc", content: [{ type: "inlineBlock" }] }
-    const initial = createUnit(schema, { body })
+    const initial = schema.createUnit({ body })
     const { root } = createDocument(getStore(), schema, initial)
     expect(root.snapshot()).toEqual(initial)
     expect(root.field("body").id).not.toBe(root.id)
@@ -238,7 +247,7 @@ test("Yjs replicas bind matching IDs to local definitions and retain sibling ide
   const local = definitions()
   const remote = definitions()
   try {
-    const kept = createUnit(local.choice, choiceFields())
+    const kept = local.choice.createUnit(choiceFields())
     const first = createDocument(firstStore, array(local.exercise), [kept]).root
     Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
     const second = createDocument(secondStore, array(remote.exercise), []).root
@@ -246,7 +255,7 @@ test("Yjs replicas bind matching IDs to local definitions and retain sibling ide
     expect(second.children()[0]!.definition).toBe(remote.choice)
     expect(second.children()[0]!.definition).not.toBe(local.choice)
 
-    first.insert(0, createUnit(local.forensic, { caseId: "new" }))
+    first.insert(0, local.forensic.createUnit({ caseId: "new" }))
     Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
     expect(second.children()[1]!.id).toBe(kept.id)
     second.remove(0)

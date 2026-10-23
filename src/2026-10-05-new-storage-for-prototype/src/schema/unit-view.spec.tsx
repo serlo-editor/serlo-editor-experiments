@@ -8,7 +8,7 @@ import { renderToStaticMarkup } from "react-dom/server"
 
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import { createDocument } from "./document.ts"
-import { array, childUnit, createUnit, object, optional, string, unit, UnitView } from "./index.ts"
+import { array, childUnit, object, optional, string, unit, UnitView } from "./index.ts"
 
 describeWithStores("UnitView", (getStore) => {
   test("remounts renderer state when a same-type child is replaced", async () => {
@@ -38,7 +38,7 @@ describeWithStores("UnitView", (getStore) => {
           )
         },
       })
-      const initial = createUnit(text, { text: "First" })
+      const initial = text.createUnit({ text: "First" })
       const { root } = createDocument(getStore(), object({ child: optional(childUnit([text])) }), {
         child: initial,
       })
@@ -49,7 +49,7 @@ describeWithStores("UnitView", (getStore) => {
       root.field("child")!.field("text").set("Edited")
       render()
       expect(host.textContent).toBe(`${initial.id}:Edited`)
-      const replacement = createUnit(text, { text: "Replacement" })
+      const replacement = text.createUnit({ text: "Replacement" })
       root.setOptional("child", replacement)
       render()
       expect(host.textContent).toBe(`${replacement.id}:Replacement`)
@@ -90,8 +90,8 @@ describeWithStores("UnitView", (getStore) => {
         )
       },
     })
-    const initial = createUnit(lesson, {
-      exercises: [createUnit(text, { text: "First" }), createUnit(other, { label: "Second" })],
+    const initial = lesson.createUnit({
+      exercises: [text.createUnit({ text: "First" }), other.createUnit({ label: "Second" })],
     })
     const { root } = createDocument(getStore(), lesson, initial)
     expect(UnitView({ handle: root }).key).toBe(root.id)
@@ -99,7 +99,7 @@ describeWithStores("UnitView", (getStore) => {
       /^<section><p id="[^"]+">First<\/p><strong>Second<\/strong><\/section>$/,
     )
     root.field("exercises").remove(0)
-    root.field("exercises").insert(0, createUnit(other, { label: "Inserted" }))
+    root.field("exercises").insert(0, other.createUnit({ label: "Inserted" }))
     // Parent explicitly rerenders; UnitView has no subscriptions yet.
     expect(renderToStaticMarkup(<UnitView handle={root} />)).toBe(
       "<section><strong>Inserted</strong><strong>Second</strong></section>",
