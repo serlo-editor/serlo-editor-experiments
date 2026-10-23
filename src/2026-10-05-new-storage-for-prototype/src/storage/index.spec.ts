@@ -522,9 +522,10 @@ test("YjsNodeStore syncs local edits between documents without echoing received 
 test("YjsNodeStore rejects cells missing their value", () => {
   const doc = new Y.Doc()
   const store = new YjsNodeStore({ doc, awareness: new Awareness(doc) })
-  const ref = store.transact((tx) => store.attach(store.cell.create("Draft"), tx))
-  store.transact(() => ref.delete("value"))
+  const cellRef = store.cell.create("Draft")
+  store.transact((tx) => store.attach(cellRef, tx))
+  store.transact(() => cellRef.delete("value"))
 
-  expect(() => store.cell.get(ref)).toThrow("Cell value absent.")
+  expect(() => store.cell.get(cellRef)).toThrow("Cell value absent.")
   doc.destroy()
 })
