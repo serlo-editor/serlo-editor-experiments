@@ -5,18 +5,18 @@ import { Doc } from "yjs"
 import { createDocument } from "../editor/schema/document.ts"
 import { YjsNodeStore } from "../editor/storage/index.ts"
 import type { NodeStore } from "../editor/storage/types.ts"
-import { Prototype } from "./content.tsx"
+import { Prototype, type PrototypeSnapshot } from "./content.tsx"
 import { initialContent } from "./initial-content.ts"
 import { syncCDRTs } from "./sync-cdrts.ts"
 
 export type PrototypeSession = ReturnType<typeof createPrototypeSessions>["first"]
 
-export function createPrototypeSessions() {
+export function createPrototypeSessions(snapshot: PrototypeSnapshot = initialContent) {
   const first = createSession("Editor 1", "#2563eb")
   const second = createSession("Editor 2", "#b45309")
-  const firstDocument = createDocument(first.store, Prototype, initialContent)
+  const firstDocument = createDocument(first.store, Prototype, snapshot)
   const disconnect = syncCDRTs(first, second)
-  const secondDocument = createDocument(second.store, Prototype, initialContent)
+  const secondDocument = createDocument(second.store, Prototype, snapshot)
   return {
     first: { ...first, document: firstDocument },
     second: { ...second, document: secondDocument },

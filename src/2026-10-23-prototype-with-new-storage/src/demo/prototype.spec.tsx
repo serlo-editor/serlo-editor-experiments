@@ -13,13 +13,34 @@ import * as Y from "yjs"
 import { createDocument } from "../editor/schema/document.ts"
 import { YjsNodeStore } from "../editor/storage/index.ts"
 import { describeWithStores } from "../editor/test-utils/test-with-stores.ts"
-import App, { SessionPane } from "./App.tsx"
-import { exportContent, Prototype, TextUnit } from "./content.tsx"
+import App, { PrototypeDemo } from "./App.tsx"
+import { exportContent, importContent, Prototype, TextUnit } from "./content.tsx"
 import { initialContent } from "./initial-content.ts"
 import { createPrototypeSessions } from "./session.ts"
 import { syncCDRTs } from "./sync-cdrts.ts"
 
 describeWithStores("prototype units", (getStore) => {
+  test("imports legacy content with fresh IDs and detached fields", () => {
+    const legacy = exportContent(initialContent)
+    const imported = importContent(legacy)
+    const importedAgain = importContent(legacy)
+    expect(imported.id).not.toBe(initialContent.id)
+    expect(importedAgain.id).not.toBe(imported.id)
+    expect(imported.items.map((item) => item.id)).not.toEqual(
+      initialContent.items.map((item) => item.id),
+    )
+    expect(importedAgain.items.map((item) => item.id)).not.toEqual(
+      imported.items.map((item) => item.id),
+    )
+    const document = createDocument(getStore(), Prototype, imported)
+    expect(exportContent(document.snapshot())).toEqual(legacy)
+    const choice = document.root.field("items").children()[2]
+    if (!choice || choice.type !== "multiple-choice") throw new Error("Expected multiple choice.")
+    choice.field("options").children()[0]?.field("isCorrect").set(true)
+    expect(legacy).toEqual(exportContent(initialContent))
+    expect(importContent([]).items).toEqual([])
+  })
+
   test("preserves typed unit identity, fields, export, and reopening", () => {
     const store = getStore()
     const document = createDocument(store, Prototype, initialContent)
@@ -49,6 +70,32 @@ describeWithStores("prototype units", (getStore) => {
     expect(text.field("content").id).toBe(editorId)
     expect(reopened.snapshot()).toEqual(document.snapshot())
   })
+})
+
+test("rejects malformed legacy content before creating collaborative sessions", () => {
+  const inline = { type: "doc", content: [{ type: "inlineBlock" }] }
+  for (const invalid of [
+    null,
+    {},
+    [{ type: "unknown" }],
+    [{ type: "multiple-choice", question: inline, options: [{ isCorrect: "yes", text: inline }] }],
+    [{ type: "multiple-choice", question: inline, options: [{}] }],
+    [{ type: "text", content: { type: "doc", content: [{ type: "unknown-node" }] } }],
+    [
+      {
+        type: "text",
+        content: {
+          type: "doc",
+          content: [
+            { type: "paragraph", content: [{ type: "text", text: "x", marks: [{ type: "gap" }] }] },
+          ],
+        },
+      },
+    ],
+  ]) {
+    // Exercise JSON input without weakening production types with assertions.
+    expect(() => importContent(JSON.parse(JSON.stringify(invalid)))).toThrow()
+  }
 })
 
 describe("prototype integration", () => {
@@ -84,7 +131,7 @@ describe("prototype integration", () => {
   })
 
   test("React reflects peer edits; local toolbars, selection, cursors, and exports stay current", async () => {
-    const sessions = createPrototypeSessions()
+    const sessions = createPrototypeSessions(importContent(exportContent(initialContent)))
     const host = document.createElement("div")
     document.body.append(host)
     const root = createRoot(host)
@@ -109,14 +156,7 @@ describe("prototype integration", () => {
     const peerEditor = peerText.field("content").getEditor()
     const gapEditor = gap.field("content").getEditor()
     try {
-      flushSync(() =>
-        root.render(
-          <>
-            <SessionPane session={sessions.first} />
-            <SessionPane session={sessions.second} />
-          </>,
-        ),
-      )
+      flushSync(() => root.render(<PrototypeDemo sessions={sessions} />))
       await tick()
       const panes = host.querySelectorAll(".app__session")
       const firstPane = panes[0]
@@ -143,7 +183,7 @@ describe("prototype integration", () => {
         )
       })
       expect(sessions.first.store.getRevision()).toBe(revision)
-      expect(firstPane.querySelector('[aria-label="Current selection"]')?.textContent).toContain(
+      expect(host.querySelector('[aria-label="Current selection"]')?.textContent).toContain(
         text.field("content").id,
       )
       const bold = firstPane.querySelector<HTMLButtonElement>(
@@ -156,9 +196,7 @@ describe("prototype integration", () => {
       flushSync(() => editor.view.dispatch(editor.state.tr.insertText("Shared!", 1, 5)))
       await tick()
       expect(peerEditor.state.doc.textContent).toContain("Shared!")
-      expect(secondPane.querySelector('[aria-label="Document JSON"]')?.textContent).toContain(
-        "Shared!",
-      )
+      expect(host.querySelector('[aria-label="Content export"]')?.textContent).toContain("Shared!")
       expect(exportContent(sessions.second.document.snapshot())[0]).toEqual(
         exportContent(sessions.first.document.snapshot())[0],
       )
@@ -169,6 +207,10 @@ describe("prototype integration", () => {
       expect(matching?.find().length).toBeGreaterThan(0)
       expect(sibling?.find()).toEqual([])
       expect(sessions.second.document.snapshot()).toEqual(sessions.first.document.snapshot())
+      flushSync(() => peerEditor.view.dispatch(peerEditor.state.tr.insertText("Peer!", 1)))
+      await tick()
+      expect(host.querySelector('[aria-label="Content export"]')?.textContent).toContain("Peer!")
+      expect(sessions.first.document.snapshot()).toEqual(sessions.second.document.snapshot())
 
       // Removing a sibling must not remount the surviving text editor.
       flushSync(() => sessions.first.document.root.field("items").remove(1))
@@ -201,6 +243,21 @@ describe("prototype integration", () => {
       await tick()
       expect(host.querySelectorAll('[role="textbox"]')).toHaveLength(12)
       expect(host.querySelectorAll(".app__session")).toHaveLength(2)
+      expect(host.querySelectorAll(".app__debug")).toHaveLength(1)
+      expect(
+        host.querySelector('[aria-label="Content export"]')?.textContent?.trim().startsWith("["),
+      ).toBe(true)
+      expect(host.querySelector('[aria-label="Document JSON"]')).toBeNull()
+      const editors = host.querySelector(".app__editors")
+      expect(editors?.nextElementSibling?.classList.contains("app__debug")).toBe(true)
+      const documentToggle = [...host.querySelectorAll("label")]
+        .find((label) => label.textContent === "Document JSON")
+        ?.querySelector("input")
+      if (!documentToggle) throw new Error("Missing document toggle.")
+      flushSync(() => documentToggle.click())
+      expect(host.querySelector('[aria-label="Document JSON"]')?.textContent).toContain(
+        '"type": "prototype"',
+      )
     } finally {
       flushSync(() => root.unmount())
       await tick()

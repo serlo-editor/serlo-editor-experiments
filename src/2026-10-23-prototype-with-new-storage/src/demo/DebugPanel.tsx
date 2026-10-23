@@ -2,7 +2,7 @@ import { useId, useState } from "react"
 
 import { exportContent } from "./content.tsx"
 import type { LocalSelection } from "./RichTextField.tsx"
-import type { PrototypeSession } from "./session.ts"
+import { type PrototypeSession, useStorageRevision } from "./session.ts"
 
 type DebugOption = "json" | "export" | "structure" | "selection"
 const options: { key: DebugOption; label: string }[] = [
@@ -19,10 +19,11 @@ export function EditorDebugPanel({
   session: PrototypeSession
   selection: LocalSelection | null
 }) {
+  useStorageRevision(session.store)
   const panelId = useId()
   const [show, setShow] = useState<Record<DebugOption, boolean>>({
-    json: true,
-    export: false,
+    json: false,
+    export: true,
     structure: false,
     selection: true,
   })

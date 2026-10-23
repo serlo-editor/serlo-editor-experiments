@@ -18,23 +18,16 @@ export default function App() {
       <header className="app__header">
         <h1 className="app__title">Prototype: Collaborative unit editing</h1>
       </header>
-      <section className="app__editors">
-        {sessions ? (
-          <>
-            <SessionPane session={sessions.first} />
-            <SessionPane session={sessions.second} />
-          </>
-        ) : (
-          "Loading…"
-        )}
-      </section>
+      {sessions ? <PrototypeDemo sessions={sessions} /> : "Loading…"}
     </main>
   )
 }
 
-export function SessionPane({ session }: { session: PrototypeSession }) {
-  // ponytail: rerender whole session; add per-unit subscriptions only if documents outgrow this demo.
-  useStorageRevision(session.store)
+export function PrototypeDemo({
+  sessions,
+}: {
+  sessions: ReturnType<typeof createPrototypeSessions>
+}) {
   const [selection, setSelection] = useState<LocalSelection | null>(null)
   const reportSelection = useCallback((next: LocalSelection | null) => {
     setSelection((previous) =>
@@ -42,6 +35,24 @@ export function SessionPane({ session }: { session: PrototypeSession }) {
     )
   }, [])
 
+  return (
+    <>
+      <section className="app__editors">
+        <SelectionContext value={reportSelection}>
+          <SessionPane session={sessions.first} />
+        </SelectionContext>
+        <SessionPane session={sessions.second} />
+      </section>
+      <section className="app__debug panel">
+        <EditorDebugPanel session={sessions.first} selection={selection} />
+      </section>
+    </>
+  )
+}
+
+export function SessionPane({ session }: { session: PrototypeSession }) {
+  // ponytail: rerender whole session; add per-unit subscriptions only if documents outgrow this demo.
+  useStorageRevision(session.store)
   return (
     <div className="app__session">
       <section className="editor-card panel" aria-label={session.name}>
@@ -54,13 +65,8 @@ export function SessionPane({ session }: { session: PrototypeSession }) {
           {session.name}
         </h2>
         <div className="editor-frame surface">
-          <SelectionContext value={reportSelection}>
-            <UnitView handle={session.document.root} />
-          </SelectionContext>
+          <UnitView handle={session.document.root} />
         </div>
-      </section>
-      <section className="app__debug panel">
-        <EditorDebugPanel session={session} selection={selection} />
       </section>
     </div>
   )

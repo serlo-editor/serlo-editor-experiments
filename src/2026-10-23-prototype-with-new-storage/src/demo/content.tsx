@@ -1,4 +1,5 @@
 import { richText as definition } from "../editor/rich-text/index.ts"
+import { createDocument } from "../editor/schema/document.ts"
 import {
   array,
   boolean,
@@ -9,10 +10,33 @@ import {
   UnitView,
 } from "../editor/schema/index.ts"
 import type { SnapshotOf } from "../editor/schema/types.ts"
+import { FlatNodeStore } from "../editor/storage/index.ts"
 import { RichTextField } from "./RichTextField.tsx"
 
 export const { Prototype, TextUnit, MultipleChoiceUnit, FillInTheGapUnit } = createUnits()
 export type PrototypeSnapshot = SnapshotOf<typeof Prototype>
+export type LegacyContent = readonly ReturnType<typeof exportContent>[number][]
+
+/** Converts typed legacy content; existing schemas validate it before any shared-store writes. */
+export function importContent(content: LegacyContent): PrototypeSnapshot {
+  if (!Array.isArray(content)) throw new TypeError("Expected a content array.")
+  const snapshot = Prototype.createUnit({
+    items: content.map((item) => {
+      switch (item.type) {
+        case "text":
+          return TextUnit.createUnit({ content: item.content })
+        case "fill-in-the-blank":
+          return FillInTheGapUnit.createUnit({ content: item.content })
+        case "multiple-choice":
+          return MultipleChoiceUnit.createUnit({ question: item.question, options: item.options })
+        default:
+          throw new TypeError("Unknown content type.")
+      }
+    }),
+  })
+  // Reuse schema validation in an isolated store; never leave partial imports in Yjs.
+  return createDocument(new FlatNodeStore(), Prototype, snapshot).snapshot()
+}
 
 export function exportContent(snapshot: PrototypeSnapshot) {
   return snapshot.items.map((item) => {
