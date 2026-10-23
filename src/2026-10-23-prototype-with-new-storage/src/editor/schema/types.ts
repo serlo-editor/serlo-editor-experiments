@@ -1,34 +1,22 @@
-import type { TypeGuard } from "../utils/type-guards"
+import type { NodeKind, NodeRefs, NodeStore } from "../storage/types.ts"
+import type { JSONValue } from "../utils/index.ts"
 
-// Use a single SchemaKind parameter so each Schema<> instantiation keeps
-// FlatValue and JSONValue paired.
-export interface Schema<K extends SchemaKind = SchemaKind> {
-  kind: K["kind"]
-  name: string
-  isFlatValue: TypeGuard<K["FlatValue"]>
-  // Store the current FlatValue and JSONValue on each Schema instance.
-  // Otherwise the derived FlatValue and JSONValue types can be inferred
-  // incorrectly.
-  //
-  // We use a unique, non-exported symbol so the SchemaTypeInfo property is
-  // not accessible outside this module.
-  readonly [SchemaTypeInfo]?: {
-    readonly FlatValue: K["FlatValue"]
-    readonly JSONValue: K["JSONValue"]
-  }
+export interface Handle<Snapshot extends JSONValue> {
+  snapshot(): Snapshot
 }
 
-export type FlatValue<S extends Schema> = SchemaTypeInfoOf<S>["FlatValue"]
-export type JSONValue<S extends Schema> = SchemaTypeInfoOf<S>["JSONValue"]
+export interface Schema<
+  Snapshot extends JSONValue,
+  SchemaHandle extends Handle<Snapshot>,
+  Kind extends NodeKind,
+> {
+  create<Refs extends NodeRefs, Tx>(store: NodeStore<Refs, Tx>, snapshot: Snapshot): Refs[Kind]
 
-export type PublicSchemaShape<S extends Schema> = Omit<S, typeof SchemaTypeInfo>
-
-type SchemaTypeInfoOf<S extends Schema> = NonNullable<S[typeof SchemaTypeInfo]>
-
-interface SchemaKind {
-  kind: string
-  FlatValue: unknown
-  JSONValue: unknown
+  bind<Refs extends NodeRefs, Tx>(store: NodeStore<Refs, Tx>, ref: Refs[Kind]): SchemaHandle
 }
 
-declare const SchemaTypeInfo: unique symbol
+export type SnapshotOf<ChildSchema> =
+  ChildSchema extends Schema<infer Snapshot, any, any> ? Snapshot : never
+
+export type HandleOf<ChildSchema> =
+  ChildSchema extends Schema<any, infer ChildHandle, any> ? ChildHandle : never
