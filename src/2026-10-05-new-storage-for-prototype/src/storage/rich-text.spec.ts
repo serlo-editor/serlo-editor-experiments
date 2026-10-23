@@ -16,7 +16,7 @@ import {
 } from "../rich-text/index.ts"
 import { createDocument } from "../schema/document.ts"
 import { array, richText } from "../schema/index.ts"
-import { describeWithStores, type StoreContract } from "../test-utils/test-with-stores.ts"
+import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import { FlatNodeStore, YjsNodeStore } from "./index.ts"
 
 const options = { definition: definition.inline({ marks: { bold: true } }) }
@@ -70,7 +70,7 @@ describe("stored rich-text editors", () => {
   })
 
   test("flat editors notify for headless content changes, not selection changes", async () => {
-    const store: StoreContract<FlatNodeStore> = new FlatNodeStore()
+    const store = new FlatNodeStore()
     const document = createDocument(store, richText(options), content("Initial"))
     const editor = document.root.getEditor()
     const observed: RichTextJSON[] = []
@@ -145,7 +145,7 @@ describe("stored rich-text editors", () => {
   })
 
   test("flat storage keeps caller-supplied local history", async () => {
-    const store: StoreContract<FlatNodeStore> = new FlatNodeStore()
+    const store = new FlatNodeStore()
     const document = createDocument(
       store,
       richText({ ...options, extensions: [defineHistory()] }),
@@ -290,7 +290,7 @@ describe("stored rich-text editors", () => {
   test("Yjs awareness publishes stable IDs and isolates sibling cursor cleanup", async () => {
     const doc = createDoc()
     const awareness = new Awareness(doc)
-    const store: StoreContract<YjsNodeStore> = new YjsNodeStore({ doc, awareness })
+    const store = new YjsNodeStore({ doc, awareness })
     awarenessInstances.push(awareness)
     awareness.setLocalStateField("user", { name: "Local" })
     const document = createDocument(store, array(richText(options)), [
@@ -332,11 +332,11 @@ describe("stored rich-text editors", () => {
     const targetDoc = createDoc()
     const sourceAwareness = new Awareness(sourceDoc)
     const targetAwareness = new Awareness(targetDoc)
-    const sourceStore: StoreContract<YjsNodeStore> = new YjsNodeStore({
+    const sourceStore = new YjsNodeStore({
       doc: sourceDoc,
       awareness: sourceAwareness,
     })
-    const targetStore: StoreContract<YjsNodeStore> = new YjsNodeStore({
+    const targetStore = new YjsNodeStore({
       doc: targetDoc,
       awareness: targetAwareness,
     })
@@ -366,7 +366,7 @@ describe("stored rich-text editors", () => {
     expect(sibling?.find()).toEqual([])
   })
 
-  function createYjsStore(doc: Y.Doc): StoreContract<YjsNodeStore> {
+  function createYjsStore(doc: Y.Doc): YjsNodeStore {
     const awareness = new Awareness(doc)
     awarenessInstances.push(awareness)
     return new YjsNodeStore({ doc, awareness })

@@ -4,15 +4,15 @@ import { Awareness } from "y-protocols/awareness"
 import * as Y from "yjs"
 
 import { FlatNodeStore, YjsNodeStore } from "../storage/index.ts"
-import type { NodeRefs, NodeStore } from "../storage/types.ts"
+import type { NodeStore } from "../storage/types.ts"
 
 export function describeWithStores(
   name: string,
-  callback: <Refs extends NodeRefs, Tx>(getStore: () => NodeStore<Refs, Tx>) => void,
+  callback: (getStore: () => NodeStore) => void,
 ): void {
   describe(name, () => {
     describe("FlatNodeStore", () => {
-      let store!: StoreContract<FlatNodeStore>
+      let store!: FlatNodeStore
 
       beforeEach(() => {
         store = new FlatNodeStore()
@@ -21,7 +21,7 @@ export function describeWithStores(
     })
 
     describe("YjsNodeStore", () => {
-      let store!: StoreContract<YjsNodeStore>
+      let store!: YjsNodeStore
       let doc!: Y.Doc
 
       beforeEach(() => {
@@ -33,8 +33,3 @@ export function describeWithStores(
     })
   })
 }
-
-export type StoreContract<Store extends FlatNodeStore | YjsNodeStore> = NodeStore<
-  { [Kind in keyof NodeRefs]: ReturnType<Store[Kind]["create"]> },
-  Parameters<Store["cell"]["edit"]>[1]
->
