@@ -21,11 +21,13 @@ drop-in replacement. Remaining integration work is tracked in `tasks/`.
 | `src/storage/flat.ts`  | In-memory storage using string refs                         |
 | `src/storage/yjs.ts`   | Collaborative storage using nested Yjs shared types         |
 | `src/schema/`          | Typed schemas, bound handles, and document snapshots        |
+| `src/react/`           | React unit rendering adapter, separate from storage         |
 | `src/test-utils/`      | Shared tests against both storage implementations           |
 | `src/utils/`           | JSON types, guards, and branded types                       |
 
 Schemas currently support strings, numbers, booleans, arrays, objects, optional
-object fields, and rich text. `createDocument()` creates and attaches a root when store has none;
+object fields, rich text, educational units, and explicit child-unit unions.
+`createDocument()` creates and attaches a root when store has none;
 otherwise it binds existing root and ignores supplied initial snapshot. Handles
 read and edit content and produce snapshots.
 
@@ -88,6 +90,71 @@ Callers unmount views when no longer used. There is no disposal API or automatic
 fragment garbage collection yet: editor caches follow store lifetime, and Yjs
 store revision tracking follows document lifetime.
 
+### Educational units
+
+`unit({ type, fields, render })` defines an object schema with reserved `id` and
+`type` metadata. Content fields sit alongside metadata in snapshots, not inside a
+`content` wrapper. Handles expose readonly `id`, literal `type`, local `definition`,
+ordinary typed `field()` access, and `snapshot()`. Renderer definitions stay local;
+Yjs stores only content and metadata using existing map/cell storage.
+
+```tsx
+import { createDocument } from "./src/schema/document.ts"
+import { array, childUnit, createUnit, string, unit } from "./src/schema/index.ts"
+import { UnitView } from "./src/react/index.ts"
+
+const exercise = unit({
+  type: "exercise",
+  fields: { question: string() },
+  render: function ExerciseView({ handle }) {
+    return <p>{handle.field("question").get()}</p>
+  },
+})
+
+const lesson = unit({
+  type: "lesson",
+  fields: { exercises: array(childUnit([exercise])) },
+  render: function LessonView({ handle }) {
+    return handle.field("exercises").map((child) => <UnitView key={child.id} handle={child} />)
+  },
+})
+
+const initial = createUnit(lesson, {
+  exercises: [createUnit(exercise, { question: "Why?" })],
+})
+// initial: { id, type: "lesson", exercises: [{ id, type: "exercise", question: "Why?" }] }
+// Given a NodeStore named store:
+const document = createDocument(store, lesson, initial)
+const view = <UnitView handle={document.root} />
+```
+
+`createUnit(definition, fields)` creates a detached snapshot with a fresh UUID and
+cloned fields. Supply already-created child snapshots for nested units. Loading a
+complete snapshot with `createDocument()` preserves supplied unit IDs; reopening
+an existing root still ignores initial snapshots. Field edits, sibling edits, and
+synchronization retain identity. `id` and `type` cannot be edited through handles.
+
+`childUnit([...definitions])` accepts explicit, nonempty lists with distinct type
+names. Stored `type` chooses the matching schema and local renderer; returned
+handles form a discriminated union. No global renderer registry is used.
+
+Object handles provide `set(field, snapshot)` for required or optional fields.
+Array handles provide `replace(index, snapshot)`, removing and inserting in one
+structural transaction. To replace a unit, pass a fresh `createUnit()` snapshot;
+old handles never retarget to the replacement. Existing `setOptional()` and
+`removeOptional()` remain available.
+
+Built-in schemas validate imports before allocating content, rejecting missing
+IDs, mismatched/unknown types, undeclared fields, and invalid field values. Custom
+schemas can participate through optional `validate(snapshot)` hooks. Storage
+transactions still do not roll back on errors. Duplicate-ID validation, copy/paste,
+recursive schemas, unit lookup/indexes, and identity for ordinary objects are
+intentionally deferred.
+
+`UnitView` mounts renderers as React components, so hooks work. Renderer elements
+are keyed by unit ID. Automatic React subscriptions are deferred: parents must
+schedule rerenders after content changes.
+
 ### Identity and schemas
 
 Prototype uses string keys for React rendering, editor caches, selection, and
@@ -95,9 +162,9 @@ awareness. Backend refs are not interchangeable with these keys: Yjs refs are
 shared-type objects, local to each replica. Integration needs stable node identity
 and a way to resolve schema information and children after synchronization.
 
-Prototype also needs literals, wrappers, unions, and rich-text schema integration. Implement these in
-this schema layer or explicit editor-side translation; existing primitive, array,
-and object schemas alone cannot represent all prototype behavior.
+Unit schemas now provide stable instance IDs and explicit unit unions. Generic
+literals, wrappers, unions beyond units, and prototype-specific schema translation
+remain separate integration work.
 
 ## Known integration blockers
 
@@ -108,9 +175,9 @@ and object schemas alone cannot represent all prototype behavior.
   so direct backend edits propagate through prototype's current sync helper.
   Transactions nested in an outer Yjs transaction retain the outer origin; a
   null-origin outer transaction is still dropped by that helper.
-- Rich-text handles expose stable editor IDs; other handles still lack stable
-  node identity. Existing keyed lookup and debug traversal need an integration
-  contract.
+- Unit handles expose stable instance IDs and rich-text handles expose stable
+  editor IDs; other handles lack stable node identity. Existing keyed lookup and
+  debug traversal still need an integration contract.
 - Prototype's React hook still depends on legacy `updateCount`; editor adapter
   must bridge storage revisions, rich-text changes, and local UI state.
 - Prototype creates and reads `Y.Array<Key>` / `Y.Map<Key>` directly. Its value

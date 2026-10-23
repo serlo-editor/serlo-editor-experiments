@@ -23,8 +23,15 @@ function primitive<Value extends Primitive>(
   expected: string,
   isValue: Guard<Value>,
 ): Schema<Value, PrimitiveHandle<Value>, "cell"> {
+  const validate = (value: unknown) => {
+    if (!isValue(value)) throw new TypeError(`Expected ${expected} cell.`)
+  }
+
   return {
+    validate,
+
     create(store, snapshot) {
+      validate(snapshot)
       return store.cell.create(snapshot)
     },
 
@@ -41,6 +48,7 @@ function primitive<Value extends Primitive>(
         get: read,
         snapshot: read,
         set(value) {
+          validate(value)
           store.transact((tx) => {
             store.cell.edit(ref, tx).set(value)
           })
