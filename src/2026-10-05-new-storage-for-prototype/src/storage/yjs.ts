@@ -38,6 +38,8 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     this.awareness = awareness
     this.revisions = doc.getArray("storage:revisions")
     // Store follows document lifetime; revisions must advance even without UI subscribers.
+    //
+    // TODO: Can this implementation be simplified by reusing or sharing an implementation with flat.ts?!
     doc.on("afterTransaction", (transaction: Y.Transaction) => {
       const richTextChanged = this.hasRichTextChanges(transaction)
       if (richTextChanged) this.richTextRevision += 1
