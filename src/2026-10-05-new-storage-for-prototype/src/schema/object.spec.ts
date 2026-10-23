@@ -48,6 +48,8 @@ describeWithStores("object schemas", (getStore) => {
 
     // @ts-expect-error Object handles expose field(), not get().
     expect(root.get).toBe(undefined)
+    // @ts-expect-error Fields are edited through child handles, not replaced.
+    expect(root.set).toBe(undefined)
     expect(() => {
       // @ts-expect-error Unknown fields are rejected.
       root.field("missing")
@@ -190,22 +192,6 @@ describeWithStores("object schemas", (getStore) => {
       // @ts-expect-error Inherited schema properties are not declared fields.
       root.field("hasOwnProperty")
     }).toThrow("Unknown field: hasOwnProperty.")
-  })
-
-  test("replaces required and optional fields through their owning object", () => {
-    const { root } = createDocument(
-      getStore(),
-      object({ profile: object({ name: string() }), note: optional(string()) }),
-      { profile: { name: "Ada" } },
-    )
-    root.set("profile", { name: "Grace" })
-    root.set("note", "Added")
-    expect(root.snapshot()).toEqual({ profile: { name: "Grace" }, note: "Added" })
-    expect(() => {
-      // @ts-expect-error Replacement fields retain their snapshot types.
-      root.set("profile", "Wrong")
-    }).toThrow()
-    expect(root.field("profile").field("name").get()).toBe("Grace")
   })
 
   test("supports empty objects", () => {

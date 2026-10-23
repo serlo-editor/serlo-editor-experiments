@@ -136,18 +136,17 @@ synchronization retain identity. `id` and `type` cannot be edited through handle
 names. Stored `type` chooses the matching schema and local renderer; returned
 handles form a discriminated union. No global renderer registry is used.
 
-Object handles provide `set(field, snapshot)` for required or optional fields.
-Array handles provide `replace(index, snapshot)`, removing and inserting in one
-structural transaction. To replace a unit, pass a fresh `createUnit()` snapshot;
-old handles never retarget to the replacement. Existing `setOptional()` and
-`removeOptional()` remain available.
+Edit object fields through child handles. Optional fields support `setOptional()`
+and `removeOptional()`; arrays support `insert()` and `remove()`. Direct replacement
+of required fields and atomic array replacement are not provided.
 
-Built-in schemas validate imports before allocating content, rejecting missing
-IDs, mismatched/unknown types, undeclared fields, and invalid field values. Custom
-schemas can participate through optional `validate(snapshot)` hooks. Storage
-transactions still do not roll back on errors. Duplicate-ID validation, copy/paste,
-recursive schemas, unit lookup/indexes, and identity for ordinary objects are
-intentionally deferred.
+`createUnit()` only builds snapshots; field handling remains with existing schemas
+when content is stored. Unit creation checks IDs, type discriminators, and unknown
+unit fields. There is no whole-tree validation preflight or schema validation hook.
+Transactions do not roll back on errors, so failed imports can leave unused content
+allocations, including rich-text fragments. Duplicate-ID validation, copy/paste,
+recursive schemas, unit lookup/indexes, and identity for ordinary objects remain
+deferred.
 
 `UnitView`, exported from `src/schema/index.ts`, mounts renderers as React components, so hooks work. Renderer elements
 are keyed by unit ID. Automatic React subscriptions are deferred: parents must

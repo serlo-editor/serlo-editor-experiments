@@ -28,7 +28,6 @@ export interface UnitDefinition<Type extends string, Fields extends SchemaMap> e
   readonly type: Type
   readonly fields: Fields
   render(props: { handle: UnitHandle<Type, Fields> }): ReactNode
-  validate(snapshot: unknown): void
 }
 
 // Parent owns rerender scheduling until subscription support is added.
@@ -56,27 +55,25 @@ export function unit<const Type extends string, Fields extends SchemaMap>({
 
   const contentSchema = object<Fields>(fields)
   const storageSchema = object({ ...fields, id: string(), type: string() })
-  const validate: UnitDefinition<Type, Fields>["validate"] = (snapshot) => {
-    if (!isObject(snapshot)) throw new TypeError("Expected unit snapshot.")
-    if (!Object.hasOwn(snapshot, "id") || typeof snapshot.id !== "string" || !snapshot.id) {
-      throw new TypeError("Expected unit ID.")
-    }
-    if (!Object.hasOwn(snapshot, "type") || snapshot.type !== type) {
-      throw new TypeError(`Expected unit type: ${type}.`)
-    }
-    const { id: _id, type: _type, ...content } = snapshot
-    contentSchema.validate?.(content)
-  }
-
   const definition: UnitDefinition<Type, Fields> = {
     type,
     fields,
     render,
-    validate,
 
     create(store, snapshot) {
-      validate(snapshot)
-      // Validation proves the flattened shape; TS cannot reduce generic mapped field types.
+      if (!isObject(snapshot)) throw new TypeError("Expected unit snapshot.")
+      if (!Object.hasOwn(snapshot, "id") || typeof snapshot.id !== "string" || !snapshot.id) {
+        throw new TypeError("Expected unit ID.")
+      }
+      if (!Object.hasOwn(snapshot, "type") || snapshot.type !== type) {
+        throw new TypeError(`Expected unit type: ${type}.`)
+      }
+      for (const key of Object.keys(snapshot)) {
+        if (key !== "id" && key !== "type" && !Object.hasOwn(fields, key)) {
+          throw new TypeError(`Unknown field: ${key}.`)
+        }
+      }
+      // Storage adds checked metadata to the same fields; TS cannot reduce generic mapped types.
       return storageSchema.create(store, snapshot as SnapshotOf<typeof storageSchema>)
     },
 
@@ -104,10 +101,7 @@ export function createUnit<Type extends string, Fields extends SchemaMap>(
   definition: UnitDefinition<Type, Fields>,
   fields: NoInfer<ObjectSnapshot<Fields>>,
 ): UnitSnapshot<Type, Fields> {
-  object(definition.fields).validate?.(fields)
-  const snapshot = { id: crypto.randomUUID(), type: definition.type, ...structuredClone(fields) }
-  definition.validate(snapshot)
-  return snapshot
+  return { ...structuredClone(fields), id: crypto.randomUUID(), type: definition.type }
 }
 
 type AnyUnitDefinition = UnitDefinition<any, any>
@@ -137,12 +131,8 @@ export function childUnit<const Definitions extends readonly AnyUnitDefinition[]
   }
 
   return {
-    validate(snapshot) {
-      const definition: Definitions[number] = select(snapshot)
-      definition.validate(snapshot)
-    },
     create(store, snapshot) {
-      // Selection erases the concrete member; its create() validates before allocation.
+      // Selection erases the concrete member while preserving the public snapshot union.
       const schema: Schema<any, any, "map"> = select(snapshot)
       return schema.create(store, snapshot)
     },

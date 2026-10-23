@@ -10,7 +10,6 @@ export interface ArrayHandle<Item extends JSONValue, Child extends Handle<Item>>
   map<Result>(callback: (child: Child, index: number) => Result): Result[]
   remove(index: number): void
   insert(index: number, value: Item): void
-  replace(index: number, value: Item): void
 }
 
 export function array<
@@ -20,16 +19,8 @@ export function array<
 >(
   childSchema: Schema<Item, Child, ChildKind>,
 ): Schema<readonly Item[], ArrayHandle<Item, Child>, "array"> {
-  const validate = (snapshots: unknown) => {
-    if (!Array.isArray(snapshots)) throw new TypeError("Expected array snapshot.")
-    for (const snapshot of snapshots) childSchema.validate?.(snapshot)
-  }
-
   return {
-    validate,
-
     create(store, snapshots) {
-      validate(snapshots)
       const refs = snapshots.map((snapshot) => childSchema.create(store, snapshot))
       return store.array.create(refs)
     },
@@ -59,18 +50,6 @@ export function array<
           const childRef = childSchema.create(store, snapshot)
           store.transact((tx) => {
             store.array.edit(ref, tx).insert(index, childRef)
-          })
-        },
-
-        replace(index, snapshot) {
-          if (!Number.isInteger(index) || index < 0 || index >= store.array.get(ref).length) {
-            throw new RangeError("Array replacement index out of bounds.")
-          }
-          const childRef = childSchema.create(store, snapshot)
-          store.transact((tx) => {
-            const editor = store.array.edit(ref, tx)
-            editor.remove(index)
-            editor.insert(index, childRef)
           })
         },
 

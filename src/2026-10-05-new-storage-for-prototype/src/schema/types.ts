@@ -10,9 +10,6 @@ export interface Schema<
   SchemaHandle extends Handle<Snapshot>,
   Kind extends NodeKind,
 > {
-  /** Validate imports before allocating storage. Custom schemas may supply their own validator. */
-  validate?(snapshot: unknown): void
-
   create<Refs extends NodeRefs, Tx>(store: NodeStore<Refs, Tx>, snapshot: Snapshot): Refs[Kind]
 
   bind<Refs extends NodeRefs, Tx>(store: NodeStore<Refs, Tx>, ref: Refs[Kind]): SchemaHandle

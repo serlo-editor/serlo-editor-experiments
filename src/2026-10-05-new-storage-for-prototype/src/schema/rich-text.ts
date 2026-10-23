@@ -1,11 +1,5 @@
-import {
-  createRichTextEditor,
-  type RichTextEditor,
-  type RichTextEditorConfig,
-  type RichTextJSON,
-} from "../rich-text/index.ts"
+import type { RichTextEditor, RichTextEditorConfig, RichTextJSON } from "../rich-text/index.ts"
 import { isRichTextId, type RichTextId } from "../storage/types.ts"
-import { isObject } from "../utils/guard.ts"
 import type { JSONValue } from "../utils/index.ts"
 import type { Handle, Schema } from "./types.ts"
 
@@ -18,26 +12,8 @@ export interface RichTextHandle extends Handle<RichTextJSON> {
 export function richText(
   config: RichTextEditorConfig,
 ): Schema<RichTextJSON, RichTextHandle, "cell"> {
-  let validationSchema: RichTextEditor["schema"] | undefined
-  const validate = (content: unknown) => {
-    if (!isObject(content) || typeof content.type !== "string") {
-      throw new TypeError("Expected rich-text document.")
-    }
-    validationSchema ??= createRichTextEditor({
-      ...config,
-      defaultContent: { ...structuredClone(content), type: content.type },
-    }).schema
-    const doc = validationSchema.nodeFromJSON(content)
-    if (doc.type !== validationSchema.topNodeType)
-      throw new TypeError("Expected rich-text document.")
-    doc.check()
-  }
-
   return {
-    validate,
-
     create(store, content) {
-      validate(content)
       const editorId = store.createRichText({ ...config, defaultContent: content })
       return store.cell.create({ kind: "richText", editorId })
     },

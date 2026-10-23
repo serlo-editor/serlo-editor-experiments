@@ -21,9 +21,5 @@ describeWithStores("array schemas", (getStore) => {
     root.remove(0)
     expect(root.length).toBe(2)
     expect(root.snapshot()).toEqual(["Lin", "Grace"])
-
-    root.replace(1, "Replacement")
-    expect(root.length).toBe(2)
-    expect(root.snapshot()).toEqual(["Lin", "Replacement"])
   })
 })

@@ -8,7 +8,7 @@ import { renderToStaticMarkup } from "react-dom/server"
 
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import { createDocument } from "./document.ts"
-import { array, childUnit, createUnit, object, string, unit, UnitView } from "./index.ts"
+import { array, childUnit, createUnit, object, optional, string, unit, UnitView } from "./index.ts"
 
 describeWithStores("UnitView", (getStore) => {
   test("remounts renderer state when a same-type child is replaced", async () => {
@@ -39,18 +39,18 @@ describeWithStores("UnitView", (getStore) => {
         },
       })
       const initial = createUnit(text, { text: "First" })
-      const { root } = createDocument(getStore(), object({ child: childUnit([text]) }), {
+      const { root } = createDocument(getStore(), object({ child: optional(childUnit([text])) }), {
         child: initial,
       })
       const render = () =>
-        flushSync(() => reactRoot.render(<UnitView handle={root.field("child")} />))
+        flushSync(() => reactRoot.render(<UnitView handle={root.field("child")!} />))
       render()
       expect(host.textContent).toBe(`${initial.id}:First`)
-      root.field("child").field("text").set("Edited")
+      root.field("child")!.field("text").set("Edited")
       render()
       expect(host.textContent).toBe(`${initial.id}:Edited`)
       const replacement = createUnit(text, { text: "Replacement" })
-      root.set("child", replacement)
+      root.setOptional("child", replacement)
       render()
       expect(host.textContent).toBe(`${replacement.id}:Replacement`)
     } finally {
@@ -98,10 +98,11 @@ describeWithStores("UnitView", (getStore) => {
     expect(renderToStaticMarkup(<UnitView handle={root} />)).toMatch(
       /^<section><p id="[^"]+">First<\/p><strong>Second<\/strong><\/section>$/,
     )
-    root.field("exercises").replace(0, createUnit(other, { label: "Replaced" }))
+    root.field("exercises").remove(0)
+    root.field("exercises").insert(0, createUnit(other, { label: "Inserted" }))
     // Parent explicitly rerenders; UnitView has no subscriptions yet.
     expect(renderToStaticMarkup(<UnitView handle={root} />)).toBe(
-      "<section><strong>Replaced</strong><strong>Second</strong></section>",
+      "<section><strong>Inserted</strong><strong>Second</strong></section>",
     )
   })
 })

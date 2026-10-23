@@ -55,6 +55,11 @@ describeWithStores("unit schemas", (getStore) => {
     fields.answers[0]!.text = "Caller changed"
     expect(initial.answers[0]!.text).toBe("First")
 
+    const suppliedMetadata = { ...choiceFields(), id: "caller", type: "other" }
+    const fresh = createUnit(choice, suppliedMetadata)
+    expect(fresh.id).not.toBe("caller")
+    expect(fresh.type).toBe("choice")
+
     const document = createDocument(getStore(), choice, initial)
     const handle = document.root
     expect(handle.id satisfies string).toBe(initial.id)
@@ -75,22 +80,26 @@ describeWithStores("unit schemas", (getStore) => {
       "type",
     ])
 
-    expect(() => {
-      // @ts-expect-error Metadata is not an editable field.
-      handle.set("id", "replacement")
-    }).toThrow("Unknown field: id.")
-    expect(() => {
-      // @ts-expect-error Metadata is not an editable field.
-      handle.set("type", "forensic")
-    }).toThrow("Unknown field: type.")
+    // @ts-expect-error Required object fields have no replacement setter.
+    expect(handle.set).toBeUndefined()
+    // @ts-expect-error Schemas have no validation hook.
+    expect(choice.validate).toBeUndefined()
     expect(() => {
       // @ts-expect-error Metadata is read through properties, not field handles.
       handle.field("id")
     }).toThrow("Unknown field: id.")
+    expect(() => {
+      // @ts-expect-error Metadata cannot be set as an optional content field.
+      handle.setOptional("type", "forensic")
+    }).toThrow("Unknown field: type.")
 
     // @ts-expect-error Snapshot retains literal discriminator.
     const wrongType: SnapshotOf<typeof choice> = { ...initial, type: "forensic" }
-    void wrongType
+    // @ts-expect-error Required content fields retain their types.
+    const wrongQuestion: SnapshotOf<typeof choice> = { ...initial, question: false }
+    // @ts-expect-error Required content fields remain required.
+    const missingFields: SnapshotOf<typeof choice> = { id: "missing", type: "choice" }
+    void [wrongType, wrongQuestion, missingFields]
   })
 
   test("loading and reopening preserve IDs instead of creating new units", () => {
@@ -104,80 +113,68 @@ describeWithStores("unit schemas", (getStore) => {
     expect(second.snapshot()).toEqual(loaded)
   })
 
-  test("child unions narrow handles and replace children through their parent", () => {
+  test("child unions narrow handles and support existing optional-field operations", () => {
     const store = getStore()
     const { choice, forensic, exercise } = definitions()
     const initial = createUnit(choice, choiceFields())
-    const schema = object({ exercise, items: array(exercise), note: optional(exercise) })
-    const { root } = createDocument(store, schema, { exercise: initial, items: [] })
-    const old = root.field("exercise")
-    expect(old.definition).toBe(choice)
-    if (old.type === "choice") {
-      expect(old.field("question").get() satisfies string).toBe("Which answer?")
+    const note = createUnit(choice, choiceFields("Note"))
+    const schema = object({ exercise, note: optional(exercise) })
+    const { root } = createDocument(store, schema, { exercise: initial, note })
+    const required = root.field("exercise")
+    expect(required.definition).toBe(choice)
+    if (required.type === "choice") {
+      expect(required.field("question").get() satisfies string).toBe("Which answer?")
       expect(() => {
         // @ts-expect-error Narrowed choice handles have no forensic fields.
-        old.field("caseId")
+        required.field("caseId")
       }).toThrow("Unknown field: caseId.")
     } else {
       throw new Error("Expected choice.")
     }
+    const oldNote = root.field("note")!
     const replacement = createUnit(forensic, { caseId: "case-42" })
-    let notifications = 0
-    const unsubscribe = store.subscribe(() => notifications++)
-    root.set("exercise", replacement)
-    expect(notifications).toBe(1)
-    unsubscribe()
-    const current = root.field("exercise")
+    root.setOptional("note", replacement)
+    const current = root.field("note")!
     expect(current.id).toBe(replacement.id)
-    expect(current.id).not.toBe(old.id)
-    expect(old.type).toBe("choice")
+    expect(current.id).not.toBe(oldNote.id)
+    expect(oldNote.type).toBe("choice")
     expect(current.definition).toBe(forensic)
     if (current.type === "forensic") {
       expect(current.field("caseId").get() satisfies string).toBe("case-42")
     }
-    root.setOptional("note", createUnit(choice, choiceFields("Note")))
-    expect(root.field("note")!.type).toBe("choice")
-    root.removeOptional("note")
-    expect(root.field("note")).toBeUndefined()
+    expect(root.field("exercise").id).toBe(initial.id)
 
     const typed: HandleOf<typeof exercise> = current
     expect(typed.snapshot()).toEqual(replacement)
     const excluded = unit({ type: "excluded", fields: {}, render: () => null })
     expect(() => {
-      // @ts-expect-error Only explicitly allowed unit types can replace this child.
-      root.set("exercise", createUnit(excluded, {}))
+      // @ts-expect-error Only explicitly allowed unit types can occupy this child field.
+      root.setOptional("note", createUnit(excluded, {}))
     }).toThrow("Unknown child unit type: excluded.")
+    root.removeOptional("note")
+    expect(root.field("note")).toBeUndefined()
   })
 
-  test("sibling insertions, removals and atomic replacements preserve unchanged IDs", () => {
-    const store = getStore()
+  test("sibling insertions and removals preserve unchanged IDs", () => {
     const { choice, forensic, exercise } = definitions()
     const kept = createUnit(choice, choiceFields("Kept"))
-    const { root } = createDocument(store, array(exercise), [kept])
-    root.insert(0, createUnit(choice, choiceFields("Inserted")))
-    expect(root.children()[1]!.id).toBe(kept.id)
-    const replacement = createUnit(forensic, { caseId: "replacement" })
-    let notifications = 0
-    const unsubscribe = store.subscribe(() => notifications++)
-    root.replace(0, replacement)
-    expect(notifications).toBe(1)
-    unsubscribe()
+    const inserted = createUnit(forensic, { caseId: "inserted" })
+    const { root } = createDocument(getStore(), array(exercise), [kept])
+    root.insert(0, inserted)
     expect(root.length).toBe(2)
-    expect(root.snapshot()).toEqual([replacement, kept])
+    expect(root.children()[1]!.id).toBe(kept.id)
+    expect(root.snapshot()).toEqual([inserted, kept])
     root.remove(0)
     expect(root.children()[0]!.id).toBe(kept.id)
-    for (const index of [-1, 1, 0.5, NaN]) {
-      expect(() => root.replace(index, replacement)).toThrow(RangeError)
-    }
     expect(root.snapshot()).toEqual([kept])
+    // @ts-expect-error Array handles expose insert/remove, not replacement.
+    expect(root.replace).toBeUndefined()
   })
 
-  test("rejects invalid imports and replacements before changing content", () => {
-    const store = getStore()
+  test("rejects invalid unit metadata and missing fields during insertion", () => {
     const { choice, exercise } = definitions()
     const initial = createUnit(choice, choiceFields())
-    const { root } = createDocument(store, object({ exercise }), { exercise: initial })
-    const revision = store.getRevision()
+    const { root } = createDocument(getStore(), array(exercise), [initial])
     for (const invalid of [
       null,
       [],
@@ -187,29 +184,21 @@ describeWithStores("unit schemas", (getStore) => {
       { ...initial, id: undefined },
       { ...initial, type: "unknown" },
       { ...initial, question: undefined },
-      { ...initial, question: false },
       { ...initial, extra: true },
-      { ...initial, answers: [{ text: "Answer", correct: "yes" }] },
-      { ...initial, answers: [{ text: "Answer", correct: true, extra: true }] },
+      { ...initial, answers: [{ text: "Answer" }] },
       { ...initial, answers: "wrong" },
     ]) {
-      // JSON.parse models untyped imported data.
-      expect(() => root.set("exercise", JSON.parse(JSON.stringify(invalid)))).toThrow()
+      // JSON.parse models untyped imported data; failed imports may allocate unused content.
+      expect(() => root.insert(1, JSON.parse(JSON.stringify(invalid)))).toThrow()
     }
-    expect(root.snapshot()).toEqual({ exercise: initial })
-    expect(store.getRevision()).toBe(revision)
+    expect(root.snapshot()).toEqual([initial])
+    expect(() => choice.create(getStore(), { ...initial, type: "choice", id: "" })).toThrow(
+      "Expected unit ID.",
+    )
     expect(() => {
-      // @ts-expect-error Creation requires declared fields.
-      createUnit(choice, { question: "Incomplete" })
-    }).toThrow()
-    expect(() => {
-      // @ts-expect-error New-unit input cannot supply an ID.
-      createUnit(choice, { ...choiceFields(), id: "provided" })
-    }).toThrow("Unknown field: id.")
-    expect(() => {
-      // @ts-expect-error Creation retains declared field types.
-      createUnit(choice, { ...choiceFields(), question: false })
-    }).toThrow("Expected string cell.")
+      // @ts-expect-error A concrete unit schema rejects other type discriminators.
+      choice.create(getStore(), { ...initial, type: "forensic" })
+    }).toThrow("Expected unit type: choice.")
   })
 
   test("composes rich-text fields without exporting internal editor IDs", () => {
@@ -267,31 +256,5 @@ test("Yjs replicas bind matching IDs to local definitions and retain sibling ide
   } finally {
     firstDoc.destroy()
     secondDoc.destroy()
-  }
-})
-
-test("invalid nested imports allocate no Yjs fragments", () => {
-  const doc = new Y.Doc()
-  const store = new YjsNodeStore({ doc, awareness: new Awareness(doc) })
-  const schema = unit({
-    type: "text",
-    fields: { body: richText({ definition: definition.inline() }), title: string() },
-    render: () => null,
-  })
-  const before = Y.encodeStateAsUpdate(doc)
-  try {
-    expect(() => {
-      schema.create(store, {
-        id: "saved",
-        type: "text",
-        body: { type: "doc", content: [{ type: "inlineBlock" }] },
-        // @ts-expect-error Untyped import has invalid title after valid rich text.
-        title: false,
-      })
-    }).toThrow()
-    expect([...doc.share.keys()]).toEqual(["storage:revisions"])
-    expect(Y.encodeStateAsUpdate(doc)).toEqual(before)
-  } finally {
-    doc.destroy()
   }
 })

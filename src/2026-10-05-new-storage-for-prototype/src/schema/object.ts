@@ -1,12 +1,7 @@
-import { isObject } from "../utils/guard.ts"
 import type { Handle, HandleOf, Schema, SnapshotOf } from "./types.ts"
 
 export interface ObjectHandle<Schemas extends SchemaMap> extends Handle<ObjectSnapshot<Schemas>> {
   field<Key extends keyof Schemas & string>(key: Key): FieldHandle<Schemas[Key]>
-  set<Key extends keyof Schemas & string>(
-    key: Key,
-    value: SnapshotOf<ChildSchema<Schemas[Key]>>,
-  ): void
   setOptional<Key extends OptionalKeys<Schemas> & string>(
     key: Key,
     value: SnapshotOf<ChildSchema<Schemas[Key]>>,
@@ -40,33 +35,20 @@ export type ObjectSnapshot<Schemas extends SchemaMap> = {
 export function object<Schemas extends SchemaMap>(
   schemas: Schemas,
 ): Schema<ObjectSnapshot<Schemas>, ObjectHandle<Schemas>, "map"> {
-  const validate = (snapshot: unknown) => {
-    if (!isObject(snapshot)) throw new TypeError("Expected object snapshot.")
-    for (const key of Object.keys(snapshot)) {
-      if (!Object.hasOwn(schemas, key)) throw new TypeError(`Unknown field: ${key}.`)
-    }
-    for (const [key, definition] of Object.entries(schemas)) {
-      if (!Object.hasOwn(snapshot, key)) {
-        if ("optional" in definition) continue
-        throw new TypeError(`Missing required field: ${key}.`)
-      }
-      const value = snapshot[key]
-      if (value === undefined) throw new TypeError(`Undefined field: ${key}.`)
-      const schema = "optional" in definition ? definition.schema : definition
-      schema.validate?.(value)
-    }
-  }
-
   return {
-    validate,
-
     create(store, snapshot) {
-      validate(snapshot)
       const fields = Object.fromEntries(
-        Object.entries(snapshot).map(([key, value]) => {
-          const definition = schemas[key]!
+        Object.entries(schemas).flatMap(([key, definition]) => {
+          if (!Object.hasOwn(snapshot, key)) {
+            if ("optional" in definition) return []
+            throw new TypeError(`Missing required field: ${key}.`)
+          }
+          const value = snapshot[key as keyof typeof snapshot]
+          if (value === undefined) {
+            throw new TypeError(`Undefined field: ${key}.`)
+          }
           const schema = "optional" in definition ? definition.schema : definition
-          return [key, schema.create(store, value)]
+          return [[key, schema.create(store, value)]]
         }),
       )
       return store.map.create(fields)
@@ -99,22 +81,16 @@ export function object<Schemas extends SchemaMap>(
         return schema.bind(store, fields[key]!) as FieldHandle<Schemas[Key]>
       }
 
-      const set = (key: string, value: unknown) => {
-        const definition = definitionOf(key)
-        if (value === undefined) throw new TypeError(`Undefined field: ${key}.`)
-        const schema = "optional" in definition ? definition.schema : definition
-        schema.validate?.(value)
-        const childRef = schema.create(store, value)
-        store.transact((tx) => store.map.edit(ref, tx).set(key, childRef))
-      }
-
       return {
         field,
-        set,
 
         setOptional(key, value) {
-          optionalSchema(key)
-          set(key, value)
+          const schema = optionalSchema(key)
+          if (value === undefined) {
+            throw new TypeError(`Undefined field: ${key}.`)
+          }
+          const childRef = schema.create(store, value)
+          store.transact((tx) => store.map.edit(ref, tx).set(key, childRef))
         },
 
         removeOptional(key) {
