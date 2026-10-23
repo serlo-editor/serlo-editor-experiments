@@ -183,7 +183,7 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     return () => this.listeners.delete(listener)
   }
 
-  attach(ref: YjsNodeRef, tx: Y.Transaction): YjsNodeRef & RootRef {
+  save(ref: YjsNodeRef, tx: Y.Transaction): YjsNodeRef & RootRef {
     this.assertActiveTransaction(tx)
     this.doc.getMap("root").set("root", ref)
     return ref as YjsNodeRef & RootRef

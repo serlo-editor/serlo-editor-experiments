@@ -147,7 +147,7 @@ describeWithStores("rich-text schemas", (getStore) => {
       { kind: "richText", editorId: "" },
       { kind: "cell", editorId: "rich-text:123" },
     ]) {
-      const ref = store.transact((tx) => store.attach(store.cell.create(value), tx))
+      const ref = store.transact((tx) => store.save(store.cell.create(value), tx))
       expect(() => schema.bind(store, ref)).toThrow("Expected rich-text cell.")
     }
     expect(() => store.getEditor("rich-text:missing", options)).toThrow("Unknown rich-text ID")

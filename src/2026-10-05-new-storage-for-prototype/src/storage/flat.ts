@@ -158,7 +158,7 @@ export class FlatNodeStore implements FlatNodeStoreContract {
     return () => this.listeners.delete(listener)
   }
 
-  attach(ref: FlatNodeRef, tx: TransactionToken): FlatNodeRef & RootRef {
+  save(ref: FlatNodeRef, tx: TransactionToken): FlatNodeRef & RootRef {
     this.assertActiveTransaction(tx)
     if (!this.cellTable.has(ref) && !this.arrayTable.has(ref) && !this.mapTable.has(ref)) {
       throw new Error(`Reference with key ${ref} does not exist.`)

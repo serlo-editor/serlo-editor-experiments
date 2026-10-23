@@ -25,7 +25,7 @@ export function createDocument<
       return existingRoot
     }
 
-    return store.attach(schema.create(store, structuredClone(initialSnapshot)), tx)
+    return store.save(schema.create(store, structuredClone(initialSnapshot)), tx)
   })
 
   return {
