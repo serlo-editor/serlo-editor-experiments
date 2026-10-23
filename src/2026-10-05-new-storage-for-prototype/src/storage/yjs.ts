@@ -11,7 +11,7 @@ import {
 } from "../rich-text/index.ts"
 import type { JSONValue } from "../utils/index.ts"
 import { createEditorSpecificAwareness } from "./editor-awareness.ts"
-import type { NodeKind, NodeStore, Ref, RichTextId, RootRef } from "./types.ts"
+import type { NodeKind, NodeStore, Ref, RichTextId } from "./types.ts"
 
 type YArray = Y.Array<YjsNodeRef>
 type YMap = Y.Map<YjsNodeRef>
@@ -171,7 +171,7 @@ export class YjsNodeStore implements YjsNodeStoreContract {
   }
 
   getRoot() {
-    return this.doc.getMap<YjsNodeRef & RootRef>("root").get("root")
+    return this.doc.getMap<YjsNodeRef>("root").get("root")
   }
 
   getRevision(): number {
@@ -183,10 +183,10 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     return () => this.listeners.delete(listener)
   }
 
-  save(ref: YjsNodeRef, tx: Y.Transaction): YjsNodeRef & RootRef {
+  save(ref: YjsNodeRef, tx: Y.Transaction): YjsNodeRef {
     this.assertActiveTransaction(tx)
     this.doc.getMap("root").set("root", ref)
-    return ref as YjsNodeRef & RootRef
+    return ref
   }
 
   transact<T>(callback: (tx: Y.Transaction) => T): T {

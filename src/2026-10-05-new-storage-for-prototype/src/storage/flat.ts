@@ -9,7 +9,7 @@ import {
   type RichTextEditorOptions,
 } from "../rich-text/index.ts"
 import type { Branded, JSONValue } from "../utils/index.ts"
-import type { NodeKind, NodeStore, Ref, RichTextId, RootRef } from "./types.ts"
+import type { NodeKind, NodeStore, Ref, RichTextId } from "./types.ts"
 
 type FlatNodeRefs = {
   [Kind in NodeKind]: Ref & Branded<string, Kind>
@@ -22,7 +22,7 @@ export class FlatNodeStore implements FlatNodeStoreContract {
   private readonly editors = new Map<RichTextId, RichTextEditor>()
   private readonly activeTransactions = new Set<TransactionToken>()
   private readonly listeners = new Set<() => void>()
-  private root: (FlatNodeRef & RootRef) | undefined
+  private root: FlatNodeRef | undefined
   private revision = 0
 
   private readonly cellTable = new ReferenceTable<"cell", JSONValue>()
@@ -158,13 +158,13 @@ export class FlatNodeStore implements FlatNodeStoreContract {
     return () => this.listeners.delete(listener)
   }
 
-  save(ref: FlatNodeRef, tx: TransactionToken): FlatNodeRef & RootRef {
+  save(ref: FlatNodeRef, tx: TransactionToken): FlatNodeRef {
     this.assertActiveTransaction(tx)
     if (!this.cellTable.has(ref) && !this.arrayTable.has(ref) && !this.mapTable.has(ref)) {
       throw new Error(`Reference with key ${ref} does not exist.`)
     }
-    this.root = ref as FlatNodeRef & RootRef
-    return ref as FlatNodeRef & RootRef
+    this.root = ref
+    return ref
   }
 
   transact<T>(callback: (tx: TransactionToken) => T): T {

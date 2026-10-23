@@ -8,7 +8,6 @@ import type { Branded, JSONValue } from "../utils/index.ts"
 export type RichTextId = `rich-text:${string}`
 
 export type Ref = Branded<unknown, "Ref">
-export type RootRef = Branded<Ref, "RootRef">
 
 export interface NodeRefs {
   cell: Ref
@@ -32,11 +31,11 @@ export interface NodeStore<Refs extends NodeRefs = NodeRefs, TransactionContext 
   //
   // TODO: Find a good way that getRoot() does not return undefined
   // => it should mimic the lifecycle
-  getRoot(): (Refs[NodeKind] & RootRef) | undefined
+  getRoot(): Refs[NodeKind] | undefined
   getRevision(): number
   subscribe(listener: () => void): () => void
   // TODO: Maybe return something else than root ref to simplify usage
-  save(ref: Refs[NodeKind], tx: TransactionContext): Refs[NodeKind] & RootRef
+  save(ref: Refs[NodeKind], tx: TransactionContext): Refs[NodeKind]
   /** Errors propagate, but transaction changes are not rolled back. */
   transact<Result>(callback: (tx: TransactionContext) => Result): Result
 }
