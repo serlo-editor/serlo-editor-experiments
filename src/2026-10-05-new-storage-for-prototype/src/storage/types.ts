@@ -34,7 +34,6 @@ export interface NodeStore<Refs extends NodeRefs = NodeRefs, TransactionContext 
   getRoot(): Refs[NodeKind] | undefined
   getRevision(): number
   subscribe(listener: () => void): () => void
-  // TODO: Maybe return something else than root ref to simplify usage
   save(ref: Refs[NodeKind], tx: TransactionContext): Refs[NodeKind]
   /** Errors propagate, but transaction changes are not rolled back. */
   transact<Result>(callback: (tx: TransactionContext) => Result): Result
