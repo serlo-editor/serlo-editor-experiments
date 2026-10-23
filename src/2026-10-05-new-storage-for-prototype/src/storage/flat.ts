@@ -101,7 +101,7 @@ export class FlatNodeStore implements FlatNodeStoreContract {
         pending = false
         if (!editor || !previousDoc || previousDoc.eq(editor.state.doc)) return
         previousDoc = editor.state.doc
-        this.transact(() => {})
+        this.publishChange()
       })
     }
 
@@ -174,11 +174,14 @@ export class FlatNodeStore implements FlatNodeStoreContract {
       return callback(tx)
     } finally {
       this.activeTransactions.delete(tx)
-      this.revision += 1
+      this.publishChange()
+    }
+  }
 
-      if (this.activeTransactions.size === 0) {
-        this.listeners.forEach((listener) => listener())
-      }
+  private publishChange(): void {
+    this.revision += 1
+    if (this.activeTransactions.size === 0) {
+      this.listeners.forEach((listener) => listener())
     }
   }
 

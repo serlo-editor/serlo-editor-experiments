@@ -30,6 +30,7 @@ export class YjsNodeStore implements YjsNodeStoreContract {
   private readonly revisions: Y.Array<null>
   private readonly awareness: Awareness
   private readonly editors = new Map<RichTextId, RichTextEditor>()
+  private readonly listeners = new Set<() => void>()
   private richTextRevision = 0
 
   constructor({ doc, awareness }: { awareness: Awareness; doc: Y.Doc }) {
@@ -38,7 +39,11 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     this.revisions = doc.getArray("storage:revisions")
     // Store follows document lifetime; revisions must advance even without UI subscribers.
     doc.on("afterTransaction", (transaction: Y.Transaction) => {
-      if (this.hasRichTextChanges(transaction)) this.richTextRevision += 1
+      const richTextChanged = this.hasRichTextChanges(transaction)
+      if (richTextChanged) this.richTextRevision += 1
+      if (richTextChanged || transaction.changed.has(this.revisions)) {
+        this.listeners.forEach((listener) => listener())
+      }
     })
   }
 
@@ -172,13 +177,8 @@ export class YjsNodeStore implements YjsNodeStoreContract {
   }
 
   subscribe(listener: () => void): () => void {
-    const onTransaction = (transaction: Y.Transaction) => {
-      if (transaction.changed.has(this.revisions) || this.hasRichTextChanges(transaction)) {
-        listener()
-      }
-    }
-    this.doc.on("afterTransaction", onTransaction)
-    return () => this.doc.off("afterTransaction", onTransaction)
+    this.listeners.add(listener)
+    return () => this.listeners.delete(listener)
   }
 
   attach(ref: YjsNodeRef, tx: Y.Transaction): YjsNodeRef & RootRef {

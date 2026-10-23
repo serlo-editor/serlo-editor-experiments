@@ -77,9 +77,21 @@ describe("stored rich-text editors", () => {
     const unsubscribe = store.subscribe(() => observed.push(document.snapshot()))
     const revision = store.getRevision()
 
+    await Promise.resolve()
+    expect(observed).toEqual([])
+    expect(store.getRevision()).toBe(revision)
+
+    editor.setContent(content("Intermediate"))
     editor.setContent(content("Changed"))
+    expect(observed).toEqual([])
     await Promise.resolve()
     expect(document.snapshot()).toEqual(content("Changed"))
+    expect(observed).toEqual([content("Changed")])
+    expect(store.getRevision()).toBe(revision + 1)
+
+    editor.setContent(content("Temporary"))
+    editor.setContent(content("Changed"))
+    await Promise.resolve()
     expect(observed).toEqual([content("Changed")])
     expect(store.getRevision()).toBe(revision + 1)
 
@@ -208,7 +220,7 @@ describe("stored rich-text editors", () => {
     expect(first.snapshot()).toEqual(content("?!Initial"))
   })
 
-  test("Yjs remote fragment edits notify without writing replicated revisions", () => {
+  test("Yjs remote fragment edits notify without writing replicated revisions", async () => {
     const firstDoc = createDoc()
     const secondDoc = createDoc()
     const firstStore = createYjsStore(firstDoc)
@@ -228,6 +240,12 @@ describe("stored rich-text editors", () => {
     expect(observed).toEqual([content("!Initial")])
     expect(secondStore.getRevision()).toBeGreaterThan(revision)
     expect(secondDoc.getArray("storage:revisions").length).toBe(structuralRevisions)
+
+    const afterRemoteEdit = secondStore.getRevision()
+    expect(second.snapshot()).toEqual(content("!Initial"))
+    await Promise.resolve()
+    expect(observed).toEqual([content("!Initial")])
+    expect(secondStore.getRevision()).toBe(afterRemoteEdit)
 
     unsubscribe()
     const beforeUnsubscribedEdit = secondStore.getRevision()
