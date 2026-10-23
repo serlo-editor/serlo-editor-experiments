@@ -22,6 +22,8 @@ export interface NodeStore<Refs extends NodeRefs = NodeRefs, TransactionContext 
   readonly array: ArrayStore<Refs[NodeKind], Refs["array"], TransactionContext>
   readonly map: MapStore<Refs[NodeKind], Refs["map"], TransactionContext>
 
+  readonly root: RootStore<Refs[NodeKind], TransactionContext>
+
   createRichText(options: RichTextEditorOptions): RichTextId
   /** Configuration is fixed when an editor is first created in this store. */
   getEditor(id: RichTextId, config: RichTextEditorConfig): RichTextEditor
@@ -31,16 +33,19 @@ export interface NodeStore<Refs extends NodeRefs = NodeRefs, TransactionContext 
   //
   // TODO: Find a good way that getRoot() does not return undefined
   // => it should mimic the lifecycle
-  getRoot(): Refs[NodeKind] | undefined
   getRevision(): number
   subscribe(listener: () => void): () => void
-  save(ref: Refs[NodeKind], tx: TransactionContext): Refs[NodeKind]
   /** Errors propagate, but transaction changes are not rolled back. */
   transact<Result>(callback: (tx: TransactionContext) => Result): Result
 }
 
 export function isRichTextId(value: unknown): value is RichTextId {
   return typeof value === "string" && value.startsWith("rich-text:") && value.length > 10
+}
+
+interface RootStore<Ref, TransactionContext> {
+  get(): Ref | undefined
+  save(ref: Ref, tx: TransactionContext): Ref
 }
 
 interface CellStore<Ref, TransactionContext> {

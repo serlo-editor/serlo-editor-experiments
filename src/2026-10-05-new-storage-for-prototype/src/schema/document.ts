@@ -20,7 +20,8 @@ export function createDocument<
 ): Document<Snapshot, Root> {
   const ref = store.transact(
     (tx) =>
-      store.getRoot() ?? store.save(schema.create(store, structuredClone(initialSnapshot)), tx),
+      store.root.get() ??
+      store.root.save(schema.create(store, structuredClone(initialSnapshot)), tx),
   )
 
   return {

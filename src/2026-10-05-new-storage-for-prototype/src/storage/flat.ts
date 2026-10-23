@@ -22,7 +22,7 @@ export class FlatNodeStore implements FlatNodeStoreContract {
   private readonly editors = new Map<RichTextId, RichTextEditor>()
   private readonly activeTransactions = new Set<TransactionToken>()
   private readonly listeners = new Set<() => void>()
-  private root: FlatNodeRef | undefined
+  private rootRef: FlatNodeRef | undefined
   private revision = 0
 
   private readonly cellTable = new ReferenceTable<"cell", JSONValue>()
@@ -145,8 +145,16 @@ export class FlatNodeStore implements FlatNodeStoreContract {
     return editor
   }
 
-  getRoot() {
-    return this.root
+  readonly root: FlatNodeStoreContract["root"] = {
+    get: () => this.rootRef,
+    save: (ref, tx) => {
+      this.assertActiveTransaction(tx)
+      if (!this.cellTable.has(ref) && !this.arrayTable.has(ref) && !this.mapTable.has(ref)) {
+        throw new Error(`Reference with key ${ref} does not exist.`)
+      }
+      this.rootRef = ref
+      return ref
+    },
   }
 
   getRevision(): number {
@@ -156,15 +164,6 @@ export class FlatNodeStore implements FlatNodeStoreContract {
   subscribe(listener: () => void): () => void {
     this.listeners.add(listener)
     return () => this.listeners.delete(listener)
-  }
-
-  save(ref: FlatNodeRef, tx: TransactionToken): FlatNodeRef {
-    this.assertActiveTransaction(tx)
-    if (!this.cellTable.has(ref) && !this.arrayTable.has(ref) && !this.mapTable.has(ref)) {
-      throw new Error(`Reference with key ${ref} does not exist.`)
-    }
-    this.root = ref
-    return ref
   }
 
   transact<T>(callback: (tx: TransactionToken) => T): T {

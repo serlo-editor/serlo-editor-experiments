@@ -170,8 +170,13 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     return editor
   }
 
-  getRoot() {
-    return this.doc.getMap<YjsNodeRef>("root").get("root")
+  readonly root: YjsNodeStoreContract["root"] = {
+    get: () => this.doc.getMap<YjsNodeRef>("root").get("root"),
+    save: (ref, tx) => {
+      this.assertActiveTransaction(tx)
+      this.doc.getMap("root").set("root", ref)
+      return ref
+    },
   }
 
   getRevision(): number {
@@ -181,12 +186,6 @@ export class YjsNodeStore implements YjsNodeStoreContract {
   subscribe(listener: () => void): () => void {
     this.listeners.add(listener)
     return () => this.listeners.delete(listener)
-  }
-
-  save(ref: YjsNodeRef, tx: Y.Transaction): YjsNodeRef {
-    this.assertActiveTransaction(tx)
-    this.doc.getMap("root").set("root", ref)
-    return ref
   }
 
   transact<T>(callback: (tx: Y.Transaction) => T): T {
