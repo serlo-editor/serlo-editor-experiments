@@ -2,7 +2,8 @@
   "$schema": "https://www.schemastore.org/tsconfig",
   "extends": "@tsconfig/bun/tsconfig.json",
   "compilerOptions": {
-    "lib": ["dom", "esnext"],
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "exactOptionalPropertyTypes": true,
     "types": ["bun"]
   }
 }

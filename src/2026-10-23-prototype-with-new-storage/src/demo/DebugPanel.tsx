@@ -1,65 +1,65 @@
-import { padStart } from "es-toolkit/compat"
-import { useId, useReducer } from "react"
+import { useId, useState } from "react"
 
-import type { CDRT } from "../editor"
-import type { FlatNode } from "../editor/nodes/flat"
-import * as F from "../editor/nodes/flat"
-import { load } from "../editor/operations/load"
-import type { Key } from "../editor/store/key"
-import { useEditorStore } from "../editor/store/use-editor-store"
+import { exportContent } from "./content.tsx"
+import type { LocalSelection } from "./RichTextField.tsx"
+import type { PrototypeSession } from "./session.ts"
 
-export interface DebugPanelProps<T extends string> {
-  name: string
-  labels: Record<T, string>
-  getCurrentValue: Record<T, () => string>
-  showOnStartup: Record<T, boolean>
-}
+type DebugOption = "json" | "export" | "structure" | "selection"
+const options: { key: DebugOption; label: string }[] = [
+  { key: "json", label: "Document JSON" },
+  { key: "export", label: "Content export" },
+  { key: "structure", label: "Unit / field structure" },
+  { key: "selection", label: "Current selection" },
+]
 
-/**
- * A debug panel component that allows toggling the visibility of various debug information.
- */
-export function DebugPanel<T extends string>({
-  name,
-  labels,
-  getCurrentValue,
-  showOnStartup,
-}: DebugPanelProps<T>) {
+export function EditorDebugPanel({
+  session,
+  selection,
+}: {
+  session: PrototypeSession
+  selection: LocalSelection | null
+}) {
   const panelId = useId()
-  const [show, toggleOption] = useReducer(
-    (prev, key: T) => ({ ...prev, [key]: !prev[key] }),
-    showOnStartup,
-  )
-  const options = Object.keys(labels) as T[]
+  const [show, setShow] = useState<Record<DebugOption, boolean>>({
+    json: true,
+    export: false,
+    structure: false,
+    selection: true,
+  })
+  const values = {
+    json: () => session.document.snapshot(),
+    export: () => exportContent(session.document.snapshot()),
+    structure: () => describeStructure(session),
+    selection: () => selection,
+  }
 
   return (
     <>
-      <h2 id={`${panelId}-header`}>Debug Panel: {name}</h2>
+      <h2 id={`${panelId}-header`}>Debug: {session.name}</h2>
       <fieldset aria-labelledby={`${panelId}-header`} className="debug-panel__options surface">
         <legend>Options</legend>
-        {options.map((option) => (
-          <label key={option} htmlFor={`${panelId}-${option}-toggle`}>
+        {options.map(({ key, label }) => (
+          <label key={key}>
             <input
-              id={`${panelId}-${option}-toggle`}
               type="checkbox"
-              checked={show[option]}
-              aria-checked={show[option]}
-              onChange={() => toggleOption(option)}
-            />{" "}
-            {labels[option]}
+              checked={show[key]}
+              onChange={() => setShow((previous) => ({ ...previous, [key]: !previous[key] }))}
+            />
+            {label}
           </label>
         ))}
       </fieldset>
       <div className="debug-panel__values">
-        {options.map((option) =>
-          show[option] ? (
+        {options.map(({ key, label }) =>
+          show[key] ? (
             <pre
-              key={option}
+              key={key}
               className="debug-panel__value surface"
               role="log"
-              aria-label={`Debug info for ${labels[option]}`}
+              aria-label={label}
               aria-live="off"
             >
-              {getCurrentValue[option]()}
+              {JSON.stringify(values[key](), null, 2)}
             </pre>
           ) : null,
         )}
@@ -68,44 +68,24 @@ export function DebugPanel<T extends string>({
   )
 }
 
-const ROOT_KEY = "root" as Key
-
-export function EditorDebugPanel({ cdrt }: { cdrt: CDRT }) {
-  const { store } = useEditorStore(cdrt)
-
-  const getCurrentValue = {
-    json: () => {
-      if (!store.has(ROOT_KEY)) return "Loading..."
-
-      const jsonValue = load({ store, node: store.get(ROOT_KEY) })
-      return JSON.stringify(jsonValue, null, 2)
-    },
-    entries: () => {
-      const stringifyEntry = ([key, entry]: [string, FlatNode]) => {
-        const value = F.isRichText(entry) ? store.getEditor(entry).state.doc.toJSON() : entry.value
-
-        return `${padStart(key, 4)}: ${JSON.stringify(value)}`
-      }
-
-      const lines = store.getEntries().map(stringifyEntry)
-
-      lines.sort()
-
-      return lines.join("\n")
-    },
-    selection: () => JSON.stringify(store.selection, null, 2),
+function describeStructure(session: PrototypeSession) {
+  const root = session.document.root
+  return {
+    id: root.id,
+    type: root.type,
+    items: root.field("items").map((item) => ({
+      id: item.id,
+      type: item.type,
+      fields:
+        item.type === "multiple-choice"
+          ? {
+              question: { editorId: item.field("question").id },
+              options: item.field("options").map((option) => ({
+                isCorrect: option.field("isCorrect").get(),
+                text: { editorId: option.field("text").id },
+              })),
+            }
+          : { content: { editorId: item.field("content").id } },
+    })),
   }
-
-  return (
-    <DebugPanel
-      name={cdrt.name}
-      labels={{
-        json: "External JSON value",
-        entries: "Internal flat nodes",
-        selection: "Current selection",
-      }}
-      showOnStartup={{ json: true, entries: false, selection: true }}
-      getCurrentValue={getCurrentValue}
-    />
-  )
 }

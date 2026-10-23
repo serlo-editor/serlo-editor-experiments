@@ -1,51 +1,55 @@
-import { applyAwarenessUpdate, encodeAwarenessUpdate } from "y-protocols/awareness.js"
+import { Awareness, applyAwarenessUpdate, encodeAwarenessUpdate } from "y-protocols/awareness"
 import * as Y from "yjs"
 
-import type { CDRT } from "../editor"
+interface Peer {
+  doc: Y.Doc
+  awareness: Awareness
+}
 
-export function syncCDRTs(cdrt1: CDRT, cdrt2: CDRT) {
-  const { doc: doc1, awareness: awareness1 } = cdrt1
-  const { doc: doc2, awareness: awareness2 } = cdrt2
-
-  Y.applyUpdate(doc2, Y.encodeStateAsUpdate(doc1))
-  Y.applyUpdate(doc1, Y.encodeStateAsUpdate(doc2))
-
-  const doc1Listener = doc1.on("update", (update, origin) => {
-    if (origin != null) Y.applyUpdate(doc2, update)
-  })
-
-  const doc2Listener = doc2.on("update", (update, origin) => {
-    if (origin != null) Y.applyUpdate(doc1, update)
-  })
-
-  const awareness1Listener: AwarenessListener = ({ added, updated, removed }, origin) => {
-    if (origin === "local") {
-      const changedClients = added.concat(updated).concat(removed)
-      const awarenessUpdate = encodeAwarenessUpdate(awareness1, changedClients)
-      applyAwarenessUpdate(awareness2, awarenessUpdate, "remote")
-    }
+export function syncCDRTs(first: Peer, second: Peer) {
+  const origin = Symbol("demo sync")
+  const forwardToSecond = (update: Uint8Array, source: unknown) => {
+    if (source !== origin) Y.applyUpdate(second.doc, update, origin)
   }
-
-  const awareness2Listener: AwarenessListener = ({ added, updated, removed }, origin) => {
-    if (origin === "local") {
-      const changedClients = added.concat(updated).concat(removed)
-      const awarenessUpdate = encodeAwarenessUpdate(awareness2, changedClients)
-      applyAwarenessUpdate(awareness1, awarenessUpdate, "remote")
-    }
+  const forwardToFirst = (update: Uint8Array, source: unknown) => {
+    if (source !== origin) Y.applyUpdate(first.doc, update, origin)
   }
+  first.doc.on("update", forwardToSecond)
+  second.doc.on("update", forwardToFirst)
+  Y.applyUpdate(second.doc, Y.encodeStateAsUpdate(first.doc), origin)
+  Y.applyUpdate(first.doc, Y.encodeStateAsUpdate(second.doc), origin)
 
-  awareness1.on("update", awareness1Listener)
-  awareness2.on("update", awareness2Listener)
+  const awarenessToSecond = () => forwardAwareness(first, second, origin)
+  const awarenessToFirst = () => forwardAwareness(second, first, origin)
+  const onFirstAwareness: AwarenessListener = (_, source) => {
+    if (source !== origin) awarenessToSecond()
+  }
+  const onSecondAwareness: AwarenessListener = (_, source) => {
+    if (source !== origin) awarenessToFirst()
+  }
+  first.awareness.on("update", onFirstAwareness)
+  second.awareness.on("update", onSecondAwareness)
+  awarenessToSecond()
+  awarenessToFirst()
 
   return () => {
-    doc1.off("update", doc1Listener)
-    doc2.off("update", doc2Listener)
-    awareness1.off("update", awareness1Listener)
-    awareness2.off("update", awareness2Listener)
+    first.doc.off("update", forwardToSecond)
+    second.doc.off("update", forwardToFirst)
+    first.awareness.off("update", onFirstAwareness)
+    second.awareness.off("update", onSecondAwareness)
   }
 }
 
 type AwarenessListener = (
-  args: { added: number[]; updated: number[]; removed: number[] },
+  change: { added: number[]; updated: number[]; removed: number[] },
   origin: unknown,
 ) => void
+
+function forwardAwareness(source: Peer, target: Peer, origin: symbol) {
+  // Include tombstones so cursor removals propagate as well as live states.
+  applyAwarenessUpdate(
+    target.awareness,
+    encodeAwarenessUpdate(source.awareness, [...source.awareness.meta.keys()]),
+    origin,
+  )
+}
