@@ -290,9 +290,9 @@ describe("stored rich-text editors", () => {
   test("Yjs awareness publishes stable IDs and isolates sibling cursor cleanup", async () => {
     const doc = createDoc()
     const awareness = new Awareness(doc)
+    const store: StoreContract<YjsNodeStore> = new YjsNodeStore({ doc, awareness })
     awarenessInstances.push(awareness)
     awareness.setLocalStateField("user", { name: "Local" })
-    const store: StoreContract<YjsNodeStore> = new YjsNodeStore(doc, { awareness })
     const document = createDocument(store, array(richText(options)), [
       content("First"),
       content("Second"),
@@ -332,13 +332,15 @@ describe("stored rich-text editors", () => {
     const targetDoc = createDoc()
     const sourceAwareness = new Awareness(sourceDoc)
     const targetAwareness = new Awareness(targetDoc)
-    awarenessInstances.push(sourceAwareness, targetAwareness)
-    const sourceStore: StoreContract<YjsNodeStore> = new YjsNodeStore(sourceDoc, {
+    const sourceStore: StoreContract<YjsNodeStore> = new YjsNodeStore({
+      doc: sourceDoc,
       awareness: sourceAwareness,
     })
-    const targetStore: StoreContract<YjsNodeStore> = new YjsNodeStore(targetDoc, {
+    const targetStore: StoreContract<YjsNodeStore> = new YjsNodeStore({
+      doc: targetDoc,
       awareness: targetAwareness,
     })
+    awarenessInstances.push(sourceAwareness, targetAwareness)
     const schema = array(richText(options))
     const source = createDocument(sourceStore, schema, [content("First"), content("Second")])
     Y.applyUpdate(targetDoc, Y.encodeStateAsUpdate(sourceDoc))
@@ -365,7 +367,9 @@ describe("stored rich-text editors", () => {
   })
 
   function createYjsStore(doc: Y.Doc): StoreContract<YjsNodeStore> {
-    return new YjsNodeStore(doc, { awareness: new Awareness(doc) })
+    const awareness = new Awareness(doc)
+    awarenessInstances.push(awareness)
+    return new YjsNodeStore({ doc, awareness })
   }
 
   function createDoc(): Y.Doc {

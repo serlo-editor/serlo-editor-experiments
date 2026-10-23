@@ -407,7 +407,7 @@ test("FlatNodeStore editors require an active transaction from their own store",
 
 test("YjsNodeStore uses store origin and groups nested transactions", () => {
   const doc = new Y.Doc()
-  const store = new YjsNodeStore(doc, { awareness: new Awareness(doc) })
+  const store = new YjsNodeStore({ doc, awareness: new Awareness(doc) })
   const ref = store.cell.create("Initial")
   store.transact((tx) => store.attach(ref, tx))
   const updates: unknown[] = []
@@ -438,8 +438,8 @@ test("YjsNodeStore uses store origin and groups nested transactions", () => {
 test("YjsNodeStore syncs local edits between documents without echoing received updates", () => {
   const doc1 = new Y.Doc()
   const doc2 = new Y.Doc()
-  const store1 = new YjsNodeStore(doc1, { awareness: new Awareness(doc1) })
-  const store2 = new YjsNodeStore(doc2, { awareness: new Awareness(doc2) })
+  const store1 = new YjsNodeStore({ doc: doc1, awareness: new Awareness(doc1) })
+  const store2 = new YjsNodeStore({ doc: doc2, awareness: new Awareness(doc2) })
   let forwarded1 = 0
   let forwarded2 = 0
 
@@ -521,7 +521,7 @@ test("YjsNodeStore syncs local edits between documents without echoing received 
 
 test("YjsNodeStore rejects cells missing their value", () => {
   const doc = new Y.Doc()
-  const store = new YjsNodeStore(doc, { awareness: new Awareness(doc) })
+  const store = new YjsNodeStore({ doc, awareness: new Awareness(doc) })
   const ref = store.transact((tx) => store.attach(store.cell.create("Draft"), tx))
   store.transact(() => ref.delete("value"))
 

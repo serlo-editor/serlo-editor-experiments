@@ -205,10 +205,12 @@ test("optional fields observe remote Yjs changes and converge after concurrent a
   const firstDoc = new Y.Doc()
   const secondDoc = new Y.Doc()
   type YjsRefs = { [Kind in NodeKind]: ReturnType<YjsNodeStore[Kind]["create"]> }
-  const firstStore: NodeStore<YjsRefs, Y.Transaction> = new YjsNodeStore(firstDoc, {
+  const firstStore: NodeStore<YjsRefs, Y.Transaction> = new YjsNodeStore({
+    doc: firstDoc,
     awareness: new Awareness(firstDoc),
   })
-  const secondStore: NodeStore<YjsRefs, Y.Transaction> = new YjsNodeStore(secondDoc, {
+  const secondStore: NodeStore<YjsRefs, Y.Transaction> = new YjsNodeStore({
+    doc: secondDoc,
     awareness: new Awareness(secondDoc),
   })
   const schema = object({ name: string(), bio: optional(string()) })

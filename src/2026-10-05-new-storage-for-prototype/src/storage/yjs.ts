@@ -32,7 +32,7 @@ export class YjsNodeStore implements YjsNodeStoreContract {
   private readonly editors = new Map<RichTextId, RichTextEditor>()
   private richTextRevision = 0
 
-  constructor(doc: Y.Doc, { awareness }: { awareness: Awareness }) {
+  constructor({ doc, awareness }: { awareness: Awareness; doc: Y.Doc }) {
     this.doc = doc
     this.awareness = awareness
     this.revisions = doc.getArray("storage:revisions")
