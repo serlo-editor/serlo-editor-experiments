@@ -1,0 +1,15 @@
+name: Setup repository for CI tests
+inputs:
+  install:
+    description: Whether to run bun install --frozen-lockfile
+    default: "true"
+runs:
+  using: composite
+  steps:
+    - uses: oven-sh/setup-bun@v2
+      with:
+        bun-version-file: .tool-versions
+
+    - run: bun install --frozen-lockfile
+      if: inputs.install == 'true'
+      shell: bash
