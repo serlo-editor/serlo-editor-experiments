@@ -1,4 +1,11 @@
+import type {
+  RichTextEditor,
+  RichTextEditorConfig,
+  RichTextEditorOptions,
+} from "../rich-text/index.ts"
 import type { Branded, JSONValue } from "../utils/index.ts"
+
+export type RichTextId = `rich-text:${string}`
 
 export type Ref = Branded<unknown, "Ref">
 export type RootRef = Branded<Ref, "RootRef">
@@ -16,6 +23,10 @@ export interface NodeStore<Refs extends NodeRefs = NodeRefs, TransactionContext 
   readonly array: ArrayStore<Refs[NodeKind], Refs["array"], TransactionContext>
   readonly map: MapStore<Refs[NodeKind], Refs["map"], TransactionContext>
 
+  createRichText(options: RichTextEditorOptions): RichTextId
+  /** Configuration is fixed when an editor is first created in this store. */
+  getEditor(id: RichTextId, config: RichTextEditorConfig): RichTextEditor
+
   // TODO: Merge those functions together so that there is a common implementation
   // for both storage types.
   //
@@ -28,6 +39,10 @@ export interface NodeStore<Refs extends NodeRefs = NodeRefs, TransactionContext 
   attach<Ref extends Refs[NodeKind]>(ref: Ref, tx: TransactionContext): Ref & RootRef
   /** Errors propagate, but transaction changes are not rolled back. */
   transact<Result>(callback: (tx: TransactionContext) => Result): Result
+}
+
+export function isRichTextId(value: unknown): value is RichTextId {
+  return typeof value === "string" && value.startsWith("rich-text:") && value.length > 10
 }
 
 interface CellStore<Ref, TransactionContext> {

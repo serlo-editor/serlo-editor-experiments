@@ -1,7 +1,17 @@
+import { defineMountHandler } from "prosekit/core"
+import { type Awareness, defineYjs } from "prosekit/extensions/yjs"
+import { prosemirrorToYXmlFragment, yXmlFragmentToProseMirrorRootNode } from "y-prosemirror"
 import * as Y from "yjs"
 
+import {
+  createRichTextEditor,
+  type RichTextEditor,
+  type RichTextEditorConfig,
+  type RichTextEditorOptions,
+} from "../rich-text/index.ts"
 import type { JSONValue } from "../utils/index.ts"
-import type { NodeKind, NodeStore, Ref, RootRef } from "./types.ts"
+import { createEditorSpecificAwareness } from "./editor-awareness.ts"
+import type { NodeKind, NodeStore, Ref, RichTextId, RootRef } from "./types.ts"
 
 type YArray = Y.Array<YjsNodeRef>
 type YMap = Y.Map<YjsNodeRef>
@@ -18,10 +28,18 @@ type YjsNodeStoreContract = NodeStore<YjsNodeRefs, Y.Transaction>
 export class YjsNodeStore implements YjsNodeStoreContract {
   private readonly doc: Y.Doc
   private readonly revisions: Y.Array<null>
+  private readonly awareness: Awareness
+  private readonly editors = new Map<RichTextId, RichTextEditor>()
+  private richTextRevision = 0
 
-  constructor(doc: Y.Doc) {
+  constructor(doc: Y.Doc, { awareness }: { awareness: Awareness }) {
     this.doc = doc
+    this.awareness = awareness
     this.revisions = doc.getArray("storage:revisions")
+    // Store follows document lifetime; revisions must advance even without UI subscribers.
+    doc.on("afterTransaction", (transaction: Y.Transaction) => {
+      if (this.hasRichTextChanges(transaction)) this.richTextRevision += 1
+    })
   }
 
   readonly cell: YjsNodeStoreContract["cell"] = {
@@ -83,17 +101,84 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     },
   }
 
+  createRichText(options: RichTextEditorOptions): RichTextId {
+    // Validate against the combined schema before writing anything to Yjs.
+    const editor = createRichTextEditor({
+      ...options,
+      ...(options.defaultContent === undefined
+        ? {}
+        : { defaultContent: structuredClone(options.defaultContent) }),
+    })
+    editor.state.doc.check()
+    const id: RichTextId = `rich-text:${crypto.randomUUID()}`
+    this.transact(() => {
+      prosemirrorToYXmlFragment(editor.state.doc, this.doc.getXmlFragment(this.fragmentName(id)))
+    })
+    return id
+  }
+
+  getEditor(id: RichTextId, config: RichTextEditorConfig): RichTextEditor {
+    const name = this.fragmentName(id)
+    if (!this.doc.share.has(name)) throw new Error(`Unknown rich-text ID: ${id}.`)
+    const fragment = this.doc.getXmlFragment(name)
+    let editor = this.editors.get(id)
+    if (!editor) {
+      editor = createRichTextEditor({
+        ...config,
+        extensions: [
+          ...(config.extensions ?? []),
+          defineYjs({
+            doc: this.doc,
+            fragment,
+            awareness: createEditorSpecificAwareness(id, this.awareness),
+          }),
+          // y-prosemirror 1.3.7 can dispatch queued cursor metadata after teardown.
+          defineMountHandler((view) => {
+            const dispatch = view.dispatch.bind(view)
+            view.dispatch = (transaction) => {
+              if (!view.isDestroyed) dispatch(transaction)
+            }
+          }),
+        ],
+      })
+      this.editors.set(id, editor)
+    }
+
+    // Yjs view bindings are inactive while unmounted. Refresh local state only;
+    // opening/snapshotting must never initialize or overwrite the shared fragment.
+    if (!editor.mounted) {
+      const sharedDoc = yXmlFragmentToProseMirrorRootNode(fragment, editor.schema)
+      const currentDoc =
+        fragment.length === 0 ? editor.schema.topNodeType.createAndFill() : sharedDoc
+      if (!currentDoc) throw new Error("Cannot create empty rich-text document.")
+      currentDoc.check()
+      if (!editor.state.doc.eq(currentDoc)) {
+        editor.updateState(
+          editor.state.apply(
+            editor.state.tr.replaceWith(0, editor.state.doc.content.size, currentDoc.content),
+          ),
+        )
+      }
+    }
+    return editor
+  }
+
   getRoot() {
     return this.doc.getMap<YjsNodeRef & RootRef>("root").get("root")
   }
 
   getRevision(): number {
-    return this.revisions.length
+    return this.revisions.length + this.richTextRevision
   }
 
   subscribe(listener: () => void): () => void {
-    this.revisions.observeDeep(listener)
-    return () => this.revisions.unobserveDeep(listener)
+    const onTransaction = (transaction: Y.Transaction) => {
+      if (transaction.changed.has(this.revisions) || this.hasRichTextChanges(transaction)) {
+        listener()
+      }
+    }
+    this.doc.on("afterTransaction", onTransaction)
+    return () => this.doc.off("afterTransaction", onTransaction)
   }
 
   attach<Ref extends YjsNodeRef>(ref: Ref, tx: Y.Transaction): Ref & RootRef {
@@ -110,6 +195,19 @@ export class YjsNodeStore implements YjsNodeStoreContract {
         this.revisions.push([null])
       }
     }, this)
+  }
+
+  private fragmentName(id: RichTextId): string {
+    return `storage:richText:${id}`
+  }
+
+  private hasRichTextChanges(transaction: Y.Transaction): boolean {
+    for (const [name, type] of this.doc.share) {
+      if (name.startsWith("storage:richText:") && transaction.changedParentTypes.has(type)) {
+        return true
+      }
+    }
+    return false
   }
 
   private assertActiveTransaction(tx: Y.Transaction): void {

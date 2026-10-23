@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test"
 
+import { Awareness } from "y-protocols/awareness"
 import * as Y from "yjs"
 
 import { YjsNodeStore } from "../storage/index.ts"
@@ -204,8 +205,12 @@ test("optional fields observe remote Yjs changes and converge after concurrent a
   const firstDoc = new Y.Doc()
   const secondDoc = new Y.Doc()
   type YjsRefs = { [Kind in NodeKind]: ReturnType<YjsNodeStore[Kind]["create"]> }
-  const firstStore: NodeStore<YjsRefs, Y.Transaction> = new YjsNodeStore(firstDoc)
-  const secondStore: NodeStore<YjsRefs, Y.Transaction> = new YjsNodeStore(secondDoc)
+  const firstStore: NodeStore<YjsRefs, Y.Transaction> = new YjsNodeStore(firstDoc, {
+    awareness: new Awareness(firstDoc),
+  })
+  const secondStore: NodeStore<YjsRefs, Y.Transaction> = new YjsNodeStore(secondDoc, {
+    awareness: new Awareness(secondDoc),
+  })
   const schema = object({ name: string(), bio: optional(string()) })
   const first = createDocument(firstStore, schema, { name: "Ada" }).root
   Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe } from "bun:test"
 
+import { Awareness } from "y-protocols/awareness"
 import * as Y from "yjs"
 
 import { FlatNodeStore, YjsNodeStore } from "../storage/index.ts"
@@ -25,7 +26,7 @@ export function describeWithStores(
 
       beforeEach(() => {
         doc = new Y.Doc()
-        store = new YjsNodeStore(doc)
+        store = new YjsNodeStore(doc, { awareness: new Awareness(doc) })
       })
       afterEach(() => doc.destroy())
       callback(() => store)
@@ -33,7 +34,7 @@ export function describeWithStores(
   })
 }
 
-type StoreContract<Store extends FlatNodeStore | YjsNodeStore> = NodeStore<
+export type StoreContract<Store extends FlatNodeStore | YjsNodeStore> = NodeStore<
   { [Kind in keyof NodeRefs]: ReturnType<Store[Kind]["create"]> },
   Parameters<Store["cell"]["edit"]>[1]
 >

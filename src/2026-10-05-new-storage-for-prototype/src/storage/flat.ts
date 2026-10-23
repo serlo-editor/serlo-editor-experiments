@@ -1,5 +1,15 @@
+import { definePlugin } from "prosekit/core"
+import type { Node as ProseMirrorNode } from "prosekit/pm/model"
+import { Plugin } from "prosekit/pm/state"
+
+import {
+  createRichTextEditor,
+  type RichTextEditor,
+  type RichTextEditorConfig,
+  type RichTextEditorOptions,
+} from "../rich-text/index.ts"
 import type { Branded, JSONValue } from "../utils/index.ts"
-import type { NodeKind, NodeStore, Ref, RootRef } from "./types.ts"
+import type { NodeKind, NodeStore, Ref, RichTextId, RootRef } from "./types.ts"
 
 type FlatNodeRefs = {
   [Kind in NodeKind]: Ref & Branded<string, Kind>
@@ -9,6 +19,7 @@ type FlatNodeRef = FlatNodeRefs[NodeKind]
 type FlatNodeStoreContract = NodeStore<FlatNodeRefs, TransactionToken>
 
 export class FlatNodeStore implements FlatNodeStoreContract {
+  private readonly editors = new Map<RichTextId, RichTextEditor>()
   private readonly activeTransactions = new Set<TransactionToken>()
   private readonly listeners = new Set<() => void>()
   private root: (FlatNodeRef & RootRef) | undefined
@@ -73,6 +84,65 @@ export class FlatNodeStore implements FlatNodeStoreContract {
         },
       }
     },
+  }
+
+  createRichText(options: RichTextEditorOptions): RichTextId {
+    const id: RichTextId = `rich-text:${crypto.randomUUID()}`
+    let editor: RichTextEditor | undefined
+    let previousDoc: ProseMirrorNode | undefined
+    let pending = false
+
+    // Plugin state hooks also run for headless commands and setContent(). Notify
+    // after state installation, coalescing changes within one microtask.
+    const scheduleChange = () => {
+      if (pending) return
+      pending = true
+      queueMicrotask(() => {
+        pending = false
+        if (!editor || !previousDoc || previousDoc.eq(editor.state.doc)) return
+        previousDoc = editor.state.doc
+        this.transact(() => {})
+      })
+    }
+
+    editor = createRichTextEditor({
+      ...options,
+      ...(options.defaultContent === undefined
+        ? {}
+        : { defaultContent: structuredClone(options.defaultContent) }),
+      extensions: [
+        ...(options.extensions ?? []),
+        definePlugin(
+          new Plugin({
+            state: {
+              init() {
+                scheduleChange()
+                return null
+              },
+              apply(transaction) {
+                if (transaction.docChanged) scheduleChange()
+                return null
+              },
+            },
+          }),
+        ),
+      ],
+    })
+    previousDoc = editor.state.doc
+    previousDoc.check()
+    this.editors.set(id, editor)
+    return id
+  }
+
+  getEditor(id: RichTextId, _config: RichTextEditorConfig): RichTextEditor {
+    const editor = this.editors.get(id)
+
+    // Since the FlatNodeStore is only used in a single editor instance (no multiuser
+    // collaboration), we can assume that each queried editor was previously created by
+    // createRichText(). If the editor is not found, it means a deeper problem
+    // in the code.
+    if (!editor) throw new Error(`Unknown rich-text ID: ${id}.`)
+    return editor
   }
 
   getRoot() {
