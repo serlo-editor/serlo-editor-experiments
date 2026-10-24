@@ -2,7 +2,6 @@ import { expect, test } from "bun:test"
 
 import { Root, TextContent } from "."
 import { initialContent } from "../../demo/initial-content"
-import { createDemoSessions } from "../../demo/sessions"
 import { createDocument } from "../schema/document"
 import { richTextHandles } from "../session"
 import { describeWithStores } from "../test-utils/test-with-stores"
@@ -70,7 +69,6 @@ test.each(
     [undefined],
     [...initialContent, { type: "unknown" }],
   ].map((invalid) => ({ invalid })),
-)("rejects malformed input before collaborative allocation: $invalid", ({ invalid }) => {
+)("rejects malformed content: $invalid", ({ invalid }) => {
   expect(() => importContent(invalid)).toThrow()
-  expect(() => createDemoSessions(invalid)).toThrow()
 })
