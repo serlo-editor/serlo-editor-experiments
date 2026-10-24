@@ -28,9 +28,12 @@ export interface NodeStore<Refs extends NodeRefs = NodeRefs, TransactionContext 
   /** Configuration is fixed when an editor is first created in this store. */
   getEditor(id: RichTextId, config: RichTextEditorConfig): RichTextEditor
 
-  // TODO: Merge those functions together so that there is a common implementation
-  // for both storage types.
+  /**
+   * Store-local invalidation version, advanced by content changes even without subscribers.
+   * Empty transactions and reads leave it unchanged. Not persisted or comparable across stores.
+   */
   getRevision(): number
+  /** Notifies after changes become readable, coalescing nested structural transactions. */
   subscribe(listener: () => void): () => void
   /** Errors propagate, but transaction changes are not rolled back. */
   transact<Result>(callback: (tx: TransactionContext) => Result): Result

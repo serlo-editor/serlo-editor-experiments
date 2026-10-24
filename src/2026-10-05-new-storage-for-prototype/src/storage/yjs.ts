@@ -10,6 +10,7 @@ import {
   type RichTextEditorOptions,
 } from "../rich-text/index.ts"
 import type { JSONValue } from "../utils/index.ts"
+import { ChangeTracker } from "./change-tracker.ts"
 import { createEditorSpecificAwareness } from "./editor-awareness.ts"
 import type { NodeKind, NodeStore, Ref, RichTextId } from "./types.ts"
 
@@ -27,25 +28,16 @@ type YjsNodeStoreContract = NodeStore<YjsNodeRefs, Y.Transaction>
 
 export class YjsNodeStore implements YjsNodeStoreContract {
   private readonly doc: Y.Doc
-  private readonly revisions: Y.Array<null>
   private readonly awareness: Awareness
   private readonly editors = new Map<RichTextId, RichTextEditor>()
-  private readonly listeners = new Set<() => void>()
-  private richTextRevision = 0
+  private readonly changes = new ChangeTracker()
 
   constructor({ doc, awareness }: { awareness: Awareness; doc: Y.Doc }) {
     this.doc = doc
     this.awareness = awareness
-    this.revisions = doc.getArray("storage:revisions")
-    // Store follows document lifetime; revisions must advance even without UI subscribers.
-    //
-    // TODO: Can this implementation be simplified by reusing or sharing an implementation with flat.ts?!
+    // Store follows document lifetime; track local and remote changes without subscribers.
     doc.on("afterTransaction", (transaction: Y.Transaction) => {
-      const richTextChanged = this.hasRichTextChanges(transaction)
-      if (richTextChanged) this.richTextRevision += 1
-      if (richTextChanged || transaction.changed.has(this.revisions)) {
-        this.listeners.forEach((listener) => listener())
-      }
+      if (this.hasStorageChanges(transaction)) this.changes.publish()
     })
   }
 
@@ -66,7 +58,7 @@ export class YjsNodeStore implements YjsNodeStoreContract {
       this.assertActiveTransaction(tx)
       return {
         set: (value) => {
-          ref.set("value", value)
+          if (!Object.is(ref.get("value"), value)) ref.set("value", value)
         },
       }
     },
@@ -99,7 +91,7 @@ export class YjsNodeStore implements YjsNodeStoreContract {
       this.assertActiveTransaction(tx)
       return {
         set: (field, item) => {
-          ref.set(field, item)
+          if (ref.get(field) !== item) ref.set(field, item)
         },
         remove: (field) => {
           ref.delete(field)
@@ -177,37 +169,34 @@ export class YjsNodeStore implements YjsNodeStoreContract {
       ),
     save: (ref, tx) => {
       this.assertActiveTransaction(tx)
-      this.doc.getMap("root").set("root", ref)
+      const root = this.doc.getMap<YjsNodeRef>("root")
+      if (root.get("root") !== ref) root.set("root", ref)
       return ref
     },
   }
 
   getRevision(): number {
-    return this.revisions.length + this.richTextRevision
+    return this.changes.getRevision()
   }
 
   subscribe(listener: () => void): () => void {
-    this.listeners.add(listener)
-    return () => this.listeners.delete(listener)
+    return this.changes.subscribe(listener)
   }
 
   transact<T>(callback: (tx: Y.Transaction) => T): T {
-    return this.doc.transact((tx) => {
-      try {
-        return callback(tx)
-      } finally {
-        this.revisions.push([null])
-      }
-    }, this)
+    return this.doc.transact(callback, this)
   }
 
   private fragmentName(id: RichTextId): string {
     return `storage:richText:${id}`
   }
 
-  private hasRichTextChanges(transaction: Y.Transaction): boolean {
+  private hasStorageChanges(transaction: Y.Transaction): boolean {
     for (const [name, type] of this.doc.share) {
-      if (name.startsWith("storage:richText:") && transaction.changedParentTypes.has(type)) {
+      if (
+        (name === "root" || name.startsWith("storage:richText:")) &&
+        (transaction.changed.has(type) || transaction.changedParentTypes.has(type))
+      ) {
         return true
       }
     }

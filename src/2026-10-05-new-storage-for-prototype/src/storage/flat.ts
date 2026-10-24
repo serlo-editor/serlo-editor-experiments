@@ -9,6 +9,7 @@ import {
   type RichTextEditorOptions,
 } from "../rich-text/index.ts"
 import type { Branded, JSONValue } from "../utils/index.ts"
+import { ChangeTracker } from "./change-tracker.ts"
 import type { NodeKind, NodeStore, Ref, RichTextId } from "./types.ts"
 
 type FlatNodeRefs = {
@@ -21,13 +22,16 @@ type FlatNodeStoreContract = NodeStore<FlatNodeRefs, TransactionToken>
 export class FlatNodeStore implements FlatNodeStoreContract {
   private readonly editors = new Map<RichTextId, RichTextEditor>()
   private readonly activeTransactions = new Set<TransactionToken>()
-  private readonly listeners = new Set<() => void>()
+  private readonly changes = new ChangeTracker()
   private rootRef: FlatNodeRef | undefined
-  private revision = 0
 
-  private readonly cellTable = new ReferenceTable<"cell", JSONValue>()
-  private readonly arrayTable = new ReferenceTable<"array", readonly FlatNodeRef[]>()
-  private readonly mapTable = new ReferenceTable<"map", Readonly<Record<string, FlatNodeRef>>>()
+  private readonly cellTable = new ReferenceTable<"cell", JSONValue>(() => this.changes.publish())
+  private readonly arrayTable = new ReferenceTable<"array", readonly FlatNodeRef[]>(() =>
+    this.changes.publish(),
+  )
+  private readonly mapTable = new ReferenceTable<"map", Readonly<Record<string, FlatNodeRef>>>(() =>
+    this.changes.publish(),
+  )
 
   readonly cell: FlatNodeStoreContract["cell"] = {
     create: (value) => this.cellTable.create(value),
@@ -70,13 +74,13 @@ export class FlatNodeStore implements FlatNodeStoreContract {
       this.assertActiveTransaction(tx)
       return {
         set: (field, item) => {
-          this.mapTable.applyUpdate(ref, (previousFields) => ({
-            ...previousFields,
-            [field]: item,
-          }))
+          this.mapTable.applyUpdate(ref, (previousFields) =>
+            previousFields[field] === item ? previousFields : { ...previousFields, [field]: item },
+          )
         },
         remove: (field) => {
           this.mapTable.applyUpdate(ref, (previousFields) => {
+            if (!Object.hasOwn(previousFields, field)) return previousFields
             const fields = { ...previousFields }
             delete fields[field]
             return fields
@@ -101,7 +105,7 @@ export class FlatNodeStore implements FlatNodeStoreContract {
         pending = false
         if (!editor || !previousDoc || previousDoc.eq(editor.state.doc)) return
         previousDoc = editor.state.doc
-        this.publishChange()
+        this.changes.publish()
       })
     }
 
@@ -152,36 +156,32 @@ export class FlatNodeStore implements FlatNodeStoreContract {
       if (!this.cellTable.has(ref) && !this.arrayTable.has(ref) && !this.mapTable.has(ref)) {
         throw new Error(`Reference with key ${ref} does not exist.`)
       }
-      this.rootRef = ref
+      if (this.rootRef !== ref) {
+        this.rootRef = ref
+        this.changes.publish()
+      }
       return ref
     },
   }
 
   getRevision(): number {
-    return this.revision
+    return this.changes.getRevision()
   }
 
   subscribe(listener: () => void): () => void {
-    this.listeners.add(listener)
-    return () => this.listeners.delete(listener)
+    return this.changes.subscribe(listener)
   }
 
   transact<T>(callback: (tx: TransactionToken) => T): T {
-    const tx = Symbol("transactionTransaction") as TransactionToken
-    this.activeTransactions.add(tx)
-    try {
-      return callback(tx)
-    } finally {
-      this.activeTransactions.delete(tx)
-      this.publishChange()
-    }
-  }
-
-  private publishChange(): void {
-    this.revision += 1
-    if (this.activeTransactions.size === 0) {
-      this.listeners.forEach((listener) => listener())
-    }
+    return this.changes.batch(() => {
+      const tx = Symbol("transactionTransaction") as TransactionToken
+      this.activeTransactions.add(tx)
+      try {
+        return callback(tx)
+      } finally {
+        this.activeTransactions.delete(tx)
+      }
+    })
   }
 
   private assertActiveTransaction(tx: TransactionToken): void {
@@ -194,6 +194,8 @@ export class FlatNodeStore implements FlatNodeStoreContract {
 class ReferenceTable<Kind extends NodeKind, Value extends JSONValue> {
   private static counter = 0
   private readonly table = new Map<FlatNodeRefs[Kind], Value>()
+
+  constructor(private readonly onChange: () => void) {}
 
   create(value: Value): FlatNodeRefs[Kind] {
     const ref = `node:${ReferenceTable.counter++}` as FlatNodeRefs[Kind]
@@ -212,7 +214,9 @@ class ReferenceTable<Kind extends NodeKind, Value extends JSONValue> {
   applyUpdate(ref: FlatNodeRefs[Kind], updater: Update<Value>): void {
     const previousValue = this.get(ref)
     const value = typeof updater === "function" ? updater(previousValue) : updater
+    if (Object.is(previousValue, value)) return
     this.table.set(ref, value)
+    this.onChange()
   }
 
   has(ref: FlatNodeRef): boolean {

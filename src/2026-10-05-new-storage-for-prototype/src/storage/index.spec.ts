@@ -8,23 +8,132 @@ import type { JSONValue } from "../utils/index.ts"
 import { FlatNodeStore, YjsNodeStore } from "./index.ts"
 
 describeWithStores("NodeStore", (getStore) => {
-  test("increments revision and notifies subscribers after transactions", () => {
+  test("increments revision after changes, even without subscribers", () => {
     const store = getStore()
+    const ref = store.cell.create("Initial")
     const notifications: number[] = []
     const unsubscribe = store.subscribe(() => notifications.push(store.getRevision()))
 
     expect(store.getRevision()).toBe(0)
-    store.transact(() => {
+    store.transact((tx) => {
+      store.root.save(ref, tx)
       expect(notifications).toEqual([])
+      expect(store.getRevision()).toBe(0)
     })
 
     expect(store.getRevision()).toBe(1)
     expect(notifications).toEqual([1])
 
     unsubscribe()
-    store.transact(() => {})
+    store.transact((tx) => store.cell.edit(ref, tx).set("Changed"))
     expect(store.getRevision()).toBe(2)
     expect(notifications).toEqual([1])
+  })
+
+  test("empty transactions, reads, and no-op writes leave revision unchanged", () => {
+    const store = getStore()
+    const cell = store.cell.create("Initial")
+    const ref = store.map.create({ cell })
+    store.root.getOrCreate(() => ref)
+    const revision = store.getRevision()
+    const notifications: number[] = []
+    store.subscribe(() => notifications.push(store.getRevision()))
+
+    store.transact(() => {})
+    store.transact((tx) => {
+      store.transact(() => {})
+      store.cell.get(cell)
+      store.map.get(ref)
+      store.cell.edit(cell, tx)
+      store.map.edit(ref, tx)
+      store.cell.edit(cell, tx).set("Initial")
+      store.map.edit(ref, tx).set("cell", cell)
+      store.map.edit(ref, tx).remove("missing")
+      store.root.save(ref, tx)
+    })
+    expect(
+      store.root.getOrCreate(() => {
+        throw new Error("Existing root must be preserved.")
+      }),
+    ).toBe(ref)
+
+    expect(store.getRevision()).toBe(revision)
+    expect(notifications).toEqual([])
+  })
+
+  test("invalidates for array edits, map edits, and root replacement", () => {
+    const store = getStore()
+    const items = store.array.create([])
+    const root = store.map.create({ items })
+    store.root.getOrCreate(() => root)
+    const revision = store.getRevision()
+    const notifications: number[] = []
+    store.subscribe(() => notifications.push(store.getRevision()))
+
+    const changes = [
+      () =>
+        store.transact((tx) => store.array.edit(items, tx).insert(0, store.cell.create("Item"))),
+      () => store.transact((tx) => store.array.edit(items, tx).remove(0)),
+      () =>
+        store.transact((tx) => store.map.edit(root, tx).set("added", store.cell.create("Field"))),
+      () => store.transact((tx) => store.map.edit(root, tx).remove("added")),
+      () => store.transact((tx) => store.root.save(store.cell.create("Replacement"), tx)),
+    ]
+    for (const [index, change] of changes.entries()) {
+      change()
+      expect(store.getRevision()).toBe(revision + index + 1)
+      expect(notifications).toHaveLength(index + 1)
+    }
+  })
+
+  test("coalesces nested writes into one revision after the outer transaction", () => {
+    const store = getStore()
+    const ref = store.root.getOrCreate(() => store.cell.create("Initial"))
+    const revision = store.getRevision()
+    const observed: JSONValue[] = []
+    store.subscribe(() => observed.push(store.cell.get(ref)))
+
+    store.transact((tx) => {
+      store.cell.edit(ref, tx).set("Outer")
+      store.transact((nested) => store.cell.edit(ref, nested).set("Inner"))
+      expect(store.getRevision()).toBe(revision)
+      expect(observed).toEqual([])
+      store.cell.edit(ref, tx).set("Final")
+    })
+
+    expect(store.getRevision()).toBe(revision + 1)
+    expect(observed).toEqual(["Final"])
+  })
+
+  test("publishes partial changes when a transaction throws, but not unchanged failures", () => {
+    const store = getStore()
+    const ref = store.root.getOrCreate(() => store.cell.create("Initial"))
+    const revision = store.getRevision()
+    const observed: JSONValue[] = []
+    store.subscribe(() => observed.push(store.cell.get(ref)))
+    const error = new Error("Transaction failed")
+
+    expect(() =>
+      store.transact(() => {
+        throw error
+      }),
+    ).toThrow(error)
+    expect(store.getRevision()).toBe(revision)
+    expect(observed).toEqual([])
+
+    expect(() =>
+      store.transact(() => {
+        store.transact((nested) => store.cell.edit(ref, nested).set("Changed"))
+        expect(observed).toEqual([])
+        throw error
+      }),
+    ).toThrow(error)
+    expect(store.getRevision()).toBe(revision + 1)
+    expect(observed).toEqual(["Changed"])
+
+    store.transact((tx) => store.cell.edit(ref, tx).set("Recovered"))
+    expect(store.getRevision()).toBe(revision + 2)
+    expect(observed).toEqual(["Changed", "Recovered"])
   })
 
   test("initializes the root lazily and publishes only after it is saved", () => {
@@ -52,6 +161,7 @@ describeWithStores("NodeStore", (getStore) => {
       }),
     ).toBe(ref)
     expect(calls).toBe(1)
+    expect(notifications).toBe(1)
   })
 
   test("getOrCreate returns a root saved explicitly without running the initializer", () => {
@@ -572,6 +682,61 @@ test("YjsNodeStore syncs local edits between documents without echoing received 
   expect(forwarded2).toBe(3)
   doc1.destroy()
   doc2.destroy()
+})
+
+test("YjsNodeStore revisions stay local and ignore unrelated, duplicate, and awareness updates", () => {
+  const firstDoc = new Y.Doc()
+  const secondDoc = new Y.Doc()
+  const firstAwareness = new Awareness(firstDoc)
+  const secondAwareness = new Awareness(secondDoc)
+  const first = new YjsNodeStore({ doc: firstDoc, awareness: firstAwareness })
+  const second = new YjsNodeStore({ doc: secondDoc, awareness: secondAwareness })
+  const observed: number[] = []
+  const unsubscribe = second.subscribe(() => observed.push(second.getRevision()))
+
+  first.transact(() => {})
+  const cell = first.cell.create("Initial")
+  first.root.getOrCreate(() => first.map.create({ cell }))
+  const update = Y.encodeStateAsUpdate(firstDoc)
+  Y.applyUpdate(secondDoc, update)
+  expect(second.getRevision()).toBe(1)
+  expect(observed).toEqual([1])
+  expect(firstDoc.share.has("storage:revisions")).toBe(false)
+  expect(secondDoc.share.has("storage:revisions")).toBe(false)
+
+  Y.applyUpdate(secondDoc, update)
+  firstDoc.getMap("unrelated").set("value", 1)
+  Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
+  secondAwareness.setLocalStateField("user", { name: "Local" })
+  expect(first.getRevision()).toBe(1)
+  expect(second.getRevision()).toBe(1)
+  expect(observed).toEqual([1])
+
+  first.transact((tx) => first.cell.edit(cell, tx).set("Second"))
+  first.transact((tx) => first.cell.edit(cell, tx).set("Third"))
+  Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
+  expect(first.getRevision()).toBe(3)
+  expect(second.getRevision()).toBe(2)
+  expect(observed).toEqual([1, 2])
+
+  unsubscribe()
+  first.transact((tx) => first.cell.edit(cell, tx).set("Fourth"))
+  Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
+  expect(second.getRevision()).toBe(3)
+  expect(observed).toEqual([1, 2])
+
+  const beforeOpening = Y.encodeStateVector(secondDoc)
+  const reopened = new YjsNodeStore({ doc: secondDoc, awareness: secondAwareness })
+  expect(reopened.getRevision()).toBe(0)
+  reopened.root.getOrCreate(() => {
+    throw new Error("Missing root.")
+  })
+  expect(reopened.getRevision()).toBe(0)
+  expect(Y.encodeStateVector(secondDoc)).toEqual(beforeOpening)
+  firstAwareness.destroy()
+  secondAwareness.destroy()
+  firstDoc.destroy()
+  secondDoc.destroy()
 })
 
 test("YjsNodeStore rejects cells missing their value", () => {

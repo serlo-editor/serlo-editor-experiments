@@ -231,7 +231,8 @@ describe("stored rich-text editors", () => {
     const second = createDocument(secondStore, schema, content("Ignored"))
     const source = mount(first.root.getEditor())
     const revision = secondStore.getRevision()
-    const structuralRevisions = secondDoc.getArray("storage:revisions").length
+    expect(firstDoc.share.has("storage:revisions")).toBe(false)
+    expect(secondDoc.share.has("storage:revisions")).toBe(false)
     const observed: RichTextJSON[] = []
     const unsubscribe = secondStore.subscribe(() => observed.push(second.snapshot()))
 
@@ -239,7 +240,7 @@ describe("stored rich-text editors", () => {
     Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
     expect(observed).toEqual([content("!Initial")])
     expect(secondStore.getRevision()).toBeGreaterThan(revision)
-    expect(secondDoc.getArray("storage:revisions").length).toBe(structuralRevisions)
+    expect(secondDoc.share.has("storage:revisions")).toBe(false)
 
     const afterRemoteEdit = secondStore.getRevision()
     expect(second.snapshot()).toEqual(content("!Initial"))
