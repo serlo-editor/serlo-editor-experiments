@@ -12,7 +12,8 @@ import {
 import type { JSONValue } from "../utils/index.ts"
 import { ChangeTracker } from "./change-tracker.ts"
 import { createEditorSpecificAwareness } from "./editor-awareness.ts"
-import type { NodeKind, NodeStore, Ref, RichTextId } from "./types.ts"
+import type { NodeKind, NodeStore, NodeWriter, Ref, RichTextId } from "./types.ts"
+import { withWriter } from "./writer.ts"
 
 type YArray = Y.Array<YjsNodeRef>
 type YMap = Y.Map<YjsNodeRef>
@@ -24,7 +25,7 @@ type YjsNodeRefs = {
 }
 type YjsNodeRef = YjsNodeRefs[NodeKind]
 
-type YjsNodeStoreContract = NodeStore<YjsNodeRefs, Y.Transaction>
+type YjsNodeStoreContract = NodeStore<YjsNodeRefs>
 
 export class YjsNodeStore implements YjsNodeStoreContract {
   private readonly doc: Y.Doc
@@ -54,14 +55,6 @@ export class YjsNodeStore implements YjsNodeStoreContract {
       }
       return value
     },
-    edit: (ref, tx) => {
-      this.assertActiveTransaction(tx)
-      return {
-        set: (value) => {
-          if (!Object.is(ref.get("value"), value)) ref.set("value", value)
-        },
-      }
-    },
   }
 
   readonly array: YjsNodeStoreContract["array"] = {
@@ -71,33 +64,11 @@ export class YjsNodeStore implements YjsNodeStoreContract {
       return array as YjsNodeRefs["array"]
     },
     get: (ref) => ref.toArray(),
-    edit: (ref, tx) => {
-      this.assertActiveTransaction(tx)
-      return {
-        remove: (index) => {
-          ref.delete(index, 1)
-        },
-        insert: (index, item) => {
-          ref.insert(index, [item])
-        },
-      }
-    },
   }
 
   readonly map: YjsNodeStoreContract["map"] = {
     create: (fields) => new Y.Map<YjsNodeRef>(Object.entries(fields)) as YjsNodeRefs["map"],
     get: (ref) => Object.fromEntries(ref.entries()),
-    edit: (ref, tx) => {
-      this.assertActiveTransaction(tx)
-      return {
-        set: (field, item) => {
-          if (ref.get(field) !== item) ref.set(field, item)
-        },
-        remove: (field) => {
-          ref.delete(field)
-        },
-      }
-    },
   }
 
   createRichText(options: RichTextEditorOptions): RichTextId {
@@ -165,14 +136,8 @@ export class YjsNodeStore implements YjsNodeStoreContract {
   readonly root: YjsNodeStoreContract["root"] = {
     getOrCreate: (create) =>
       this.transact(
-        (tx) => this.doc.getMap<YjsNodeRef>("root").get("root") ?? this.root.save(create(), tx),
+        (write) => this.doc.getMap<YjsNodeRef>("root").get("root") ?? write.root.save(create()),
       ),
-    save: (ref, tx) => {
-      this.assertActiveTransaction(tx)
-      const root = this.doc.getMap<YjsNodeRef>("root")
-      if (root.get("root") !== ref) root.set("root", ref)
-      return ref
-    },
   }
 
   getRevision(): number {
@@ -183,8 +148,35 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     return this.changes.subscribe(listener)
   }
 
-  transact<T>(callback: (tx: Y.Transaction) => T): T {
-    return this.doc.transact(callback, this)
+  transact<T>(callback: (write: NodeWriter<YjsNodeRefs>) => T): T {
+    return this.doc.transact(() => withWriter(this.writer, callback), this)
+  }
+
+  private readonly writer: NodeWriter<YjsNodeRefs> = {
+    cell: {
+      set: (ref, value) => {
+        if (!Object.is(ref.get("value"), value)) ref.set("value", value)
+      },
+    },
+    array: {
+      remove: (ref, index) => ref.delete(index, 1),
+      insert: (ref, index, item) => ref.insert(index, [item]),
+    },
+    map: {
+      set: (ref, field, item) => {
+        if (ref.get(field) !== item) ref.set(field, item)
+      },
+      remove: (ref, field) => {
+        ref.delete(field)
+      },
+    },
+    root: {
+      save: (ref) => {
+        const root = this.doc.getMap<YjsNodeRef>("root")
+        if (root.get("root") !== ref) root.set("root", ref)
+        return ref
+      },
+    },
   }
 
   private fragmentName(id: RichTextId): string {
@@ -201,11 +193,5 @@ export class YjsNodeStore implements YjsNodeStoreContract {
       }
     }
     return false
-  }
-
-  private assertActiveTransaction(tx: Y.Transaction): void {
-    if (tx.doc !== this.doc || this.doc._transaction !== tx) {
-      throw new Error("Invalid transaction.")
-    }
   }
 }

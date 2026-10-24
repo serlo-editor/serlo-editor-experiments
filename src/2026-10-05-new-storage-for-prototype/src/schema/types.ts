@@ -10,9 +10,9 @@ export interface Schema<
   SchemaHandle extends Handle<Snapshot>,
   Kind extends NodeKind,
 > {
-  create<Refs extends NodeRefs, Tx>(store: NodeStore<Refs, Tx>, snapshot: Snapshot): Refs[Kind]
+  create<Refs extends NodeRefs>(store: NodeStore<Refs>, snapshot: Snapshot): Refs[Kind]
 
-  bind<Refs extends NodeRefs, Tx>(store: NodeStore<Refs, Tx>, ref: Refs[Kind]): SchemaHandle
+  bind<Refs extends NodeRefs>(store: NodeStore<Refs>, ref: Refs[Kind]): SchemaHandle
 }
 
 export type SnapshotOf<ChildSchema> =

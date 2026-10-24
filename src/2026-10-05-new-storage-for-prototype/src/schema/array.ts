@@ -41,16 +41,12 @@ export function array<
         },
 
         remove(index) {
-          store.transact((tx) => {
-            store.array.edit(ref, tx).remove(index)
-          })
+          store.transact((write) => write.array.remove(ref, index))
         },
 
         insert(index, snapshot) {
           const childRef = childSchema.create(store, snapshot)
-          store.transact((tx) => {
-            store.array.edit(ref, tx).insert(index, childRef)
-          })
+          store.transact((write) => write.array.insert(ref, index, childRef))
         },
 
         snapshot() {

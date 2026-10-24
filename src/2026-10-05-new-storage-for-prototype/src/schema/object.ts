@@ -90,12 +90,12 @@ export function object<Schemas extends SchemaMap>(
             throw new TypeError(`Undefined field: ${key}.`)
           }
           const childRef = schema.create(store, value)
-          store.transact((tx) => store.map.edit(ref, tx).set(key, childRef))
+          store.transact((write) => write.map.set(ref, key, childRef))
         },
 
         removeOptional(key) {
           optionalSchema(key)
-          store.transact((tx) => store.map.edit(ref, tx).remove(key))
+          store.transact((write) => write.map.remove(ref, key))
         },
 
         snapshot() {

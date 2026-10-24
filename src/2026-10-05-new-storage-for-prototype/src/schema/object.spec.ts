@@ -158,9 +158,9 @@ describeWithStores("object schemas", (getStore) => {
     }).toThrow("Undefined field: name.")
 
     const store = getStore()
-    const ref = store.transact((tx) => store.root.save(schema.create(store, { name: "Ada" }), tx))
+    const ref = store.transact((write) => write.root.save(schema.create(store, { name: "Ada" })))
     const root = schema.bind(store, ref)
-    store.transact((tx) => store.map.edit(ref, tx).remove("name"))
+    store.transact((write) => write.map.remove(ref, "name"))
     expect(() => root.field("name")).toThrow("Missing required field: name.")
     expect(() => root.snapshot()).toThrow("Missing required field: name.")
   })
@@ -205,11 +205,11 @@ test("optional fields observe remote Yjs changes and converge after concurrent a
   const firstDoc = new Y.Doc()
   const secondDoc = new Y.Doc()
   type YjsRefs = { [Kind in NodeKind]: ReturnType<YjsNodeStore[Kind]["create"]> }
-  const firstStore: NodeStore<YjsRefs, Y.Transaction> = new YjsNodeStore({
+  const firstStore: NodeStore<YjsRefs> = new YjsNodeStore({
     doc: firstDoc,
     awareness: new Awareness(firstDoc),
   })
-  const secondStore: NodeStore<YjsRefs, Y.Transaction> = new YjsNodeStore({
+  const secondStore: NodeStore<YjsRefs> = new YjsNodeStore({
     doc: secondDoc,
     awareness: new Awareness(secondDoc),
   })

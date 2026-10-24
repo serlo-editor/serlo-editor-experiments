@@ -12,9 +12,8 @@ export function createDocument<
   Root extends Handle<Snapshot>,
   Kind extends NodeKind,
   Refs extends NodeRefs,
-  Tx,
 >(
-  store: NodeStore<Refs, Tx>,
+  store: NodeStore<Refs>,
   schema: Schema<Snapshot, Root, Kind>,
   initialSnapshot: Snapshot,
 ): Document<Snapshot, Root> {

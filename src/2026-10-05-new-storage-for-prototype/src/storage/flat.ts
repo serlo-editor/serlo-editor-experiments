@@ -10,18 +10,18 @@ import {
 } from "../rich-text/index.ts"
 import type { Branded, JSONValue } from "../utils/index.ts"
 import { ChangeTracker } from "./change-tracker.ts"
-import type { NodeKind, NodeStore, Ref, RichTextId } from "./types.ts"
+import type { NodeKind, NodeStore, NodeWriter, Ref, RichTextId } from "./types.ts"
+import { withWriter } from "./writer.ts"
 
 type FlatNodeRefs = {
   [Kind in NodeKind]: Ref & Branded<string, Kind>
 }
 type FlatNodeRef = FlatNodeRefs[NodeKind]
 
-type FlatNodeStoreContract = NodeStore<FlatNodeRefs, TransactionToken>
+type FlatNodeStoreContract = NodeStore<FlatNodeRefs>
 
 export class FlatNodeStore implements FlatNodeStoreContract {
   private readonly editors = new Map<RichTextId, RichTextEditor>()
-  private readonly activeTransactions = new Set<TransactionToken>()
   private readonly changes = new ChangeTracker()
   private rootRef: FlatNodeRef | undefined
 
@@ -36,58 +36,16 @@ export class FlatNodeStore implements FlatNodeStoreContract {
   readonly cell: FlatNodeStoreContract["cell"] = {
     create: (value) => this.cellTable.create(value),
     get: (ref) => this.cellTable.get(ref),
-    edit: (ref, tx) => {
-      this.assertActiveTransaction(tx)
-      return {
-        set: (value) => this.cellTable.applyUpdate(ref, () => value),
-      }
-    },
   }
 
   readonly array: FlatNodeStoreContract["array"] = {
     create: (items) => this.arrayTable.create(items),
     get: (ref) => this.arrayTable.get(ref),
-    edit: (ref, tx) => {
-      this.assertActiveTransaction(tx)
-      return {
-        remove: (index) => {
-          this.arrayTable.applyUpdate(ref, (previousItems) => [
-            ...previousItems.slice(0, index),
-            ...previousItems.slice(index + 1),
-          ])
-        },
-        insert: (index, item) => {
-          this.arrayTable.applyUpdate(ref, (previousItems) => [
-            ...previousItems.slice(0, index),
-            item,
-            ...previousItems.slice(index),
-          ])
-        },
-      }
-    },
   }
 
   readonly map: FlatNodeStoreContract["map"] = {
     create: (fields) => this.mapTable.create(fields),
     get: (ref) => this.mapTable.get(ref),
-    edit: (ref, tx) => {
-      this.assertActiveTransaction(tx)
-      return {
-        set: (field, item) => {
-          this.mapTable.applyUpdate(ref, (previousFields) =>
-            previousFields[field] === item ? previousFields : { ...previousFields, [field]: item },
-          )
-        },
-        remove: (field) => {
-          this.mapTable.applyUpdate(ref, (previousFields) => {
-            if (!Object.hasOwn(previousFields, field)) return previousFields
-            const fields = { ...previousFields }
-            delete fields[field]
-            return fields
-          })
-        },
-      }
-    },
   }
 
   createRichText(options: RichTextEditorOptions): RichTextId {
@@ -150,18 +108,7 @@ export class FlatNodeStore implements FlatNodeStoreContract {
   }
 
   readonly root: FlatNodeStoreContract["root"] = {
-    getOrCreate: (create) => this.transact((tx) => this.rootRef ?? this.root.save(create(), tx)),
-    save: (ref, tx) => {
-      this.assertActiveTransaction(tx)
-      if (!this.cellTable.has(ref) && !this.arrayTable.has(ref) && !this.mapTable.has(ref)) {
-        throw new Error(`Reference with key ${ref} does not exist.`)
-      }
-      if (this.rootRef !== ref) {
-        this.rootRef = ref
-        this.changes.publish()
-      }
-      return ref
-    },
+    getOrCreate: (create) => this.transact((write) => this.rootRef ?? write.root.save(create())),
   }
 
   getRevision(): number {
@@ -172,22 +119,56 @@ export class FlatNodeStore implements FlatNodeStoreContract {
     return this.changes.subscribe(listener)
   }
 
-  transact<T>(callback: (tx: TransactionToken) => T): T {
-    return this.changes.batch(() => {
-      const tx = Symbol("transactionTransaction") as TransactionToken
-      this.activeTransactions.add(tx)
-      try {
-        return callback(tx)
-      } finally {
-        this.activeTransactions.delete(tx)
-      }
-    })
+  transact<T>(callback: (write: NodeWriter<FlatNodeRefs>) => T): T {
+    return this.changes.batch(() => withWriter(this.writer, callback))
   }
 
-  private assertActiveTransaction(tx: TransactionToken): void {
-    if (!this.activeTransactions.has(tx)) {
-      throw new Error("Invalid transaction.")
-    }
+  private readonly writer: NodeWriter<FlatNodeRefs> = {
+    cell: {
+      set: (ref, value) => this.cellTable.applyUpdate(ref, () => value),
+    },
+    array: {
+      remove: (ref, index) => {
+        this.arrayTable.applyUpdate(ref, (items) => [
+          ...items.slice(0, index),
+          ...items.slice(index + 1),
+        ])
+      },
+      insert: (ref, index, item) => {
+        this.arrayTable.applyUpdate(ref, (items) => [
+          ...items.slice(0, index),
+          item,
+          ...items.slice(index),
+        ])
+      },
+    },
+    map: {
+      set: (ref, field, item) => {
+        this.mapTable.applyUpdate(ref, (fields) =>
+          fields[field] === item ? fields : { ...fields, [field]: item },
+        )
+      },
+      remove: (ref, field) => {
+        this.mapTable.applyUpdate(ref, (previousFields) => {
+          if (!Object.hasOwn(previousFields, field)) return previousFields
+          const fields = { ...previousFields }
+          delete fields[field]
+          return fields
+        })
+      },
+    },
+    root: {
+      save: (ref) => {
+        if (!this.cellTable.has(ref) && !this.arrayTable.has(ref) && !this.mapTable.has(ref)) {
+          throw new Error(`Reference with key ${ref} does not exist.`)
+        }
+        if (this.rootRef !== ref) {
+          this.rootRef = ref
+          this.changes.publish()
+        }
+        return ref
+      },
+    },
   }
 }
 
@@ -225,5 +206,3 @@ class ReferenceTable<Kind extends NodeKind, Value extends JSONValue> {
 }
 
 export type Update<Value extends JSONValue> = Value | ((previousValue: Value) => Value)
-
-type TransactionToken = Branded<symbol, "TransactionToken">

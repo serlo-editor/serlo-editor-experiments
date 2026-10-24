@@ -16,7 +16,7 @@ describeWithStores("Document", (getStore) => {
         return {
           snapshot: () => store.cell.get(ref),
           set(value) {
-            store.transact((tx) => store.cell.edit(ref, tx).set(value))
+            store.transact((write) => write.cell.set(ref, value))
           },
         }
       },

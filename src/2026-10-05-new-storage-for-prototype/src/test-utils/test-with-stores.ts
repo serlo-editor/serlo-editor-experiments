@@ -8,7 +8,8 @@ import type { NodeStore } from "../storage/types.ts"
 
 export function describeWithStores(
   name: string,
-  callback: (getStore: () => NodeStore) => void,
+  // Shared behavioral tests erase backend-specific reference types, never mixing stores.
+  callback: (getStore: () => NodeStore<any>) => void,
 ): void {
   describe(name, () => {
     describe("FlatNodeStore", () => {
