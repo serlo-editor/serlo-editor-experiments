@@ -27,6 +27,61 @@ describeWithStores("NodeStore", (getStore) => {
     expect(notifications).toEqual([1])
   })
 
+  test("initializes the root lazily and publishes only after it is saved", () => {
+    const store = getStore()
+    const ref = store.cell.create("Initial")
+    let calls = 0
+    let notifications = 0
+    store.subscribe(() => {
+      notifications += 1
+      expect(store.cell.get(ref)).toBe("Initial")
+    })
+
+    expect(
+      store.root.getOrCreate(() => {
+        calls += 1
+        expect(notifications).toBe(0)
+        return ref
+      }),
+    ).toBe(ref)
+    expect(notifications).toBe(1)
+    expect(
+      store.root.getOrCreate(() => {
+        calls += 1
+        throw new Error("Initializer must not run twice.")
+      }),
+    ).toBe(ref)
+    expect(calls).toBe(1)
+  })
+
+  test("getOrCreate returns a root saved explicitly without running the initializer", () => {
+    const store = getStore()
+    const first = store.cell.create("First")
+    const replacement = store.cell.create("Replacement")
+    store.root.getOrCreate(() => first)
+    store.transact((tx) => store.root.save(replacement, tx))
+
+    expect(
+      store.root.getOrCreate(() => {
+        throw new Error("Existing root must be preserved.")
+      }),
+    ).toBe(replacement)
+  })
+
+  test("permits retrying root initialization after an initializer throws", () => {
+    const store = getStore()
+    const error = new Error("Initialization failed")
+    expect(() =>
+      store.root.getOrCreate(() => {
+        throw error
+      }),
+    ).toThrow(error)
+
+    const ref = store.cell.create("Recovered")
+    expect(store.root.getOrCreate(() => ref)).toBe(ref)
+    expect(store.cell.get(ref)).toBe("Recovered")
+  })
+
   test("reads every JSON value kind without losing empty or falsy values", () => {
     const nodeStore = getStore()
     const values: readonly JSONValue[] = [

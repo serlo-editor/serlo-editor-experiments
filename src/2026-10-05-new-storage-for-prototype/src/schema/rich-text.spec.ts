@@ -36,8 +36,9 @@ describeWithStores("rich-text schemas", (getStore) => {
     const schema = richText(options)
     const initial = content("Hello")
     const document = createDocument(store, schema, initial)
-    const ref = store.root.get()
-    if (!ref) throw new Error("Missing root.")
+    const ref = store.root.getOrCreate(() => {
+      throw new Error("Missing root.")
+    })
 
     expect(store.cell.get(ref)).toEqual({ kind: "richText", editorId: document.root.id })
     expect(document.root.getEditor().getDocJSON()).toEqual(initial)

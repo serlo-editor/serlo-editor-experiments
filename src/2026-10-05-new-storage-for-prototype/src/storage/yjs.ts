@@ -171,7 +171,10 @@ export class YjsNodeStore implements YjsNodeStoreContract {
   }
 
   readonly root: YjsNodeStoreContract["root"] = {
-    get: () => this.doc.getMap<YjsNodeRef>("root").get("root"),
+    getOrCreate: (create) =>
+      this.transact(
+        (tx) => this.doc.getMap<YjsNodeRef>("root").get("root") ?? this.root.save(create(), tx),
+      ),
     save: (ref, tx) => {
       this.assertActiveTransaction(tx)
       this.doc.getMap("root").set("root", ref)

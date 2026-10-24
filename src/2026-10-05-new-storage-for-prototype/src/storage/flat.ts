@@ -146,7 +146,7 @@ export class FlatNodeStore implements FlatNodeStoreContract {
   }
 
   readonly root: FlatNodeStoreContract["root"] = {
-    get: () => this.rootRef,
+    getOrCreate: (create) => this.transact((tx) => this.rootRef ?? this.root.save(create(), tx)),
     save: (ref, tx) => {
       this.assertActiveTransaction(tx)
       if (!this.cellTable.has(ref) && !this.arrayTable.has(ref) && !this.mapTable.has(ref)) {

@@ -30,9 +30,6 @@ export interface NodeStore<Refs extends NodeRefs = NodeRefs, TransactionContext 
 
   // TODO: Merge those functions together so that there is a common implementation
   // for both storage types.
-  //
-  // TODO: Find a good way that getRoot() does not return undefined
-  // => it should mimic the lifecycle
   getRevision(): number
   subscribe(listener: () => void): () => void
   /** Errors propagate, but transaction changes are not rolled back. */
@@ -44,7 +41,8 @@ export function isRichTextId(value: unknown): value is RichTextId {
 }
 
 interface RootStore<Ref, TransactionContext> {
-  get(): Ref | undefined
+  /** Runs the initializer inside a transaction, only when no root exists. */
+  getOrCreate(create: () => Ref): Ref
   save(ref: Ref, tx: TransactionContext): Ref
 }
 

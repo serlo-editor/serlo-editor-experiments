@@ -181,7 +181,7 @@ describe("stored rich-text editors", () => {
     const second = createDocument(secondStore, schema, content("Ignored"))
 
     expect(second.root.id).toBe(first.root.id)
-    expect(secondStore.root.get()).not.toBe(firstStore.root.get())
+    expect(secondDoc.getMap("root").get("root")).not.toBe(firstDoc.getMap("root").get("root"))
     expect(second.root.getEditor()).not.toBe(first.root.getEditor())
     const beforeLookup = Y.encodeStateVector(secondDoc)
     expect(second.snapshot()).toEqual(first.snapshot())
