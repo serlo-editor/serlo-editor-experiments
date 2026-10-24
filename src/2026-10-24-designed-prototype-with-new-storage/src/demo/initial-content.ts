@@ -1,8 +1,7 @@
-import type { ContentJSON } from "../editor"
+import { FillInTheBlank, MultipleChoice, TextContent, type RootSnapshot } from "../editor/content"
 
-export const initialContent: ContentJSON = [
-  {
-    type: "text",
+export const initialContent: RootSnapshot = [
+  TextContent.createUnit({
     content: {
       type: "doc",
       content: [
@@ -17,9 +16,8 @@ export const initialContent: ContentJSON = [
         },
       ],
     },
-  },
-  {
-    type: "fill-in-the-blank",
+  }),
+  FillInTheBlank.createUnit({
     content: {
       type: "doc",
       content: [
@@ -33,9 +31,8 @@ export const initialContent: ContentJSON = [
         },
       ],
     },
-  },
-  {
-    type: "multiple-choice",
+  }),
+  MultipleChoice.createUnit({
     question: {
       type: "doc",
       content: [
@@ -68,5 +65,5 @@ export const initialContent: ContentJSON = [
         },
       },
     ],
-  },
+  }),
 ]

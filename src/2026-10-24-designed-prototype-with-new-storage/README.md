@@ -21,9 +21,9 @@ bun run build
 - `src/editor/content/`: text, gap, and multiple-choice unit definitions and
   local authoring renderers. Root is an array of explicit child-unit variants.
   Unit IDs key content; rich-text IDs key option rows and scope remote cursors.
-- `src/editor/content/io.ts`: validates external content before shared allocation;
-  converts old JSON to fresh unit snapshots and exports the original JSON shape
-  without internal IDs. Native document snapshots preserve unit IDs on reopening.
+- `src/editor/content/`: typed unit definitions and initial snapshots. This demo
+  seeds content directly from those definitions; external JSON import/export is
+  not part of this prototype.
 - `src/editor/session.ts`: document/awareness lifetime, document binding, export.
 - `src/editor/components/`: authoring UI and local toolbar/focus state.
 - `src/demo/`: two in-memory synchronized peers and interactive learner preview.
@@ -53,5 +53,4 @@ Document-wide React subscriptions are deliberate; granular subscriptions can be
 added if rendering cost warrants them.
 
 No persistence, network provider, legacy Yjs-layout migration, generic node index,
-new debug/export panels, or global undo redesign. JSON export is available through
-`session.exportContent()`.
+external JSON import/export, new debug panels, or global undo redesign.

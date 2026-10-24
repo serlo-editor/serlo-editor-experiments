@@ -2,7 +2,6 @@ import { Awareness } from "y-protocols/awareness"
 import * as Y from "yjs"
 
 import { type RootHandle, Root, type RootSnapshot } from "./content"
-import { exportContent } from "./content/io"
 import { createDocument } from "./schema/document"
 import type { RichTextHandle } from "./schema/rich-text"
 import { YjsNodeStore } from "./storage"
@@ -30,7 +29,6 @@ export function createSession(
       awareness,
       store,
       document,
-      exportContent: () => exportContent(document.snapshot()),
       destroy() {
         if (destroyed) return
         destroyed = true

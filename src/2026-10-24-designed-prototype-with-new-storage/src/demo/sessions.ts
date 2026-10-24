@@ -1,10 +1,10 @@
 import * as Y from "yjs"
 
-import { createSession, importContent } from "../editor"
+import { createSession } from "../editor"
+import type { RootSnapshot } from "../editor/content"
 import { syncCDRTs } from "./sync-cdrts"
 
-export function createDemoSessions(content: unknown) {
-  const snapshot = importContent(content)
+export function createDemoSessions(snapshot: RootSnapshot) {
   const first = createSession({ name: "Editor 1", color: "#2563eb" }, snapshot)
   try {
     const second = createSession(
