@@ -1,8 +1,8 @@
-import { ContentType, type JSONValue, type Root } from "../editor"
+import type { ContentJSON } from "../editor"
 
-export const initialContent: JSONValue<Root> = [
+export const initialContent: ContentJSON = [
   {
-    type: ContentType.Text,
+    type: "text",
     content: {
       type: "doc",
       content: [
@@ -19,7 +19,7 @@ export const initialContent: JSONValue<Root> = [
     },
   },
   {
-    type: ContentType.FillInTheBlank,
+    type: "fill-in-the-blank",
     content: {
       type: "doc",
       content: [
@@ -35,7 +35,7 @@ export const initialContent: JSONValue<Root> = [
     },
   },
   {
-    type: ContentType.MultipleChoice,
+    type: "multiple-choice",
     question: {
       type: "doc",
       content: [

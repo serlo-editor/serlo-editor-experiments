@@ -1,17 +1,22 @@
 import { useEffect, useState } from "react"
 
-import { Editor, useCDRT } from "../editor"
+import { Editor } from "../editor"
 import { initialContent } from "./initial-content"
 import { Preview } from "./Preview"
-import { syncCDRTs } from "./sync-cdrts"
+import { createDemoSessions } from "./sessions"
 
 export default function App() {
-  const cdrt1 = useCDRT({ name: "Editor 1", color: "#2563eb" })
-  const cdrt2 = useCDRT({ name: "Editor 2", color: "#b45309" })
+  const [sessions, setSessions] = useState<ReturnType<typeof createDemoSessions> | null>(null)
   const [previewVersion, resetPreview] = useState(0)
   const [rightPane, setRightPane] = useState<"preview" | "collaboration">("preview")
 
-  useEffect(() => syncCDRTs(cdrt1, cdrt2), [cdrt1, cdrt2])
+  useEffect(() => {
+    const next = createDemoSessions(initialContent)
+    setSessions(next)
+    return () => next.destroy()
+  }, [])
+
+  if (!sessions) return <main className="app">Loading...</main>
 
   return (
     <main className="app">
@@ -39,7 +44,7 @@ export default function App() {
 
       <div className="app__workspace">
         <section className="app__authoring" aria-label="Inhalt bearbeiten">
-          <Editor cdrt={cdrt1} initialContent={initialContent} />
+          <Editor session={sessions.first} />
         </section>
 
         <section
@@ -69,14 +74,14 @@ export default function App() {
             </header>
           )}
           <div id="right-pane-preview" className="app__device" hidden={rightPane !== "preview"}>
-            <Preview key={previewVersion} cdrt={cdrt1} />
+            <Preview key={previewVersion} session={sessions.first} />
           </div>
           <div
             id="right-pane-collaboration"
             className="app__collaboration"
             hidden={rightPane !== "collaboration"}
           >
-            <Editor cdrt={cdrt2} />
+            <Editor session={sessions.second} />
           </div>
         </section>
       </div>

@@ -1,51 +1,59 @@
-import { applyAwarenessUpdate, encodeAwarenessUpdate } from "y-protocols/awareness.js"
+import { applyAwarenessUpdate, encodeAwarenessUpdate } from "y-protocols/awareness"
 import * as Y from "yjs"
 
-import type { CDRT } from "../editor"
+import type { EditorSession } from "../editor"
 
-export function syncCDRTs(cdrt1: CDRT, cdrt2: CDRT) {
-  const { doc: doc1, awareness: awareness1 } = cdrt1
-  const { doc: doc2, awareness: awareness2 } = cdrt2
-
-  Y.applyUpdate(doc2, Y.encodeStateAsUpdate(doc1))
-  Y.applyUpdate(doc1, Y.encodeStateAsUpdate(doc2))
-
-  const doc1Listener = doc1.on("update", (update, origin) => {
-    if (origin != null) Y.applyUpdate(doc2, update)
-  })
-
-  const doc2Listener = doc2.on("update", (update, origin) => {
-    if (origin != null) Y.applyUpdate(doc1, update)
-  })
-
-  const awareness1Listener: AwarenessListener = ({ added, updated, removed }, origin) => {
-    if (origin === "local") {
-      const changedClients = added.concat(updated).concat(removed)
-      const awarenessUpdate = encodeAwarenessUpdate(awareness1, changedClients)
-      applyAwarenessUpdate(awareness2, awarenessUpdate, "remote")
-    }
+/** Explicit transport origin forwards null-origin writes, but never echoes received updates. */
+export function syncCDRTs(first: EditorSession, second: EditorSession) {
+  const origin = Symbol("demo-transport")
+  const forwardFirst = (update: Uint8Array, source: unknown) => {
+    if (source !== origin) Y.applyUpdate(second.doc, update, origin)
   }
-
-  const awareness2Listener: AwarenessListener = ({ added, updated, removed }, origin) => {
-    if (origin === "local") {
-      const changedClients = added.concat(updated).concat(removed)
-      const awarenessUpdate = encodeAwarenessUpdate(awareness2, changedClients)
-      applyAwarenessUpdate(awareness1, awarenessUpdate, "remote")
-    }
+  const forwardSecond = (update: Uint8Array, source: unknown) => {
+    if (source !== origin) Y.applyUpdate(first.doc, update, origin)
   }
+  const presenceFirst: AwarenessListener = ({ added, updated, removed }, source) => {
+    if (source !== origin)
+      applyAwarenessUpdate(
+        second.awareness,
+        encodeAwarenessUpdate(first.awareness, [...added, ...updated, ...removed]),
+        origin,
+      )
+  }
+  const presenceSecond: AwarenessListener = ({ added, updated, removed }, source) => {
+    if (source !== origin)
+      applyAwarenessUpdate(
+        first.awareness,
+        encodeAwarenessUpdate(second.awareness, [...added, ...updated, ...removed]),
+        origin,
+      )
+  }
+  Y.applyUpdate(second.doc, Y.encodeStateAsUpdate(first.doc), origin)
+  Y.applyUpdate(first.doc, Y.encodeStateAsUpdate(second.doc), origin)
+  applyAwarenessUpdate(
+    second.awareness,
+    encodeAwarenessUpdate(first.awareness, [...first.awareness.getStates().keys()]),
+    origin,
+  )
+  applyAwarenessUpdate(
+    first.awareness,
+    encodeAwarenessUpdate(second.awareness, [...second.awareness.getStates().keys()]),
+    origin,
+  )
 
-  awareness1.on("update", awareness1Listener)
-  awareness2.on("update", awareness2Listener)
-
+  first.doc.on("update", forwardFirst)
+  second.doc.on("update", forwardSecond)
+  first.awareness.on("update", presenceFirst)
+  second.awareness.on("update", presenceSecond)
   return () => {
-    doc1.off("update", doc1Listener)
-    doc2.off("update", doc2Listener)
-    awareness1.off("update", awareness1Listener)
-    awareness2.off("update", awareness2Listener)
+    first.doc.off("update", forwardFirst)
+    second.doc.off("update", forwardSecond)
+    first.awareness.off("update", presenceFirst)
+    second.awareness.off("update", presenceSecond)
   }
 }
 
 type AwarenessListener = (
-  args: { added: number[]; updated: number[]; removed: number[] },
+  changes: { added: number[]; updated: number[]; removed: number[] },
   origin: unknown,
 ) => void
