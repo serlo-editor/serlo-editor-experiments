@@ -4,20 +4,20 @@ import { richText as definition } from "../rich-text"
 import { array, boolean, childUnit, object, richText, unit } from "../schema"
 import type { HandleOf, SnapshotOf } from "../schema/types"
 
-export const inlineDefinition = definition.inline({ marks: { bold: true, italic: true } })
-export const textDefinition = definition.block({
+const textDefinition = definition.block({
   marks: { bold: true, italic: true },
   blocks: { paragraph: true, heading: true, orderedList: true, bulletList: true },
-})
-export const gapDefinition = definition.block({
-  marks: { bold: true, italic: true, gap: true },
-  blocks: { paragraph: true },
 })
 
 export const TextContent = unit({
   type: "text",
   fields: { content: richText({ definition: textDefinition }) },
   render: ({ handle }) => <RichText handle={handle.field("content")} />,
+})
+
+const gapDefinition = definition.block({
+  marks: { bold: true, italic: true, gap: true },
+  blocks: { paragraph: true },
 })
 
 export const FillInTheBlank = unit({
@@ -30,6 +30,8 @@ export const FillInTheBlank = unit({
     </div>
   ),
 })
+
+const inlineDefinition = definition.inline({ marks: { bold: true, italic: true } })
 
 export const MultipleChoice = unit({
   type: "multiple-choice",
