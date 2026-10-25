@@ -205,4 +205,4 @@ class ReferenceTable<Kind extends NodeKind, Value extends JSONValue> {
   }
 }
 
-export type Update<Value extends JSONValue> = Value | ((previousValue: Value) => Value)
+type Update<Value extends JSONValue> = Value | ((previousValue: Value) => Value)
