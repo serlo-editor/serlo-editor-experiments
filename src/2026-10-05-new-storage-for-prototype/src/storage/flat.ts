@@ -69,9 +69,6 @@ export class FlatNodeStore implements FlatNodeStoreContract {
 
     editor = createRichTextEditor({
       ...options,
-      ...(options.defaultContent === undefined
-        ? {}
-        : { defaultContent: structuredClone(options.defaultContent) }),
       extensions: [
         ...(options.extensions ?? []),
         definePlugin(

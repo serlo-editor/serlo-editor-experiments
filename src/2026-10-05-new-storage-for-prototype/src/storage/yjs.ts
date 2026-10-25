@@ -73,12 +73,7 @@ export class YjsNodeStore implements YjsNodeStoreContract {
 
   createRichText(options: RichTextEditorOptions): RichTextId {
     // Validate against the combined schema before writing anything to Yjs.
-    const editor = createRichTextEditor({
-      ...options,
-      ...(options.defaultContent === undefined
-        ? {}
-        : { defaultContent: structuredClone(options.defaultContent) }),
-    })
+    const editor = createRichTextEditor(options)
     editor.state.doc.check()
     const id: RichTextId = `rich-text:${crypto.randomUUID()}`
     this.transact(() => {
