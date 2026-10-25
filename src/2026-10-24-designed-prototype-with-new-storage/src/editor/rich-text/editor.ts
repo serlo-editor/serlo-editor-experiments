@@ -20,7 +20,8 @@ export interface RichTextEditorOptions extends RichTextEditorConfig {
   defaultContent?: NodeJSON
 }
 
-/** Creates a ProseKit editor; collaboration is supplied through extensions. */
+/** Creates a ProseKit editor; collaboration is supplied through extensions.
+ * Uses `structuredClone` for ``defaultContent`. */
 export function createRichTextEditor({
   definition,
   defaultContent,
@@ -28,7 +29,7 @@ export function createRichTextEditor({
   onViewUpdate,
 }: RichTextEditorOptions) {
   return createEditor({
-    ...(defaultContent === undefined ? {} : { defaultContent }),
+    ...(defaultContent === undefined ? {} : { defaultContent: structuredClone(defaultContent) }),
     extension: union(
       defineRichTextExtension(definition),
       ...extensions,
