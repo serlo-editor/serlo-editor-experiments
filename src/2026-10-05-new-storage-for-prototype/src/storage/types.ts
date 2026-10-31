@@ -5,8 +5,6 @@ import type {
 } from "../rich-text/index.ts"
 import type { Branded, JSONValue } from "../utils/index.ts"
 
-export type RichTextId = `rich-text:${string}`
-
 export type Ref = Branded<unknown, "Ref">
 
 export interface NodeRefs {
@@ -16,6 +14,12 @@ export interface NodeRefs {
 }
 
 export type NodeKind = keyof NodeRefs
+
+export type RichTextId = `rich-text:${string}`
+
+export function isRichTextId(value: unknown): value is RichTextId {
+  return typeof value === "string" && value.startsWith("rich-text:") && value.length > 10
+}
 
 export interface NodeStore<Refs extends NodeRefs = NodeRefs> {
   readonly cell: CellStore<Refs["cell"]>
@@ -56,10 +60,6 @@ export interface NodeWriter<Refs extends NodeRefs = NodeRefs> {
   readonly root: {
     save(ref: Refs[NodeKind]): Refs[NodeKind]
   }
-}
-
-export function isRichTextId(value: unknown): value is RichTextId {
-  return typeof value === "string" && value.startsWith("rich-text:") && value.length > 10
 }
 
 interface RootStore<Ref> {
