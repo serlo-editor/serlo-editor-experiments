@@ -189,9 +189,9 @@ class ReferenceTable<Kind extends NodeKind, Value extends JSONValue> {
     return value
   }
 
-  applyUpdate(ref: FlatNodeRefs[Kind], updater: Update<Value>): void {
+  applyUpdate(ref: FlatNodeRefs[Kind], updater: (previousValue: Value) => Value): void {
     const previousValue = this.get(ref)
-    const value = typeof updater === "function" ? updater(previousValue) : updater
+    const value = updater(previousValue)
     if (Object.is(previousValue, value)) return
     this.table.set(ref, value)
     this.onChange()
@@ -201,5 +201,3 @@ class ReferenceTable<Kind extends NodeKind, Value extends JSONValue> {
     return this.table.has(ref as FlatNodeRefs[Kind])
   }
 }
-
-export type Update<Value extends JSONValue> = Value | ((previousValue: Value) => Value)

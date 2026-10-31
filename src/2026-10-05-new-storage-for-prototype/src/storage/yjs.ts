@@ -43,11 +43,7 @@ export class YjsNodeStore implements YjsNodeStoreContract {
   }
 
   readonly cell: YjsNodeStoreContract["cell"] = {
-    create: (value) => {
-      const cell = new Y.Map<JSONValue>()
-      cell.set("value", value)
-      return cell as YjsNodeRefs["cell"]
-    },
+    create: (value) => new Y.Map<JSONValue>([["value", value]]) as YjsNodeRefs["cell"],
     get: (ref) => {
       const value = ref.get("value")
       if (value === undefined) {
@@ -58,11 +54,7 @@ export class YjsNodeStore implements YjsNodeStoreContract {
   }
 
   readonly array: YjsNodeStoreContract["array"] = {
-    create: (items) => {
-      const array = new Y.Array<YjsNodeRef>()
-      array.push(items as YjsNodeRef[])
-      return array as YjsNodeRefs["array"]
-    },
+    create: (items) => Y.Array.from([...items]) as YjsNodeRefs["array"],
     get: (ref) => ref.toArray(),
   }
 
@@ -97,34 +89,13 @@ export class YjsNodeStore implements YjsNodeStoreContract {
             fragment,
             awareness: createEditorSpecificAwareness(id, this.awareness),
           }),
-          // y-prosemirror 1.3.7 can dispatch queued cursor metadata after teardown.
-          defineMountHandler((view) => {
-            const dispatch = view.dispatch.bind(view)
-            view.dispatch = (transaction) => {
-              if (!view.isDestroyed) dispatch(transaction)
-            }
-          }),
+          defineSafeYjsTeardown(),
         ],
       })
       this.editors.set(id, editor)
     }
 
-    // Yjs view bindings are inactive while unmounted. Refresh local state only;
-    // opening/snapshotting must never initialize or overwrite the shared fragment.
-    if (!editor.mounted) {
-      const sharedDoc = yXmlFragmentToProseMirrorRootNode(fragment, editor.schema)
-      const currentDoc =
-        fragment.length === 0 ? editor.schema.topNodeType.createAndFill() : sharedDoc
-      if (!currentDoc) throw new Error("Cannot create empty rich-text document.")
-      currentDoc.check()
-      if (!editor.state.doc.eq(currentDoc)) {
-        editor.updateState(
-          editor.state.apply(
-            editor.state.tr.replaceWith(0, editor.state.doc.content.size, currentDoc.content),
-          ),
-        )
-      }
-    }
+    refreshUnmountedEditor(editor, fragment)
     return editor
   }
 
@@ -188,5 +159,35 @@ export class YjsNodeStore implements YjsNodeStoreContract {
       }
     }
     return false
+  }
+}
+
+function defineSafeYjsTeardown() {
+  // y-prosemirror 1.3.7 can dispatch queued cursor metadata after teardown.
+  return defineMountHandler((view) => {
+    const dispatch = view.dispatch.bind(view)
+    view.dispatch = (transaction) => {
+      if (!view.isDestroyed) dispatch(transaction)
+    }
+  })
+}
+
+function refreshUnmountedEditor(editor: RichTextEditor, fragment: Y.XmlFragment): void {
+  if (editor.mounted) return
+
+  // Yjs view bindings are inactive while unmounted. Refresh local state only;
+  // opening/snapshotting must never initialize or overwrite the shared fragment.
+  const currentDoc =
+    fragment.length === 0
+      ? editor.schema.topNodeType.createAndFill()
+      : yXmlFragmentToProseMirrorRootNode(fragment, editor.schema)
+  if (!currentDoc) throw new Error("Cannot create empty rich-text document.")
+  currentDoc.check()
+  if (!editor.state.doc.eq(currentDoc)) {
+    editor.updateState(
+      editor.state.apply(
+        editor.state.tr.replaceWith(0, editor.state.doc.content.size, currentDoc.content),
+      ),
+    )
   }
 }
