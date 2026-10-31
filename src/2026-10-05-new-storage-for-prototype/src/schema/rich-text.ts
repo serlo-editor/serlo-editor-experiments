@@ -1,5 +1,6 @@
 import type { RichTextEditor, RichTextEditorConfig, RichTextJSON } from "../rich-text/index.ts"
-import { isRichTextId, type RichTextId } from "../storage/types.ts"
+import type { RichTextId } from "../storage/index.ts"
+import { isRichTextId } from "../storage/types.ts"
 import type { JSONValue } from "../utils/index.ts"
 import type { Handle, Schema } from "./types.ts"
 

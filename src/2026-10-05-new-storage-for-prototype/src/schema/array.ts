@@ -1,4 +1,4 @@
-import type { NodeKind } from "../storage/types.ts"
+import type { NodeKind } from "../storage/index.ts"
 import type { JSONValue } from "../utils/index.ts"
 import type { Handle, Schema } from "./types.ts"
 
