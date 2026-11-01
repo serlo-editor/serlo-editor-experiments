@@ -21,6 +21,7 @@ export function isRichTextId(value: unknown): value is RichTextId {
   return typeof value === "string" && value.startsWith("rich-text:") && value.length > 10
 }
 
+// TODO: Rename to "DocumentStore"?!
 export interface NodeStore<Refs extends NodeRefs = NodeRefs> {
   readonly cell: CellStore<Refs["cell"]>
   readonly array: ArrayStore<Refs[NodeKind], Refs["array"]>
