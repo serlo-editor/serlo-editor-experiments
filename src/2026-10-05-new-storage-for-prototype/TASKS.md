@@ -5,6 +5,15 @@ The consumer is `../2026-10-24-designed-prototype-with-new-storage/`, which cont
 
 Core already supports separate store instances. Main missing feature is genuine read-only access. Additional gaps belong in the schema layer, not low-level storage.
 
+## Current delivery
+
+`ReadonlyNodeStore` stores immutable nested JSON, initialized through the existing
+`createDocument()` / `root.getOrCreate()` flow. It returns read-only ProseMirror
+editors, keeps revisions at zero, and has no-op subscriptions. It is standalone
+snapshot storage, not a facade or live remote view. No capability flag, separate
+root lookup/open API, or separate rich-text JSON API is added. Read-only storage
+and handle types, plus a smaller rich-text view, remain TODOs.
+
 ## Required store features
 
 ### 1. Read-only storage capability
@@ -12,10 +21,10 @@ Core already supports separate store instances. Main missing feature is genuine 
 Allow reading content, answers, or feedback without permitting content changes.
 Current `NodeStore` always exposes creation, transactions, and mutable rich-text editors.
 
-- [ ] Add a read-only store implementation or facade with reads, snapshots, revisions, and subscriptions.
+- [x] Add a read-only store implementation or facade with reads, snapshots, revisions, and subscriptions.
 - [ ] Expose an explicit writable/read-only capability.
-- [ ] Reject structural writes and rich-text changes through read-only access.
-- [ ] Prevent mutation through returned JSON values or collections; the flat store currently returns stored values directly.
+- [x] Reject structural writes and rich-text changes through read-only access.
+- [x] Prevent mutation through returned JSON values or collections in read-only storage. Writable flat-store access remains unchanged.
 - [ ] Support read-only access to a live store: remote updates remain readable while local writes stay blocked.
 - [ ] Reflect read-only access in schema handle types.
 
@@ -45,7 +54,7 @@ Current `RichTextHandle.snapshot()` calls `getEditor()`, which exposes the full 
 - [ ] Add read-only access to current ProseMirror JSON by rich-text ID and definition.
 - [ ] Keep reads current with updates from the underlying collaborative source.
 - [ ] Ensure reads never initialize or overwrite shared fragments.
-- [ ] Restrict mutable editor access to writable stores.
+- [x] Restrict mutable editor access to writable stores (read-only storage returns guarded editors).
 
 Reuse existing Yjs unmounted-fragment refresh logic. No second collaboration system is needed.
 
@@ -102,8 +111,8 @@ Do not use array positions or rich-text fragment IDs as durable answer keys: sna
 
 Prioritize read-only access, non-mutating document binding, read-only rich-text reads, and stable option/gap IDs.
 
-- [ ] Test blocked structural writes and rich-text commands through read-only access.
-- [ ] Test that returned values cannot mutate stored content outside write APIs.
+- [x] Test blocked structural writes and rich-text commands through read-only access.
+- [x] Test that returned read-only values cannot mutate stored content outside write APIs.
 - [ ] Test that opening or snapshotting read-only documents causes no shared-content writes.
 - [ ] Test that read-only views observe remote updates.
 - [ ] Test content/answer/feedback isolation and independent revisions.

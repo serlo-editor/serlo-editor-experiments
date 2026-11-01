@@ -15,14 +15,15 @@ drop-in replacement. Remaining integration work is tracked in `tasks/`.
 
 ## Current structure
 
-| Location               | Responsibility                                              |
-| ---------------------- | ----------------------------------------------------------- |
-| `src/storage/types.ts` | Backend-neutral refs, cells, arrays, maps, and transactions |
-| `src/storage/flat.ts`  | In-memory storage using string refs                         |
-| `src/storage/yjs.ts`   | Collaborative storage using nested Yjs shared types         |
-| `src/schema/`          | Typed schemas, bound handles, and document snapshots        |
-| `src/test-utils/`      | Shared tests against both storage implementations           |
-| `src/utils/`           | JSON types, guards, and branded types                       |
+| Location                  | Responsibility                                              |
+| ------------------------- | ----------------------------------------------------------- |
+| `src/storage/types.ts`    | Backend-neutral refs, cells, arrays, maps, and transactions |
+| `src/storage/flat.ts`     | In-memory storage using string refs                         |
+| `src/storage/readonly.ts` | Immutable nested JSON and read-only rich-text editors       |
+| `src/storage/yjs.ts`      | Collaborative storage using nested Yjs shared types         |
+| `src/schema/`             | Typed schemas, bound handles, and document snapshots        |
+| `src/test-utils/`         | Shared tests against both storage implementations           |
+| `src/utils/`              | JSON types, guards, and branded types                       |
 
 Schemas currently support strings, numbers, booleans, arrays, objects, optional
 object fields, rich text, educational units, and explicit child-unit unions.
@@ -49,6 +50,19 @@ Keep responsibilities separate:
 Prototype's `EditorStore` can remain an editor-facing adapter, but content must
 come from this backend rather than parallel legacy Yjs tables. Backend APIs need
 not reproduce every method of existing `EditorStore`.
+
+### Read-only storage
+
+`ReadonlyNodeStore` initializes through the existing `createDocument(store, schema,
+snapshot)` API. Reopening preserves the existing root. Refs are frozen nested JSON:
+cell values, arrays, and plain objects, with no reference tables or Yjs dependency.
+Creation is allowed only during root initialization; `transact()` always throws.
+Returned rich-text editors support mounting and selection, but reject content changes,
+including programmatic replacements. Snapshots remain ordinary detached JSON.
+
+Initialization is setup: revisions stay at zero and subscriptions are no-ops.
+This is standalone snapshot storage, not a live view of another store. Read-only
+storage/handle types and a smaller read-only rich-text renderer remain TODOs.
 
 ### Rich text
 

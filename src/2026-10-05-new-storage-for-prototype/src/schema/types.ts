@@ -1,6 +1,7 @@
 import type { NodeKind, NodeRefs, NodeStore } from "../storage/index.ts"
 import type { JSONValue } from "../utils/index.ts"
 
+// TODO: Add read-only handle types; mutation methods currently throw at runtime.
 export interface Handle<Snapshot extends JSONValue> {
   snapshot(): Snapshot
 }

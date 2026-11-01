@@ -3,7 +3,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test
 import { Window } from "happy-dom"
 import { defineHistory } from "prosekit/core"
 import { undo } from "prosekit/pm/history"
-import { TextSelection } from "prosekit/pm/state"
+import { EditorState, TextSelection } from "prosekit/pm/state"
 import type { DecorationSet } from "prosekit/pm/view"
 import { yCursorPluginKey } from "y-prosemirror"
 import { Awareness, applyAwarenessUpdate, encodeAwarenessUpdate } from "y-protocols/awareness"
@@ -17,7 +17,7 @@ import {
 import { createDocument } from "../schema/document.ts"
 import { array, richText } from "../schema/index.ts"
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
-import { FlatNodeStore, YjsNodeStore } from "./index.ts"
+import { FlatNodeStore, ReadonlyNodeStore, YjsNodeStore } from "./index.ts"
 
 const options = { definition: definition.inline({ marks: { bold: true } }) }
 
@@ -154,6 +154,39 @@ describe("stored rich-text editors", () => {
       expect(observed).toHaveLength(2)
       unsubscribe()
     })
+  })
+
+  test("read-only editors mount and select but reject content changes and replacement states", () => {
+    const store = new ReadonlyNodeStore()
+    const document = createDocument(store, richText(options), content("Initial"))
+    const editor = mount(document.root.getEditor())
+    expect(editor.view.editable).toBe(false)
+    expect(() => editor.view.dispatch(editor.state.tr.insertText("!", 1))).toThrow(
+      "Storage is read-only.",
+    )
+    expect(() =>
+      editor.view.dispatch(editor.state.tr.addMark(1, 2, editor.schema.marks.bold!.create())),
+    ).toThrow("Storage is read-only.")
+    expect(() => editor.setContent(content("Changed"))).toThrow("Storage is read-only.")
+
+    const changed = EditorState.create({
+      doc: editor.schema.nodeFromJSON(content("Changed")),
+      plugins: editor.state.plugins,
+    })
+    expect(() => editor.updateState(changed)).toThrow("Storage is read-only.")
+    expect(() => editor.view.updateState(changed)).toThrow("Storage is read-only.")
+    expect(() => editor.view.setProps({ state: changed })).toThrow("Storage is read-only.")
+    expect(() => editor.view.updateState(editor.state.reconfigure({ plugins: [] }))).toThrow(
+      "Storage is read-only.",
+    )
+    editor.view.dispatch(editor.state.tr.setSelection(TextSelection.create(editor.state.doc, 2)))
+    expect(editor.state.selection.from).toBe(2)
+    expect(document.snapshot()).toEqual(content("Initial"))
+
+    editor.unmount()
+    mount(editor)
+    expect(editor.view.editable).toBe(false)
+    expect(document.snapshot()).toEqual(content("Initial"))
   })
 
   test("flat storage keeps caller-supplied local history", async () => {

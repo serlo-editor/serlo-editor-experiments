@@ -35,6 +35,7 @@ export interface NodeStore<Refs extends NodeRefs = NodeRefs> {
   /**
    * Store-local invalidation version, advanced by content changes even without subscribers.
    * Empty transactions and reads leave it unchanged. Not persisted or comparable across stores.
+   * Immutable stores treat initialization as setup and keep this version at zero.
    */
   getRevision(): number
   /** Notifies after changes become readable, coalescing nested structural transactions. */
@@ -64,7 +65,7 @@ export interface NodeWriter<Refs extends NodeRefs = NodeRefs> {
 }
 
 interface RootStore<Ref> {
-  /** Runs the initializer inside a transaction, only when no root exists. */
+  /** Runs the initializer only when no root exists; writable stores use a transaction. */
   getOrCreate(create: () => Ref): Ref
 }
 
