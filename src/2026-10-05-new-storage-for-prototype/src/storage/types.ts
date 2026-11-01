@@ -53,6 +53,7 @@ export interface NodeStore<Refs extends NodeRefs = NodeRefs> {
   getRevision(): number
   /** Notifies after changes become readable, coalescing nested structural transactions. */
   subscribe(listener: () => void): () => void
+  // TODO: Add idempotent dispose() to release editors and store-owned listeners without destroying caller-owned resources.
   /**
    * Writer is valid only during this synchronous callback, including nested transactions.
    * Errors propagate, but transaction changes are not rolled back.
