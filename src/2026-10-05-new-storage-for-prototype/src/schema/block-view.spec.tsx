@@ -8,9 +8,9 @@ import { renderToStaticMarkup } from "react-dom/server"
 
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import { createDocument } from "./document.ts"
-import { array, childUnit, object, optional, string, unit, UnitView } from "./index.ts"
+import { array, blockUnion, object, optional, string, block, BlockView } from "./index.ts"
 
-describeWithStores("UnitView", (getStore) => {
+describeWithStores("BlockView", (getStore) => {
   test("remounts renderer state when a same-type child is replaced", async () => {
     const window = new Window()
     const globals = new Map<string, PropertyDescriptor | undefined>()
@@ -26,7 +26,7 @@ describeWithStores("UnitView", (getStore) => {
     document.body.append(host)
     const reactRoot = createRoot(host)
     try {
-      const text = unit({
+      const text = block({
         type: "text",
         fields: { text: string() },
         render: function TextView({ value }) {
@@ -38,18 +38,18 @@ describeWithStores("UnitView", (getStore) => {
           )
         },
       })
-      const initial = text.createUnit({ text: "First" })
-      const { root } = createDocument(getStore(), object({ child: optional(childUnit([text])) }), {
+      const initial = text.createSnapshot({ text: "First" })
+      const { root } = createDocument(getStore(), object({ child: optional(blockUnion([text])) }), {
         child: initial,
       })
       const render = () =>
-        flushSync(() => reactRoot.render(<UnitView value={root.field("child")!} />))
+        flushSync(() => reactRoot.render(<BlockView value={root.field("child")!} />))
       render()
       expect(host.textContent).toBe(`${initial.id}:First`)
       root.field("child")!.field("text").set("Edited")
       render()
       expect(host.textContent).toBe(`${initial.id}:Edited`)
-      const replacement = text.createUnit({ text: "Replacement" })
+      const replacement = text.createSnapshot({ text: "Replacement" })
       root.setOptional("child", replacement)
       render()
       expect(host.textContent).toBe(`${replacement.id}:Replacement`)
@@ -64,7 +64,7 @@ describeWithStores("UnitView", (getStore) => {
   })
 
   test("mounts nested union renderers as components with working hooks", () => {
-    const text = unit({
+    const text = block({
       type: "text",
       fields: { text: string() },
       render: function TextView({ value }) {
@@ -72,36 +72,39 @@ describeWithStores("UnitView", (getStore) => {
         return <p id={id}>{value.field("text").get()}</p>
       },
     })
-    const other = unit({
+    const other = block({
       type: "other",
       fields: { label: string() },
       render: ({ value }) => <strong>{value.field("label").get()}</strong>,
     })
-    const lesson = unit({
+    const lesson = block({
       type: "lesson",
-      fields: { exercises: array(childUnit([text, other])) },
+      fields: { exercises: array(blockUnion([text, other])) },
       render: function LessonView({ value }) {
         return (
           <section>
             {value.field("exercises").map((child) => (
-              <UnitView key={child.id} value={child} />
+              <BlockView key={child.id} value={child} />
             ))}
           </section>
         )
       },
     })
-    const initial = lesson.createUnit({
-      exercises: [text.createUnit({ text: "First" }), other.createUnit({ label: "Second" })],
+    const initial = lesson.createSnapshot({
+      exercises: [
+        text.createSnapshot({ text: "First" }),
+        other.createSnapshot({ label: "Second" }),
+      ],
     })
     const { root } = createDocument(getStore(), lesson, initial)
-    expect(UnitView({ value: root }).key).toBe(root.id)
-    expect(renderToStaticMarkup(<UnitView value={root} />)).toMatch(
+    expect(BlockView({ value: root }).key).toBe(root.id)
+    expect(renderToStaticMarkup(<BlockView value={root} />)).toMatch(
       /^<section><p id="[^"]+">First<\/p><strong>Second<\/strong><\/section>$/,
     )
     root.field("exercises").remove(0)
-    root.field("exercises").insert(0, other.createUnit({ label: "Inserted" }))
-    // Parent explicitly rerenders; UnitView has no subscriptions yet.
-    expect(renderToStaticMarkup(<UnitView value={root} />)).toBe(
+    root.field("exercises").insert(0, other.createSnapshot({ label: "Inserted" }))
+    // Parent explicitly rerenders; BlockView has no subscriptions yet.
+    expect(renderToStaticMarkup(<BlockView value={root} />)).toBe(
       "<section><strong>Inserted</strong><strong>Second</strong></section>",
     )
   })

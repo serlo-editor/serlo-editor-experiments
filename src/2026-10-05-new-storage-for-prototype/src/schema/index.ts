@@ -3,10 +3,10 @@ export { array } from "./array.ts"
 export { object, optional } from "./object.ts"
 export { richText } from "./rich-text.ts"
 export {
-  unit,
-  childUnit,
-  UnitView,
-  type UnitDefinition,
-  type StoredUnit,
-  type UnitSnapshot,
-} from "./unit.ts"
+  block,
+  blockUnion,
+  BlockView,
+  type BlockDefinition,
+  type StoredBlock,
+  type BlockSnapshot,
+} from "./block.ts"

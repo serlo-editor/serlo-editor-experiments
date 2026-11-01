@@ -26,7 +26,7 @@ drop-in replacement. Remaining integration work is tracked in `tasks/`.
 | `src/utils/`              | JSON types, guards, and branded types                       |
 
 Schemas currently support strings, numbers, booleans, arrays, objects, optional
-object fields, rich text, educational units, and explicit child-unit unions.
+object fields, rich text, blocks, and explicit block unions.
 `createDocument()` creates and attaches a root when store has none;
 otherwise it binds existing root and ignores supplied initial snapshot. Stored
 values read and edit content and produce snapshots.
@@ -61,8 +61,7 @@ Returned rich-text editors support mounting and selection, but reject content ch
 including programmatic replacements. Snapshots remain ordinary detached JSON.
 
 Initialization is setup: revisions stay at zero and subscriptions are no-ops.
-This is standalone snapshot storage, not a live view of another store. Read-only
-read-only storage/value types and a smaller read-only rich-text renderer remain TODOs.
+This is standalone snapshot storage, not a live view of another store. Read-only storage/value types and a smaller read-only rich-text renderer remain TODOs.
 
 ### Rich text
 
@@ -103,9 +102,9 @@ Callers unmount views when no longer used. There is no disposal API or automatic
 fragment garbage collection yet: editor caches follow store lifetime, and Yjs
 store revision tracking follows document lifetime.
 
-### Educational units
+### Blocks
 
-`unit({ type, fields, render })` defines an object schema with reserved `id` and
+`block({ type, fields, render })` defines an object schema with reserved `id` and
 `type` metadata. Content fields sit alongside metadata in snapshots, not inside a
 `content` wrapper. Stored values expose readonly `id`, literal `type`, local `definition`,
 ordinary typed `field()` access, and `snapshot()`. Renderer definitions stay local;
@@ -113,9 +112,9 @@ Yjs stores only content and metadata using existing map/cell storage.
 
 ```tsx
 import { createDocument } from "./src/schema/document.ts"
-import { array, childUnit, string, unit, UnitView } from "./src/schema/index.ts"
+import { array, blockUnion, string, block, BlockView } from "./src/schema/index.ts"
 
-const exercise = unit({
+const exercise = block({
   type: "exercise",
   fields: { question: string() },
   render: function ExerciseView({ value }) {
@@ -123,32 +122,32 @@ const exercise = unit({
   },
 })
 
-const lesson = unit({
+const lesson = block({
   type: "lesson",
-  fields: { exercises: array(childUnit([exercise])) },
+  fields: { exercises: array(blockUnion([exercise])) },
   render: function LessonView({ value }) {
-    return value.field("exercises").map((child) => <UnitView key={child.id} value={child} />)
+    return value.field("exercises").map((child) => <BlockView key={child.id} value={child} />)
   },
 })
 
-const initial = lesson.createUnit({
-  exercises: [exercise.createUnit({ question: "Why?" })],
+const initial = lesson.createSnapshot({
+  exercises: [exercise.createSnapshot({ question: "Why?" })],
 })
 // initial: { id, type: "lesson", exercises: [{ id, type: "exercise", question: "Why?" }] }
 // Given a NodeStore named store:
 const document = createDocument(store, lesson, initial)
-const view = <UnitView value={document.root} />
+const view = <BlockView value={document.root} />
 ```
 
-`definition.createUnit(fields)` creates a detached snapshot with a fresh UUID,
+`definition.createSnapshot(fields)` creates a detached snapshot with a fresh UUID,
 fixed type, and cloned fields. Supply already-created child snapshots for nested
-units. `definition.create(store, snapshot)` stores complete snapshots without
+blocks. `definition.create(store, snapshot)` stores complete snapshots without
 regenerating IDs. Loading a complete snapshot with `createDocument()` also preserves
-supplied unit IDs; reopening
+supplied block IDs; reopening
 an existing root still ignores initial snapshots. Field edits, sibling edits, and
 synchronization retain identity. `id` and `type` cannot be edited through stored values.
 
-`childUnit([...definitions])` accepts explicit, nonempty lists with distinct type
+`blockUnion([...definitions])` accepts explicit, nonempty lists with distinct type
 names. Stored `type` chooses the matching schema and local renderer; returned
 stored values form a discriminated union. No global renderer registry is used.
 
@@ -156,16 +155,16 @@ Edit object fields through child stored values. Optional fields support `setOpti
 and `removeOptional()`; arrays support `insert()` and `remove()`. Direct replacement
 of required fields and atomic array replacement are not provided.
 
-`definition.createUnit()` only builds snapshots; field handling remains with existing schemas
-when content is stored. Unit creation checks IDs, type discriminators, and unknown
-unit fields. There is no whole-tree validation preflight or schema validation hook.
+`definition.createSnapshot()` only builds snapshots; field handling remains with existing schemas
+when content is stored. Block creation checks IDs, type discriminators, and unknown
+block fields. There is no whole-tree validation preflight or schema validation hook.
 Transactions do not roll back on errors, so failed imports can leave unused content
 allocations, including rich-text fragments. Duplicate-ID validation, copy/paste,
-recursive schemas, unit lookup/indexes, and identity for ordinary objects remain
+recursive schemas, block lookup/indexes, and identity for ordinary objects remain
 deferred.
 
-`UnitView`, exported from `src/schema/index.ts`, mounts renderers as React components, so hooks work. Renderer elements
-are keyed by unit ID. Automatic React subscriptions are deferred: parents must
+`BlockView`, exported from `src/schema/index.ts`, mounts renderers as React components, so hooks work. Renderer elements
+are keyed by block ID. Automatic React subscriptions are deferred: parents must
 schedule rerenders after content changes.
 
 ### Identity and schemas
@@ -175,8 +174,8 @@ awareness. Backend refs are not interchangeable with these keys: Yjs refs are
 shared-type objects, local to each replica. Integration needs stable node identity
 and a way to resolve schema information and children after synchronization.
 
-Unit schemas now provide stable instance IDs and explicit unit unions. Generic
-literals, wrappers, unions beyond units, and prototype-specific schema translation
+Block schemas now provide stable instance IDs and explicit block unions. Generic
+literals, wrappers, unions beyond blocks, and prototype-specific schema translation
 remain separate integration work.
 
 ## Known integration blockers
@@ -188,7 +187,7 @@ remain separate integration work.
   so direct backend edits propagate through prototype's current sync helper.
   Transactions nested in an outer Yjs transaction retain the outer origin; a
   null-origin outer transaction is still dropped by that helper.
-- Unit stored values expose stable instance IDs and rich-text stored values expose stable
+- Block stored values expose stable instance IDs and rich-text stored values expose stable
   editor IDs; other stored values lack stable node identity. Existing keyed lookup and
   debug traversal still need an integration contract.
 - Prototype's React hook still depends on legacy `updateCount`; editor adapter
