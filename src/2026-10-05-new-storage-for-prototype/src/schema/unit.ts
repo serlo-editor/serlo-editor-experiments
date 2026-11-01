@@ -84,9 +84,10 @@ export function unit<const Type extends string, Fields extends SchemaMap>({
     },
 
     bind(store, ref) {
-      const refs = store.map.get(ref)
-      const id = refs.id === undefined ? undefined : store.cell.get(refs.id)
-      const storedType = refs.type === undefined ? undefined : store.cell.get(refs.type)
+      const idRef = store.map.getField(ref, "id")
+      const typeRef = store.map.getField(ref, "type")
+      const id = idRef === undefined ? undefined : store.cell.get(idRef)
+      const storedType = typeRef === undefined ? undefined : store.cell.get(typeRef)
       if (typeof id !== "string" || !id) throw new TypeError("Expected unit ID.")
       if (storedType !== type) throw new TypeError(`Expected unit type: ${type}.`)
       const content = contentSchema.bind(store, ref)
@@ -135,7 +136,7 @@ export function childUnit<const Definitions extends readonly AnyUnitDefinition[]
       return schema.create(store, snapshot)
     },
     bind(store, ref) {
-      const typeRef = store.map.get(ref).type
+      const typeRef = store.map.getField(ref, "type")
       const definition = select({
         type: typeRef === undefined ? undefined : store.cell.get(typeRef),
       })

@@ -46,6 +46,10 @@ export class FlatNodeStore implements FlatNodeStoreContract {
   readonly map: FlatNodeStoreContract["map"] = {
     create: (fields) => this.mapTable.create(fields),
     get: (ref) => this.mapTable.get(ref),
+    getField: (ref, field) => {
+      const fields = this.mapTable.get(ref)
+      return Object.hasOwn(fields, field) ? fields[field] : undefined
+    },
   }
 
   createRichText(options: RichTextEditorOptions): RichTextId {

@@ -39,6 +39,7 @@ export class ReadonlyNodeStore implements ReadonlyNodeStoreContract {
   readonly map: ReadonlyNodeStoreContract["map"] = {
     create: (fields) => this.create({ ...fields }),
     get: (ref) => ref,
+    getField: (ref, field) => (Object.hasOwn(ref, field) ? ref[field] : undefined),
   }
 
   readonly root: ReadonlyNodeStoreContract["root"] = {

@@ -72,13 +72,13 @@ export function object<Schemas extends SchemaMap>(
 
       const field = <Key extends keyof Schemas & string>(key: Key): FieldHandle<Schemas[Key]> => {
         const definition = definitionOf(key)
-        const fields = store.map.get(ref)
-        if (!Object.hasOwn(fields, key)) {
+        const childRef = store.map.getField(ref, key)
+        if (childRef === undefined) {
           if ("optional" in definition) return undefined as FieldHandle<Schemas[Key]>
           throw new TypeError(`Missing required field: ${key}.`)
         }
         const schema = "optional" in definition ? definition.schema : definition
-        return schema.bind(store, fields[key]!) as FieldHandle<Schemas[Key]>
+        return schema.bind(store, childRef) as FieldHandle<Schemas[Key]>
       }
 
       return {

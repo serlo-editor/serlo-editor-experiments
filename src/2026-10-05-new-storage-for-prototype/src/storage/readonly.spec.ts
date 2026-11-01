@@ -77,6 +77,31 @@ test("freezes nested cell JSON and copies array/map inputs", () => {
   })
 })
 
+test("gets own map fields without losing falsy references", () => {
+  const store = new ReadonlyNodeStore()
+  const values = { null: null, false: false, zero: 0, empty: "" }
+  const keys = ["", "世界 👋", "__proto__", "constructor", "toString", "hasOwnProperty"]
+  store.root.getOrCreate(() => {
+    const fields = Object.fromEntries(
+      Object.entries(values).map(([key, value]) => [key, store.cell.create(value)]),
+    )
+    const specialFields = Object.fromEntries(keys.map((key) => [key, store.cell.create(key)]))
+    const map = store.map.create({})
+    const root = store.map.create({ ...fields, ...specialFields, map })
+    for (const [key, value] of Object.entries(values)) {
+      expect<JSONValue | undefined>(store.map.getField(root, key)).toBe(value)
+    }
+    for (const key of keys) {
+      expect<JSONValue | undefined>(store.map.getField(root, key)).toBe(key)
+      expect(store.map.getField(map, key)).toBeUndefined()
+    }
+    expect(store.map.getField(root, "map")).toBe(map)
+    expect(store.map.getField(root, "missing")).toBeUndefined()
+    return root
+  })
+  expect(store.getRevision()).toBe(0)
+})
+
 test("rejects transactions without executing callbacks and creation outside initialization", () => {
   const store = new ReadonlyNodeStore()
   const forbidden = [

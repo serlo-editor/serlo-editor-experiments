@@ -35,6 +35,7 @@ export interface NodeStore<Refs extends NodeRefs = NodeRefs> {
   readonly map: {
     create(fields: Readonly<Record<string, Refs[NodeKind]>>): Refs["map"]
     get(ref: Refs["map"]): Readonly<Record<string, Refs[NodeKind]>>
+    getField(ref: Refs["map"], field: string): Refs[NodeKind] | undefined
   }
   readonly root: {
     /** Runs the initializer only when no root exists; writable stores use a transaction. */

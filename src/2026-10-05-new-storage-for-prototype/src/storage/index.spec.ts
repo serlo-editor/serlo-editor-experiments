@@ -41,6 +41,8 @@ describeWithStores("NodeStore", (getStore) => {
       store.transact(() => {})
       store.cell.get(cell)
       store.map.get(ref)
+      store.map.getField(ref, "cell")
+      store.map.getField(ref, "missing")
       tx.cell.set(cell, "Initial")
       tx.map.set(ref, "cell", cell)
       tx.map.remove(ref, "missing")
@@ -279,7 +281,7 @@ describeWithStores("NodeStore", (getStore) => {
     expect(rootRef).toBe(nodeStore.transact((write) => write.root.save(rootRef)))
     expect(nodeStore.map.get(rootRef)).toEqual(fields)
     expect(nodeStore.map.get(rootRef), "Repeated reads preserve references").toEqual(fields)
-    expect(nodeStore.map.get(rootRef).title).toBe(titleRef)
+    expect(nodeStore.map.getField(rootRef, "title")).toBe(titleRef)
     expect(nodeStore.map.get(branchRef)).toEqual({ items: arrayRef })
     expect(nodeStore.array.get(arrayRef)).toEqual([emptyRef, leafRef])
     expect(nodeStore.map.get(emptyRef)).toEqual({})
@@ -366,6 +368,34 @@ describeWithStores("NodeStore", (getStore) => {
     const child = store.cell.create("Again")
     store.transact((tx) => tx.map.set(ref, "__proto__", child))
     expect(store.map.get(ref)).toEqual({ ["__proto__"]: child })
+  })
+
+  test("gets individual map fields and observes replacements and removals", () => {
+    const store = getStore()
+    const keys = ["", "世界 👋", "__proto__", "constructor", "toString", "hasOwnProperty"]
+    const array = store.array.create([])
+    const map = store.map.create({})
+    const fields = Object.fromEntries(keys.map((key) => [key, store.cell.create(null)]))
+    const root = store.root.getOrCreate(() => store.map.create({ ...fields, array, map }))
+
+    expect(store.map.getField(root, "array")).toBe(array)
+    expect(store.map.getField(root, "map")).toBe(map)
+    expect(store.map.getField(root, "missing")).toBeUndefined()
+    for (const key of keys) {
+      expect(store.map.getField(map, key)).toBeUndefined()
+      expect(store.map.getField(root, key)).toBe(fields[key])
+      const replacement = store.cell.create("Changed")
+      store.transact((write) => {
+        write.map.set(root, key, replacement)
+        expect(store.map.getField(root, key)).toBe(replacement)
+      })
+      expect(store.map.getField(root, key)).toBe(replacement)
+      store.transact((write) => {
+        write.map.remove(root, key)
+        expect(store.map.getField(root, key)).toBeUndefined()
+      })
+      expect(store.map.getField(root, key)).toBeUndefined()
+    }
   })
 
   test("inserts maps into arrays", () => {

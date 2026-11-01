@@ -61,6 +61,7 @@ export class YjsNodeStore implements YjsNodeStoreContract {
   readonly map: YjsNodeStoreContract["map"] = {
     create: (fields) => new Y.Map<YjsNodeRef>(Object.entries(fields)) as YjsNodeRefs["map"],
     get: (ref) => Object.fromEntries(ref.entries()),
+    getField: (ref, field) => ref.get(field),
   }
 
   createRichText(options: RichTextEditorOptions): RichTextId {
