@@ -23,6 +23,7 @@ export function isRichTextId(value: unknown): value is RichTextId {
 
 // TODO: Rename to "DocumentStore"?!
 export interface NodeStore<Refs extends NodeRefs = NodeRefs> {
+  // TODO: Idea: Distinguish "create" between initialization and subsequent writes.
   readonly cell: {
     create(value: JSONValue): Refs["cell"]
     get(ref: Refs["cell"]): JSONValue
