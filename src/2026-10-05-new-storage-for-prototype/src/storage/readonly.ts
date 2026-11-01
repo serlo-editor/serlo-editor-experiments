@@ -19,7 +19,7 @@ type ReadonlyNodeRefs = {
 }
 type ReadonlyNodeStoreContract = NodeStore<ReadonlyNodeRefs>
 
-// TODO: Add proper read-only storage types and read-only schema handles.
+// TODO: Add proper read-only storage and schema value types.
 /** Immutable nested JSON; initialization is setup, not an observable change. */
 export class ReadonlyNodeStore implements ReadonlyNodeStoreContract {
   private rootRef: ReadonlyNodeRef | undefined

@@ -7,6 +7,6 @@ export {
   childUnit,
   UnitView,
   type UnitDefinition,
-  type UnitHandle,
+  type StoredUnit,
   type UnitSnapshot,
 } from "./unit.ts"

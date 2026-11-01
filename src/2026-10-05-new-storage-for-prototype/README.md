@@ -21,15 +21,15 @@ drop-in replacement. Remaining integration work is tracked in `tasks/`.
 | `src/storage/flat.ts`     | In-memory storage using string refs                         |
 | `src/storage/readonly.ts` | Immutable nested JSON and read-only rich-text editors       |
 | `src/storage/yjs.ts`      | Collaborative storage using nested Yjs shared types         |
-| `src/schema/`             | Typed schemas, bound handles, and document snapshots        |
+| `src/schema/`             | Typed schemas, bound stored values, and document snapshots  |
 | `src/test-utils/`         | Shared tests against both storage implementations           |
 | `src/utils/`              | JSON types, guards, and branded types                       |
 
 Schemas currently support strings, numbers, booleans, arrays, objects, optional
 object fields, rich text, educational units, and explicit child-unit unions.
 `createDocument()` creates and attaches a root when store has none;
-otherwise it binds existing root and ignores supplied initial snapshot. Handles
-read and edit content and produce snapshots.
+otherwise it binds existing root and ignores supplied initial snapshot. Stored
+values read and edit content and produce snapshots.
 
 ## Target integration
 
@@ -62,7 +62,7 @@ including programmatic replacements. Snapshots remain ordinary detached JSON.
 
 Initialization is setup: revisions stay at zero and subscriptions are no-ops.
 This is standalone snapshot storage, not a live view of another store. Read-only
-storage/handle types and a smaller read-only rich-text renderer remain TODOs.
+read-only storage/value types and a smaller read-only rich-text renderer remain TODOs.
 
 ### Rich text
 
@@ -78,7 +78,7 @@ import { richText } from "./src/schema/index.ts"
 const schema = richText({
   definition: definition.inline({ marks: { bold: true } }),
 })
-// Bound handle: handle.id, handle.getEditor(), handle.snapshot().
+// Bound stored value: value.id, value.getEditor(), value.snapshot().
 ```
 
 Both stores expose `createRichText({ definition, defaultContent, extensions,
@@ -107,7 +107,7 @@ store revision tracking follows document lifetime.
 
 `unit({ type, fields, render })` defines an object schema with reserved `id` and
 `type` metadata. Content fields sit alongside metadata in snapshots, not inside a
-`content` wrapper. Handles expose readonly `id`, literal `type`, local `definition`,
+`content` wrapper. Stored values expose readonly `id`, literal `type`, local `definition`,
 ordinary typed `field()` access, and `snapshot()`. Renderer definitions stay local;
 Yjs stores only content and metadata using existing map/cell storage.
 
@@ -118,16 +118,16 @@ import { array, childUnit, string, unit, UnitView } from "./src/schema/index.ts"
 const exercise = unit({
   type: "exercise",
   fields: { question: string() },
-  render: function ExerciseView({ handle }) {
-    return <p>{handle.field("question").get()}</p>
+  render: function ExerciseView({ value }) {
+    return <p>{value.field("question").get()}</p>
   },
 })
 
 const lesson = unit({
   type: "lesson",
   fields: { exercises: array(childUnit([exercise])) },
-  render: function LessonView({ handle }) {
-    return handle.field("exercises").map((child) => <UnitView key={child.id} handle={child} />)
+  render: function LessonView({ value }) {
+    return value.field("exercises").map((child) => <UnitView key={child.id} value={child} />)
   },
 })
 
@@ -137,7 +137,7 @@ const initial = lesson.createUnit({
 // initial: { id, type: "lesson", exercises: [{ id, type: "exercise", question: "Why?" }] }
 // Given a NodeStore named store:
 const document = createDocument(store, lesson, initial)
-const view = <UnitView handle={document.root} />
+const view = <UnitView value={document.root} />
 ```
 
 `definition.createUnit(fields)` creates a detached snapshot with a fresh UUID,
@@ -146,13 +146,13 @@ units. `definition.create(store, snapshot)` stores complete snapshots without
 regenerating IDs. Loading a complete snapshot with `createDocument()` also preserves
 supplied unit IDs; reopening
 an existing root still ignores initial snapshots. Field edits, sibling edits, and
-synchronization retain identity. `id` and `type` cannot be edited through handles.
+synchronization retain identity. `id` and `type` cannot be edited through stored values.
 
 `childUnit([...definitions])` accepts explicit, nonempty lists with distinct type
 names. Stored `type` chooses the matching schema and local renderer; returned
-handles form a discriminated union. No global renderer registry is used.
+stored values form a discriminated union. No global renderer registry is used.
 
-Edit object fields through child handles. Optional fields support `setOptional()`
+Edit object fields through child stored values. Optional fields support `setOptional()`
 and `removeOptional()`; arrays support `insert()` and `remove()`. Direct replacement
 of required fields and atomic array replacement are not provided.
 
@@ -188,8 +188,8 @@ remain separate integration work.
   so direct backend edits propagate through prototype's current sync helper.
   Transactions nested in an outer Yjs transaction retain the outer origin; a
   null-origin outer transaction is still dropped by that helper.
-- Unit handles expose stable instance IDs and rich-text handles expose stable
-  editor IDs; other handles lack stable node identity. Existing keyed lookup and
+- Unit stored values expose stable instance IDs and rich-text stored values expose stable
+  editor IDs; other stored values lack stable node identity. Existing keyed lookup and
   debug traversal still need an integration contract.
 - Prototype's React hook still depends on legacy `updateCount`; editor adapter
   must bridge storage revisions, rich-text changes, and local UI state.

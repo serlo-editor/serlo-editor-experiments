@@ -29,11 +29,11 @@ describeWithStores("UnitView", (getStore) => {
       const text = unit({
         type: "text",
         fields: { text: string() },
-        render: function TextView({ handle }) {
-          const [mountedId] = useState(handle.id)
+        render: function TextView({ value }) {
+          const [mountedId] = useState(value.id)
           return (
             <p>
-              {mountedId}:{handle.field("text").get()}
+              {mountedId}:{value.field("text").get()}
             </p>
           )
         },
@@ -43,7 +43,7 @@ describeWithStores("UnitView", (getStore) => {
         child: initial,
       })
       const render = () =>
-        flushSync(() => reactRoot.render(<UnitView handle={root.field("child")!} />))
+        flushSync(() => reactRoot.render(<UnitView value={root.field("child")!} />))
       render()
       expect(host.textContent).toBe(`${initial.id}:First`)
       root.field("child")!.field("text").set("Edited")
@@ -67,24 +67,24 @@ describeWithStores("UnitView", (getStore) => {
     const text = unit({
       type: "text",
       fields: { text: string() },
-      render: function TextView({ handle }) {
+      render: function TextView({ value }) {
         const id = useId()
-        return <p id={id}>{handle.field("text").get()}</p>
+        return <p id={id}>{value.field("text").get()}</p>
       },
     })
     const other = unit({
       type: "other",
       fields: { label: string() },
-      render: ({ handle }) => <strong>{handle.field("label").get()}</strong>,
+      render: ({ value }) => <strong>{value.field("label").get()}</strong>,
     })
     const lesson = unit({
       type: "lesson",
       fields: { exercises: array(childUnit([text, other])) },
-      render: function LessonView({ handle }) {
+      render: function LessonView({ value }) {
         return (
           <section>
-            {handle.field("exercises").map((child) => (
-              <UnitView key={child.id} handle={child} />
+            {value.field("exercises").map((child) => (
+              <UnitView key={child.id} value={child} />
             ))}
           </section>
         )
@@ -94,14 +94,14 @@ describeWithStores("UnitView", (getStore) => {
       exercises: [text.createUnit({ text: "First" }), other.createUnit({ label: "Second" })],
     })
     const { root } = createDocument(getStore(), lesson, initial)
-    expect(UnitView({ handle: root }).key).toBe(root.id)
-    expect(renderToStaticMarkup(<UnitView handle={root} />)).toMatch(
+    expect(UnitView({ value: root }).key).toBe(root.id)
+    expect(renderToStaticMarkup(<UnitView value={root} />)).toMatch(
       /^<section><p id="[^"]+">First<\/p><strong>Second<\/strong><\/section>$/,
     )
     root.field("exercises").remove(0)
     root.field("exercises").insert(0, other.createUnit({ label: "Inserted" }))
     // Parent explicitly rerenders; UnitView has no subscriptions yet.
-    expect(renderToStaticMarkup(<UnitView handle={root} />)).toBe(
+    expect(renderToStaticMarkup(<UnitView value={root} />)).toBe(
       "<section><strong>Inserted</strong><strong>Second</strong></section>",
     )
   })

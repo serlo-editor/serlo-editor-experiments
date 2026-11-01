@@ -8,7 +8,7 @@ import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import { array } from "./array.ts"
 import { createDocument } from "./document.ts"
 import { boolean, number, object, optional, string } from "./index.ts"
-import type { HandleOf, SnapshotOf } from "./types.ts"
+import type { SnapshotOf, StoredValueOf } from "./types.ts"
 
 describeWithStores("object schemas", (getStore) => {
   test("reads typed fields and snapshots child edits", () => {
@@ -45,9 +45,9 @@ describeWithStores("object schemas", (getStore) => {
       profile: { bio: "Updated" },
     })
 
-    // @ts-expect-error Object handles expose field(), not get().
+    // @ts-expect-error Object stored values expose field(), not get().
     expect(root.get).toBe(undefined)
-    // @ts-expect-error Fields are edited through child handles, not replaced.
+    // @ts-expect-error Fields are edited through child stored values, not replaced.
     expect(root.set).toBe(undefined)
     expect(() => {
       // @ts-expect-error Unknown fields are rejected.
@@ -61,7 +61,7 @@ describeWithStores("object schemas", (getStore) => {
     const root = document.root
 
     expect(root.field("name").get() satisfies string).toBe("Ada")
-    expect(root.field("bio") satisfies HandleOf<ReturnType<typeof string>> | undefined).toBe(
+    expect(root.field("bio") satisfies StoredValueOf<ReturnType<typeof string>> | undefined).toBe(
       undefined,
     )
     expect(document.snapshot()).toEqual({ name: "Ada" })
@@ -105,14 +105,14 @@ describeWithStores("object schemas", (getStore) => {
     }).toThrow("Unknown field: missing.")
 
     // @ts-expect-error Optional fields require an undefined check.
-    const requiredHandle: HandleOf<ReturnType<typeof string>> = root.field("bio")
+    const requiredValue: StoredValueOf<ReturnType<typeof string>> = root.field("bio")
     // @ts-expect-error Optional string fields reject numbers.
     const wrongSetter: (key: "bio", value: number) => void = root.setOptional
     // @ts-expect-error Required snapshot fields remain required.
     const missingName: SnapshotOf<typeof schema> = {}
     // @ts-expect-error Optional snapshot properties cannot explicitly contain undefined.
     const undefinedBio: SnapshotOf<typeof schema> = { name: "Ada", bio: undefined }
-    void [requiredHandle, wrongSetter, missingName, undefinedBio]
+    void [requiredValue, wrongSetter, missingName, undefinedBio]
   })
 
   test("preserves optional falsy values, arrays, and nested objects", () => {
@@ -164,7 +164,7 @@ describeWithStores("object schemas", (getStore) => {
     expect(() => root.snapshot()).toThrow("Missing required field: name.")
   })
 
-  test("handles optional prototype field names without inherited properties", () => {
+  test("supports optional prototype field names without inherited properties", () => {
     const schema = object({
       ["__proto__"]: optional(string()),
       constructor: optional(string()),

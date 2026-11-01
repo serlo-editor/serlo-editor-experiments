@@ -1,6 +1,6 @@
 import { isBoolean, isNumber, isString } from "../utils/index.ts"
 import type { Guard, Primitive } from "../utils/index.ts"
-import type { Handle, Schema } from "./types.ts"
+import type { Schema, StoredValue } from "./types.ts"
 
 export function string() {
   return primitive("string", isString)
@@ -14,7 +14,7 @@ export function number() {
   return primitive("number", isNumber)
 }
 
-interface PrimitiveHandle<Value extends Primitive> extends Handle<Value> {
+interface StoredPrimitive<Value extends Primitive> extends StoredValue<Value> {
   get(): Value
   set(value: Value): void
 }
@@ -22,7 +22,7 @@ interface PrimitiveHandle<Value extends Primitive> extends Handle<Value> {
 function primitive<Value extends Primitive>(
   expected: string,
   isValue: Guard<Value>,
-): Schema<Value, PrimitiveHandle<Value>, "cell"> {
+): Schema<Value, StoredPrimitive<Value>, "cell"> {
   return {
     create(store, snapshot) {
       return store.cell.create(snapshot)

@@ -134,7 +134,7 @@ test("closes failed initialization and permits retrying", () => {
   expect(store.cell.get(ref)).toBe("Recovered")
 })
 
-test("schema handles read snapshots but cannot mutate content", () => {
+test("schema stored values read snapshots but cannot mutate content", () => {
   const store = new ReadonlyNodeStore()
   const schema = object({ title: string(), items: array(string()), note: optional(string()) })
   const initial = { title: "Title", items: ["First"], note: "Note" }

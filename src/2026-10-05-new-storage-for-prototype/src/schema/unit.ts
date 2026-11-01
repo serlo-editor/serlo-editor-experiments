@@ -1,19 +1,19 @@
 import { createElement, type ReactNode } from "react"
 
 import { isObject } from "../utils/guard.ts"
-import { object, type ObjectHandle, type ObjectSnapshot, type SchemaMap } from "./object.ts"
+import { object, type ObjectSnapshot, type SchemaMap, type StoredObject } from "./object.ts"
 import { string } from "./primitives.ts"
-import type { HandleOf, Schema, SnapshotOf } from "./types.ts"
+import type { Schema, SnapshotOf, StoredValueOf } from "./types.ts"
 
 export type UnitSnapshot<Type extends string, Fields extends SchemaMap> = {
   readonly id: string
   readonly type: Type
 } & ObjectSnapshot<Fields>
 
-export interface UnitHandle<
+export interface StoredUnit<
   Type extends string,
   Fields extends SchemaMap,
-> extends ObjectHandle<Fields> {
+> extends StoredObject<Fields> {
   readonly id: string
   readonly type: Type
   readonly definition: UnitDefinition<Type, Fields>
@@ -22,22 +22,22 @@ export interface UnitHandle<
 
 export interface UnitDefinition<Type extends string, Fields extends SchemaMap> extends Schema<
   UnitSnapshot<Type, Fields>,
-  UnitHandle<Type, Fields>,
+  StoredUnit<Type, Fields>,
   "map"
 > {
   readonly type: Type
   readonly fields: Fields
   /** Builds a detached snapshot with fresh identity; create(store, snapshot) preserves IDs. */
   createUnit(fields: ObjectSnapshot<Fields>): UnitSnapshot<Type, Fields>
-  render(props: { handle: UnitHandle<Type, Fields> }): ReactNode
+  render(props: { value: StoredUnit<Type, Fields> }): ReactNode
 }
 
 // Parent owns rerender scheduling until subscription support is added.
 //
 // TODO: Add subscription support to allow child units to rerender themselves
 // when their state changes to avoid rerenderiing the entire app.
-export function UnitView({ handle }: { handle: UnitHandle<string, SchemaMap> }) {
-  return createElement(handle.definition.render, { handle, key: handle.id })
+export function UnitView({ value }: { value: StoredUnit<string, SchemaMap> }) {
+  return createElement(value.definition.render, { value, key: value.id })
 }
 
 /** Object schema with immutable identity, discriminator, and local renderer metadata. */
@@ -108,7 +108,7 @@ type AnyUnitDefinition = UnitDefinition<any, any>
 /** Explicit union; each child carries its locally bound renderer definition. */
 export function childUnit<const Definitions extends readonly AnyUnitDefinition[]>(
   definitions: Definitions,
-): Schema<SnapshotOf<Definitions[number]>, HandleOf<Definitions[number]>, "map"> {
+): Schema<SnapshotOf<Definitions[number]>, StoredValueOf<Definitions[number]>, "map"> {
   const byType = new Map<string, Definitions[number]>()
   if (definitions.length === 0) throw new TypeError("Expected at least one child unit definition.")
   for (const definition of definitions) {
@@ -140,8 +140,8 @@ export function childUnit<const Definitions extends readonly AnyUnitDefinition[]
       const definition = select({
         type: typeRef === undefined ? undefined : store.cell.get(typeRef),
       })
-      // Stored discriminator selects exactly one member of the inferred handle union.
-      return definition.bind(store, ref) as HandleOf<Definitions[number]>
+      // Stored discriminator selects exactly one member of the inferred stored-value union.
+      return definition.bind(store, ref) as StoredValueOf<Definitions[number]>
     },
   }
 }

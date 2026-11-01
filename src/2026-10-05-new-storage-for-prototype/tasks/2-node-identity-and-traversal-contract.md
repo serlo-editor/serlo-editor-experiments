@@ -9,7 +9,7 @@ Relevant files: `src/storage/types.ts`, `src/schema/types.ts`, and prototype's
 - [ ] Choose stable node IDs usable by React keys, editor caches, selection,
       fragment names, and awareness. Do not use array index, regenerated snapshot
       ID, or replica-local Yjs object identity as shared ID.
-- [ ] Expose enough identity and traversal through handles or adapter to find
+- [ ] Expose enough identity and traversal through stored values or adapter to find
       nodes, resolve schema/union variant, access fields/items, and enumerate
       reachable nodes for debug views.
 - [ ] Specify how IDs survive edits, reopening, and synchronization; distinguish

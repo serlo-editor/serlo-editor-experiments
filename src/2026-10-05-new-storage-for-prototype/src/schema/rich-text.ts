@@ -1,9 +1,9 @@
 import type { RichTextEditor, RichTextEditorConfig, RichTextJSON } from "../rich-text/index.ts"
 import { isRichTextId, type RichTextId } from "../storage/index.ts"
 import type { JSONValue } from "../utils/index.ts"
-import type { Handle, Schema } from "./types.ts"
+import type { Schema, StoredValue } from "./types.ts"
 
-export interface RichTextHandle extends Handle<RichTextJSON> {
+export interface StoredRichText extends StoredValue<RichTextJSON> {
   readonly id: RichTextId
   getEditor(): RichTextEditor
 }
@@ -11,7 +11,7 @@ export interface RichTextHandle extends Handle<RichTextJSON> {
 /** Stores an editor ID in a cell; snapshots contain only ProseMirror JSON. */
 export function richText(
   config: RichTextEditorConfig,
-): Schema<RichTextJSON, RichTextHandle, "cell"> {
+): Schema<RichTextJSON, StoredRichText, "cell"> {
   return {
     create(store, content) {
       const editorId = store.createRichText({ ...config, defaultContent: content })

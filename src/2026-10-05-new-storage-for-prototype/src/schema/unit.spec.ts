@@ -8,7 +8,7 @@ import { YjsNodeStore } from "../storage/index.ts"
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import { createDocument } from "./document.ts"
 import { array, boolean, childUnit, object, optional, richText, string, unit } from "./index.ts"
-import type { HandleOf, SnapshotOf } from "./types.ts"
+import type { SnapshotOf, StoredValueOf } from "./types.ts"
 
 function definitions() {
   const choice = unit({
@@ -18,14 +18,14 @@ function definitions() {
       answers: array(object({ text: string(), correct: boolean() })),
       explanation: optional(string()),
     },
-    render({ handle }) {
-      return handle.field("question").get() satisfies string
+    render({ value }) {
+      return value.field("question").get() satisfies string
     },
   })
   const forensic = unit({
     type: "forensic",
     fields: { caseId: string() },
-    render: ({ handle }) => handle.field("caseId").get(),
+    render: ({ value }) => value.field("caseId").get(),
   })
   return { choice, forensic, exercise: childUnit([choice, forensic]) }
 }
@@ -35,7 +35,7 @@ function choiceFields(question = "Which answer?") {
 }
 
 describeWithStores("unit schemas", (getStore) => {
-  test("creates flat snapshots with fresh IDs and typed object handles", () => {
+  test("creates flat snapshots with fresh IDs and typed stored values", () => {
     const { choice } = definitions()
     const fields = choiceFields()
     const initial = choice.createUnit(fields)
@@ -51,17 +51,17 @@ describeWithStores("unit schemas", (getStore) => {
     expect(fresh.type).toBe("choice")
 
     const document = createDocument(getStore(), choice, initial)
-    const handle = document.root
-    expect(handle.id satisfies string).toBe(initial.id)
-    expect(handle.type satisfies "choice").toBe("choice")
-    expect(handle.definition).toBe(choice)
-    expect(handle.snapshot()).toEqual(initial)
-    expect(handle.field("question").get() satisfies string).toBe("Which answer?")
-    expect(handle.field("explanation")).toBeUndefined()
-    handle.field("question").set("Updated")
-    handle.setOptional("explanation", "Because")
+    const value = document.root
+    expect(value.id satisfies string).toBe(initial.id)
+    expect(value.type satisfies "choice").toBe("choice")
+    expect(value.definition).toBe(choice)
+    expect(value.snapshot()).toEqual(initial)
+    expect(value.field("question").get() satisfies string).toBe("Which answer?")
+    expect(value.field("explanation")).toBeUndefined()
+    value.field("question").set("Updated")
+    value.setOptional("explanation", "Because")
     expect(document.snapshot()).toEqual({ ...initial, question: "Updated", explanation: "Because" })
-    expect(handle.id).toBe(initial.id)
+    expect(value.id).toBe(initial.id)
     expect(Object.keys(document.snapshot()).sort()).toEqual([
       "answers",
       "explanation",
@@ -71,16 +71,16 @@ describeWithStores("unit schemas", (getStore) => {
     ])
 
     // @ts-expect-error Required object fields have no replacement setter.
-    expect(handle.set).toBeUndefined()
+    expect(value.set).toBeUndefined()
     // @ts-expect-error Schemas have no validation hook.
     expect(choice.validate).toBeUndefined()
     expect(() => {
-      // @ts-expect-error Metadata is read through properties, not field handles.
-      handle.field("id")
+      // @ts-expect-error Metadata is read through properties, not field values.
+      value.field("id")
     }).toThrow("Unknown field: id.")
     expect(() => {
       // @ts-expect-error Metadata cannot be set as an optional content field.
-      handle.setOptional("type", "forensic")
+      value.setOptional("type", "forensic")
     }).toThrow("Unknown field: type.")
 
     // @ts-expect-error Snapshot retains literal discriminator.
@@ -122,7 +122,7 @@ describeWithStores("unit schemas", (getStore) => {
     expect(second.snapshot()).toEqual(loaded)
   })
 
-  test("child unions narrow handles and support existing optional-field operations", () => {
+  test("child unions narrow stored values and support existing optional-field operations", () => {
     const store = getStore()
     const { choice, forensic, exercise } = definitions()
     const initial = choice.createUnit(choiceFields())
@@ -134,7 +134,7 @@ describeWithStores("unit schemas", (getStore) => {
     if (required.type === "choice") {
       expect(required.field("question").get() satisfies string).toBe("Which answer?")
       expect(() => {
-        // @ts-expect-error Narrowed choice handles have no forensic fields.
+        // @ts-expect-error Narrowed choice values have no forensic fields.
         required.field("caseId")
       }).toThrow("Unknown field: caseId.")
     } else {
@@ -153,7 +153,7 @@ describeWithStores("unit schemas", (getStore) => {
     }
     expect(root.field("exercise").id).toBe(initial.id)
 
-    const typed: HandleOf<typeof exercise> = current
+    const typed: StoredValueOf<typeof exercise> = current
     expect(typed.snapshot()).toEqual(replacement)
     const excluded = unit({ type: "excluded", fields: {}, render: () => null })
     expect(() => {
@@ -176,7 +176,7 @@ describeWithStores("unit schemas", (getStore) => {
     root.remove(0)
     expect(root.children()[0]!.id).toBe(kept.id)
     expect(root.snapshot()).toEqual([kept])
-    // @ts-expect-error Array handles expose insert/remove, not replacement.
+    // @ts-expect-error Array stored values expose insert/remove, not replacement.
     expect(root.replace).toBeUndefined()
   })
 

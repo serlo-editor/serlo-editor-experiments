@@ -1,10 +1,11 @@
 import type { NodeKind } from "../storage/index.ts"
 import type { JSONValue } from "../utils/index.ts"
-import type { Handle, Schema } from "./types.ts"
+import type { Schema, StoredValue } from "./types.ts"
 
-export interface ArrayHandle<Item extends JSONValue, Child extends Handle<Item>> extends Handle<
-  readonly Item[]
-> {
+export interface StoredArray<
+  Item extends JSONValue,
+  Child extends StoredValue<Item>,
+> extends StoredValue<readonly Item[]> {
   readonly length: number
   children(): Child[]
   map<Result>(callback: (child: Child, index: number) => Result): Result[]
@@ -14,11 +15,11 @@ export interface ArrayHandle<Item extends JSONValue, Child extends Handle<Item>>
 
 export function array<
   Item extends JSONValue,
-  Child extends Handle<Item>,
+  Child extends StoredValue<Item>,
   ChildKind extends NodeKind,
 >(
   childSchema: Schema<Item, Child, ChildKind>,
-): Schema<readonly Item[], ArrayHandle<Item, Child>, "array"> {
+): Schema<readonly Item[], StoredArray<Item, Child>, "array"> {
   return {
     create(store, snapshots) {
       const refs = snapshots.map((snapshot) => childSchema.create(store, snapshot))

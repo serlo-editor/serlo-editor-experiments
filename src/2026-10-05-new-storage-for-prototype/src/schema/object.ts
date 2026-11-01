@@ -1,7 +1,9 @@
-import type { Handle, HandleOf, Schema, SnapshotOf } from "./types.ts"
+import type { Schema, SnapshotOf, StoredValue, StoredValueOf } from "./types.ts"
 
-export interface ObjectHandle<Schemas extends SchemaMap> extends Handle<ObjectSnapshot<Schemas>> {
-  field<Key extends keyof Schemas & string>(key: Key): FieldHandle<Schemas[Key]>
+export interface StoredObject<Schemas extends SchemaMap> extends StoredValue<
+  ObjectSnapshot<Schemas>
+> {
+  field<Key extends keyof Schemas & string>(key: Key): FieldValue<Schemas[Key]>
   setOptional<Key extends OptionalKeys<Schemas> & string>(
     key: Key,
     value: SnapshotOf<ChildSchema<Schemas[Key]>>,
@@ -19,8 +21,8 @@ interface OptionalField<Child extends AnySchema> {
 
 type ChildSchema<Field> = Field extends OptionalField<infer Child> ? Child : Field
 
-type FieldHandle<Field> =
-  Field extends OptionalField<infer Child> ? HandleOf<Child> | undefined : HandleOf<Field>
+type FieldValue<Field> =
+  Field extends OptionalField<infer Child> ? StoredValueOf<Child> | undefined : StoredValueOf<Field>
 
 type OptionalKeys<Schemas extends SchemaMap> = {
   [Key in keyof Schemas]-?: Schemas[Key] extends OptionalField<AnySchema> ? Key : never
@@ -34,7 +36,7 @@ export type ObjectSnapshot<Schemas extends SchemaMap> = {
 
 export function object<Schemas extends SchemaMap>(
   schemas: Schemas,
-): Schema<ObjectSnapshot<Schemas>, ObjectHandle<Schemas>, "map"> {
+): Schema<ObjectSnapshot<Schemas>, StoredObject<Schemas>, "map"> {
   return {
     create(store, snapshot) {
       const fields = Object.fromEntries(
@@ -70,15 +72,15 @@ export function object<Schemas extends SchemaMap>(
         return definition.schema
       }
 
-      const field = <Key extends keyof Schemas & string>(key: Key): FieldHandle<Schemas[Key]> => {
+      const field = <Key extends keyof Schemas & string>(key: Key): FieldValue<Schemas[Key]> => {
         const definition = definitionOf(key)
         const childRef = store.map.getField(ref, key)
         if (childRef === undefined) {
-          if ("optional" in definition) return undefined as FieldHandle<Schemas[Key]>
+          if ("optional" in definition) return undefined as FieldValue<Schemas[Key]>
           throw new TypeError(`Missing required field: ${key}.`)
         }
         const schema = "optional" in definition ? definition.schema : definition
-        return schema.bind(store, childRef) as FieldHandle<Schemas[Key]>
+        return schema.bind(store, childRef) as FieldValue<Schemas[Key]>
       }
 
       return {
@@ -102,7 +104,7 @@ export function object<Schemas extends SchemaMap>(
           return Object.fromEntries(
             Object.keys(schemas).flatMap((key) => {
               const child = field(key)
-              return child === undefined ? [] : [[key, (child as Handle<any>).snapshot()]]
+              return child === undefined ? [] : [[key, (child as StoredValue<any>).snapshot()]]
             }),
           ) as ObjectSnapshot<Schemas>
         },
