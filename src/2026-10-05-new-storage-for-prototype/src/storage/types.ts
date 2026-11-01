@@ -23,10 +23,22 @@ export function isRichTextId(value: unknown): value is RichTextId {
 
 // TODO: Rename to "DocumentStore"?!
 export interface NodeStore<Refs extends NodeRefs = NodeRefs> {
-  readonly cell: CellStore<Refs["cell"]>
-  readonly array: ArrayStore<Refs[NodeKind], Refs["array"]>
-  readonly map: MapStore<Refs[NodeKind], Refs["map"]>
-  readonly root: RootStore<Refs[NodeKind]>
+  readonly cell: {
+    create(value: JSONValue): Refs["cell"]
+    get(ref: Refs["cell"]): JSONValue
+  }
+  readonly array: {
+    create(items: readonly Refs[NodeKind][]): Refs["array"]
+    get(ref: Refs["array"]): readonly Refs[NodeKind][]
+  }
+  readonly map: {
+    create(fields: Readonly<Record<string, Refs[NodeKind]>>): Refs["map"]
+    get(ref: Refs["map"]): Readonly<Record<string, Refs[NodeKind]>>
+  }
+  readonly root: {
+    /** Runs the initializer only when no root exists; writable stores use a transaction. */
+    getOrCreate(create: () => Refs[NodeKind]): Refs[NodeKind]
+  }
 
   createRichText(options: RichTextEditorOptions): RichTextId
   /** Configuration is fixed when an editor is first created in this store. */
@@ -62,24 +74,4 @@ export interface NodeWriter<Refs extends NodeRefs = NodeRefs> {
   readonly root: {
     save(ref: Refs[NodeKind]): Refs[NodeKind]
   }
-}
-
-interface RootStore<Ref> {
-  /** Runs the initializer only when no root exists; writable stores use a transaction. */
-  getOrCreate(create: () => Ref): Ref
-}
-
-interface CellStore<Ref> {
-  create(value: JSONValue): Ref
-  get(ref: Ref): JSONValue
-}
-
-interface ArrayStore<ItemRef, ArrayRef> {
-  create(items: readonly ItemRef[]): ArrayRef
-  get(ref: ArrayRef): readonly ItemRef[]
-}
-
-interface MapStore<ItemRef, MapRef> {
-  create(fields: Readonly<Record<string, ItemRef>>): MapRef
-  get(ref: MapRef): Readonly<Record<string, ItemRef>>
 }
