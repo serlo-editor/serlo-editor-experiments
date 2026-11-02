@@ -28,6 +28,9 @@ jobs:
       - run: bun install --frozen-lockfile
       - uses: actions/configure-pages@v5
       - run: bun run build:pages
+        env:
+          # Public Liveblocks key for collaboration demos; unset falls back to in-page sync.
+          LIVEBLOCKS_PUBLIC: ${{ vars.LIVEBLOCKS_PUBLIC }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .pages

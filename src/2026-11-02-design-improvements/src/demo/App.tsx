@@ -1,25 +1,48 @@
 import { useEffect, useState } from "react"
 
 import { Editor } from "../editor"
+import { createBackend } from "../sync"
 import { type ExerciseType, exerciseTypes } from "./initial-content"
 import { Preview } from "./Preview"
-import { createDemoSessions, type DemoSessions } from "./sessions"
+import { type DemoSession, openDemoSession } from "./sessions"
 
 export default function App() {
-  const [sessionsByType, setSessionsByType] = useState<Map<ExerciseType, DemoSessions> | null>(null)
+  const [sessionsByType, setSessionsByType] = useState<Map<ExerciseType, DemoSession> | null>(null)
   const [exerciseType, setExerciseType] = useState<ExerciseType>("single-choice")
   const [previewVersion, resetPreview] = useState(0)
-  const [rightPane, setRightPane] = useState<"preview" | "collaboration">("preview")
+  const [connectionError, setConnectionError] = useState<string | null>(null)
 
-  // every exercise type keeps its own synchronized documents, so switching keeps its state
+  // every exercise type has its own room, so switching keeps its state
   useEffect(() => {
-    const next = new Map(exerciseTypes.map(({ id, content }) => [id, createDemoSessions(content)]))
-    setSessionsByType(next)
-    return () => next.forEach((sessions) => sessions.destroy())
+    const backend = createBackend()
+    let closed = false
+    const pending = Promise.all(
+      exerciseTypes.map(async ({ id, content }): Promise<[ExerciseType, DemoSession]> => [
+        id,
+        await openDemoSession(backend, `editor-demo:demo:${id}`, content),
+      ]),
+    ).then((entries) => new Map(entries))
+    pending.then(
+      (next) => {
+        if (!closed) setSessionsByType(next)
+      },
+      (error: unknown) => {
+        if (!closed) setConnectionError(String(error))
+      },
+    )
+    return () => {
+      closed = true
+      pending.then(
+        (next) => next.forEach((demo) => demo.close()),
+        () => {},
+      )
+    }
   }, [])
 
-  const sessions = sessionsByType?.get(exerciseType)
-  if (!sessions) return <main className="app">Loading...</main>
+  const session = sessionsByType?.get(exerciseType)?.session
+  if (connectionError)
+    return <main className="app">Verbindung fehlgeschlagen: {connectionError}</main>
+  if (!session) return <main className="app">Loading...</main>
 
   return (
     <main className="app">
@@ -37,74 +60,40 @@ export default function App() {
             </button>
           ))}
         </nav>
-        <div className="app__view-switch" role="group" aria-label="Ansicht im rechten Bereich">
-          <button
-            type="button"
-            aria-pressed={rightPane === "preview"}
-            aria-controls="right-pane-preview"
-            onClick={() => setRightPane("preview")}
-          >
-            Vorschau
-          </button>
-          <button
-            type="button"
-            aria-pressed={rightPane === "collaboration"}
-            aria-controls="right-pane-collaboration"
-            onClick={() => setRightPane("collaboration")}
-          >
-            Zusammenarbeit
-          </button>
-        </div>
       </header>
 
       <div className="app__workspace">
         <section className="app__authoring" aria-label="Inhalt bearbeiten">
-          <Editor
-            key={exerciseType}
-            session={sessions.first}
-            showName={rightPane === "collaboration"}
-          />
+          <Editor key={exerciseType} session={session} showName={false} />
         </section>
 
-        <section
-          className={`app__preview${rightPane === "collaboration" ? " app__preview--collaboration" : ""}`}
-          aria-label={rightPane === "preview" ? "Vorschau" : "Zusammenarbeit"}
-        >
-          {rightPane === "preview" && (
-            <header className="app__preview-header">
-              <h2 className="app__preview-title">Vorschau</h2>
-              <button
-                type="button"
-                className="app__reset"
-                aria-label="Vorschau zurücksetzen"
-                title="Vorschau zurücksetzen"
-                onClick={() => resetPreview((version) => version + 1)}
+        <section className="app__preview" aria-label="Vorschau">
+          <header className="app__preview-header">
+            <h2 className="app__preview-title">Vorschau</h2>
+            <button
+              type="button"
+              className="app__reset"
+              aria-label="Vorschau zurücksetzen"
+              title="Vorschau zurücksetzen"
+              onClick={() => resetPreview((version) => version + 1)}
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                aria-hidden="true"
               >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.8"
-                  aria-hidden="true"
-                >
-                  <path d="M4 4v6h6M4.5 9a8 8 0 1 1-.2 6" />
-                </svg>
-              </button>
-            </header>
-          )}
-          <div id="right-pane-preview" className="app__device" hidden={rightPane !== "preview"}>
+                <path d="M4 4v6h6M4.5 9a8 8 0 1 1-.2 6" />
+              </svg>
+            </button>
+          </header>
+          <div className="app__device">
             <span className="app__device-button app__device-button--upper" aria-hidden="true" />
             <span className="app__device-button app__device-button--lower" aria-hidden="true" />
             <div className="app__screen">
-              <Preview key={`${exerciseType}-${previewVersion}`} session={sessions.first} />
+              <Preview key={`${exerciseType}-${previewVersion}`} session={session} />
             </div>
-          </div>
-          <div
-            id="right-pane-collaboration"
-            className="app__collaboration"
-            hidden={rightPane !== "collaboration"}
-          >
-            <Editor key={exerciseType} session={sessions.second} />
           </div>
         </section>
       </div>

@@ -101,6 +101,13 @@ export class YjsNodeStore implements YjsNodeStoreContract {
             doc: this.doc,
             fragment,
             awareness: createEditorSpecificAwareness(id, this.awareness),
+            // y-prosemirror's default alpha suffix "70" (~44%) hides the selected text too much.
+            cursor: {
+              selectionBuilder: (user) => ({
+                style: `background-color: ${user.color}40`,
+                class: "ProseMirror-yjs-selection",
+              }),
+            },
           }),
           // y-prosemirror 1.3.7 can dispatch queued cursor metadata after teardown.
           defineMountHandler((view) => {

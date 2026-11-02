@@ -15,3 +15,6 @@ dist/
 !.vscode/extensions.json
 .idea
 package-lock.json
+
+# Secrets
+.env

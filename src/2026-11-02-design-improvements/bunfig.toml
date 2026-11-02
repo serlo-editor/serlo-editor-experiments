@@ -1,0 +1,4 @@
+[serve.static]
+# Inline only the public Liveblocks key into the dev bundle, never the secret.
+# `bun build` ignores this and gets the same filter via `--env` in package.json.
+env = "LIVEBLOCKS_PUBLIC*"
