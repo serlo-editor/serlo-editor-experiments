@@ -1,54 +1,80 @@
-import { applyAwarenessUpdate, Awareness, encodeAwarenessUpdate } from "y-protocols/awareness"
+import {
+  applyAwarenessUpdate,
+  Awareness,
+  encodeAwarenessUpdate,
+  removeAwarenessStates,
+} from "y-protocols/awareness"
 import * as Y from "yjs"
 
 import type { SyncBackend } from "./types"
 
-/** In-memory backend: connections in the same page share rooms, nothing leaves the browser. */
-export function createLocalBackend(): SyncBackend {
-  const rooms = new Map<string, Set<Peer>>()
-  // Explicit transport origin forwards local writes, but never echoes relayed updates.
-  const relay = Symbol("local-relay")
+/** Without a reply in this window, the room is assumed to have no other open tab. */
+const peerReplyTimeoutMs = 300
 
+/**
+ * Offline backend: syncs all tabs (and connections within a tab) of the same origin via
+ * `BroadcastChannel`. Nothing leaves the browser, and a room is gone once its last tab closes.
+ */
+export function createLocalBackend(): SyncBackend {
   return {
     connect(roomId) {
-      const peers = rooms.get(roomId) ?? new Set<Peer>()
-      rooms.set(roomId, peers)
+      const channel = new BroadcastChannel(`editor-sync:${roomId}`)
       const doc = new Y.Doc()
       const awareness = new Awareness(doc)
-      const self: Peer = { doc, awareness }
+      // Explicit transport origin forwards local writes, but never echoes received updates.
+      const remote = Symbol("broadcast-channel")
+      const post = (message: Message) => channel.postMessage(message)
+      let onFirstReply = () => {}
 
-      for (const peer of peers) {
-        Y.applyUpdate(doc, Y.encodeStateAsUpdate(peer.doc), relay)
-        const clients = [...peer.awareness.getStates().keys()]
-        applyAwarenessUpdate(awareness, encodeAwarenessUpdate(peer.awareness, clients), relay)
+      channel.onmessage = ({ data }: MessageEvent<Message>) => {
+        switch (data.type) {
+          case "sync-request":
+            post({ type: "sync-reply", update: Y.encodeStateAsUpdate(doc, data.stateVector) })
+            post({ type: "awareness", update: encodeAwarenessUpdate(awareness, [doc.clientID]) })
+            return
+          case "sync-reply":
+            Y.applyUpdate(doc, data.update, remote)
+            onFirstReply()
+            return
+          case "update":
+            Y.applyUpdate(doc, data.update, remote)
+            return
+          case "awareness":
+            applyAwarenessUpdate(awareness, data.update, remote)
+        }
       }
 
       const forwardDoc = (update: Uint8Array, origin: unknown) => {
-        if (origin === relay) return
-        for (const peer of peers) if (peer !== self) Y.applyUpdate(peer.doc, update, relay)
+        if (origin !== remote) post({ type: "update", update })
       }
+      // Every peer listens on the channel itself, so only this peer's own presence is sent.
       const forwardAwareness: AwarenessListener = ({ added, updated, removed }, origin) => {
-        if (origin === relay) return
-        const update = encodeAwarenessUpdate(awareness, [...added, ...updated, ...removed])
-        for (const peer of peers) {
-          if (peer !== self) applyAwarenessUpdate(peer.awareness, update, relay)
-        }
+        const changed = [...added, ...updated, ...removed]
+        if (origin === remote || !changed.includes(doc.clientID)) return
+        post({ type: "awareness", update: encodeAwarenessUpdate(awareness, [doc.clientID]) })
       }
       doc.on("update", forwardDoc)
       awareness.on("update", forwardAwareness)
-      peers.add(self)
+
+      const initialSync = new Promise<void>((resolve) => {
+        const timer = setTimeout(resolve, peerReplyTimeoutMs)
+        onFirstReply = () => {
+          clearTimeout(timer)
+          resolve()
+        }
+      })
+      post({ type: "sync-request", stateVector: Y.encodeStateVector(doc) })
 
       return {
         doc,
         awareness,
-        synced: () => Promise.resolve(),
+        synced: () => initialSync,
         disconnect() {
-          // Destroying awareness first forwards the removal of this peer's presence.
-          awareness.destroy()
+          removeAwarenessStates(awareness, [doc.clientID], "disconnect")
           doc.off("update", forwardDoc)
           awareness.off("update", forwardAwareness)
-          peers.delete(self)
-          if (peers.size === 0) rooms.delete(roomId)
+          channel.close()
+          awareness.destroy()
           doc.destroy()
         },
       }
@@ -56,10 +82,11 @@ export function createLocalBackend(): SyncBackend {
   }
 }
 
-interface Peer {
-  doc: Y.Doc
-  awareness: Awareness
-}
+type Message =
+  | { type: "sync-request"; stateVector: Uint8Array }
+  | { type: "sync-reply"; update: Uint8Array }
+  | { type: "update"; update: Uint8Array }
+  | { type: "awareness"; update: Uint8Array }
 
 type AwarenessListener = (
   changes: { added: number[]; updated: number[]; removed: number[] },

@@ -4,12 +4,24 @@ import type { SyncBackend } from "./types"
 
 export type { SyncBackend, SyncConnection } from "./types"
 
-/** Uses Liveblocks when a public key is inlined at build time, otherwise syncs within the page. */
+/**
+ * Uses Liveblocks when a public key is inlined at build time and the browser is online,
+ * otherwise syncs within the page.
+ */
 export function createBackend(): SyncBackend {
   const publicApiKey = readLiveblocksPublicKey()
-  // oxlint-disable-next-line no-console -- the silent fallback is easy to mistake for broken sync
-  console.info(`Sync backend: ${publicApiKey ? "Liveblocks" : "local (LIVEBLOCKS_PUBLIC unset)"}`)
-  return publicApiKey ? createLiveblocksBackend(publicApiKey) : createLocalBackend()
+  if (!publicApiKey) return fallBackToLocal("LIVEBLOCKS_PUBLIC unset")
+  if (!navigator.onLine) return fallBackToLocal("offline")
+  // oxlint-disable-next-line no-console -- makes the active backend visible next to fallbacks
+  console.info("Sync backend: Liveblocks")
+  return createLiveblocksBackend(publicApiKey)
+}
+
+/** The silent fallback is easy to mistake for broken sync, so it is always logged. */
+export function fallBackToLocal(reason: string): SyncBackend {
+  // oxlint-disable-next-line no-console
+  console.info(`Sync backend: local (${reason})`)
+  return createLocalBackend()
 }
 
 /** Bun replaces only the literal `process.env.X`; when unset, the browser has no `process`. */

@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useState } from "react"
 
 import { Editor } from "../editor"
-import { createBackend } from "../sync"
+import { createBackend, fallBackToLocal } from "../sync"
 import { type ExerciseType, exerciseTypes } from "./initial-content"
 import { useViewers } from "./presence"
 import { Preview } from "./Preview"
-import { type DemoSession, openDemoSession } from "./sessions"
+import { type DemoSession, openDemoSessions } from "./sessions"
 
 export default function App() {
   const [sessionsByType, setSessionsByType] = useState<Map<ExerciseType, DemoSession> | null>(null)
@@ -15,14 +15,12 @@ export default function App() {
 
   // every exercise type has its own room, so switching keeps its state
   useEffect(() => {
-    const backend = createBackend()
     let closed = false
-    const pending = Promise.all(
-      exerciseTypes.map(async ({ id, content }): Promise<[ExerciseType, DemoSession]> => [
-        id,
-        await openDemoSession(backend, `editor-demo:demo:${id}`, content),
-      ]),
-    ).then((entries) => new Map(entries))
+    // Unreachable servers (offline despite `navigator.onLine`, blocked, down) end in a timeout.
+    const pending = openDemoSessions(createBackend()).catch((error: unknown) => {
+      if (closed) throw error
+      return openDemoSessions(fallBackToLocal(String(error)))
+    })
     pending.then(
       (next) => {
         if (!closed) setSessionsByType(next)
