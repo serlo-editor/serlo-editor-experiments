@@ -28,6 +28,7 @@
 }
 
 .app__types button {
+  position: relative;
   padding: 0.4rem 0.75rem;
   font-size: 0.875rem;
   color: #404040;
@@ -35,6 +36,22 @@
   border: 0;
   border-radius: var(--radius-1);
   transition: background-color 150ms;
+}
+
+/* collaborators currently viewing this exercise type */
+.app__viewers {
+  position: absolute;
+  top: -0.2rem;
+  right: -0.2rem;
+  display: flex;
+  gap: 0.15rem;
+}
+
+.app__viewer {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px #ffffff;
 }
 
 .app__types button:hover {

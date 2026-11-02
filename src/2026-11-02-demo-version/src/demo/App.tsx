@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 
 import { Editor } from "../editor"
 import { createBackend } from "../sync"
 import { type ExerciseType, exerciseTypes } from "./initial-content"
+import { useViewers } from "./presence"
 import { Preview } from "./Preview"
 import { type DemoSession, openDemoSession } from "./sessions"
 
@@ -39,6 +40,13 @@ export default function App() {
     }
   }, [])
 
+  const editorSessions = useMemo(
+    () =>
+      sessionsByType && new Map([...sessionsByType].map(([type, { session }]) => [type, session])),
+    [sessionsByType],
+  )
+  const viewers = useViewers(editorSessions, exerciseType)
+
   const session = sessionsByType?.get(exerciseType)?.session
   if (connectionError)
     return <main className="app">Verbindung fehlgeschlagen: {connectionError}</main>
@@ -57,6 +65,18 @@ export default function App() {
               onClick={() => setExerciseType(id)}
             >
               {label}
+              {viewers.get(id)?.length ? (
+                <span className="app__viewers">
+                  {viewers.get(id)?.map(({ clientId, name, color }) => (
+                    <span
+                      key={clientId}
+                      className="app__viewer"
+                      style={{ backgroundColor: color }}
+                      title={name}
+                    />
+                  ))}
+                </span>
+              ) : null}
             </button>
           ))}
         </nav>
