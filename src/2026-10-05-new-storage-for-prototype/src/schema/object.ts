@@ -1,4 +1,4 @@
-import type { Schema, SnapshotOf, StoredValue, StoredValueOf } from "./types.ts"
+import type { AnySchema, Schema, SnapshotOf, StoredValue, StoredValueOf } from "./types.ts"
 
 export interface StoredObject<Schemas extends SchemaMap> extends StoredValue<
   ObjectSnapshot<Schemas>
@@ -11,7 +11,6 @@ export interface StoredObject<Schemas extends SchemaMap> extends StoredValue<
   removeOptional<Key extends OptionalKeys<Schemas> & string>(key: Key): void
 }
 
-type AnySchema = Schema<any, any, any>
 export type SchemaMap = Readonly<Record<string, AnySchema | OptionalField<AnySchema>>>
 
 interface OptionalField<Child extends AnySchema> {

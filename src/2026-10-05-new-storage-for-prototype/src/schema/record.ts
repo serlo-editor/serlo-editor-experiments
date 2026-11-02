@@ -1,8 +1,6 @@
 import type { NodeKind } from "../storage/index.ts"
 import { isObject } from "../utils/guard.ts"
-import type { Schema, SnapshotOf, StoredValue, StoredValueOf } from "./types.ts"
-
-type AnySchema = Schema<any, any, NodeKind>
+import type { AnySchema, Schema, SnapshotOf, StoredValue, StoredValueOf } from "./types.ts"
 
 type RecordSnapshot<ChildSchema extends AnySchema> = Readonly<
   Record<string, SnapshotOf<ChildSchema>>

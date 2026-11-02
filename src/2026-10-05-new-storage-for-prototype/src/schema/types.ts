@@ -16,6 +16,8 @@ export interface Schema<
   bind<Refs extends NodeRefs>(store: NodeStore<Refs>, ref: Refs[Kind]): BoundValue
 }
 
+export type AnySchema = Schema<any, any, NodeKind>
+
 export type SnapshotOf<ChildSchema> =
   ChildSchema extends Schema<infer Snapshot, any, any> ? Snapshot : never
 
