@@ -1,5 +1,5 @@
 import { renderMath } from "./math.ts"
-import { boxTypeLabel } from "./titled-block.ts"
+import { boxTypeLabel, createBoxIcon } from "./titled-block.ts"
 
 /**
  * Finishes serialized rich text for learners: the document keeps formulas as TeX, spoilers
@@ -35,10 +35,16 @@ export function renderStaticRichText(root: ParentNode) {
     if (label) {
       const badge = document.createElement("span")
       badge.className = "box__badge"
-      badge.textContent = label
+      const icon = createBoxIcon(box.dataset.box ?? "")
+      badge.append(...(icon ? [icon] : []), label)
       title.prepend(badge)
     } else if (!title.textContent?.trim()) {
       title.remove()
     }
   })
+
+  // media still waiting for a link has nothing to show
+  root
+    .querySelectorAll("img:not([src]), img[src=''], .embed:not(:has(iframe))")
+    .forEach((media) => media.remove())
 }

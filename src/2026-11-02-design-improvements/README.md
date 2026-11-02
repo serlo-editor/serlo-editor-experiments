@@ -20,9 +20,10 @@ bun run build
 - `src/editor/rich-text/`: rich-text definitions compiled to ProseKit extensions.
   Tasks support bold, italic, links, headings, lists, code blocks, formulas
   (TeX via Temml), spoilers, boxes, images, YouTube videos, GeoGebra applets,
-  and tables. Spoilers, boxes, and embeds are plain ProseMirror nodes;
-  `renderStaticRichText` turns them into `<details>`, badges, and typeset
-  formulas for the learner preview.
+  and tables. Spoilers, boxes, and media are plain ProseMirror nodes; DOM node
+  views add the spoiler toggle, the box type picker, and link cards for media.
+  `renderStaticRichText` turns them into `<details>`, badges with icons, and
+  typeset formulas for the learner preview.
 - `src/editor/content/`: unit definitions with local authoring renderers for
   text, single/multiple choice, text input, fill-in-the-blank (typed and drag &
   drop), image drag & drop, and free text. Root is an array of explicit

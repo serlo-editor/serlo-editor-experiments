@@ -59,15 +59,9 @@ const toolGroups: Tool[][] = [
   [
     nodeTool("codeBlock", "Code-Block", Code, "toggleCodeBlock"),
     nodeTool("mathInline", "Formel", Sigma, "insertMath"),
-    promptTool("image", "Bild", Image, "insertImage", "Link zum Bild", (src) => [{ src }]),
-    promptTool("video", "YouTube-Video", Video, "insertVideo", "Link zum YouTube-Video"),
-    promptTool(
-      "geogebra",
-      "GeoGebra",
-      Shapes,
-      "insertGeogebra",
-      "Link oder ID des GeoGebra-Applets",
-    ),
+    nodeTool("image", "Bild", Image, "insertImageCard"),
+    nodeTool("video", "YouTube-Video", Video, "insertVideoCard"),
+    nodeTool("geogebra", "GeoGebra", Shapes, "insertGeogebraCard"),
     nodeTool("table", "Tabelle", Table, "insertTable", { row: 3, col: 2, header: true }),
   ],
 ]
@@ -191,30 +185,6 @@ function nodeTool(
     isActive: (editor) => command.startsWith("toggle") && isNodeActive(editor, name, attrs),
     canExec: (editor) => canExecCommand(editor, command, ...args),
     run: (editor) => execCommand(editor, command, ...args),
-  }
-}
-
-/** Inserts a node from a link the author types into a prompt, like the tiptap prototype. */
-function promptTool(
-  name: string,
-  label: string,
-  icon: LucideIcon,
-  command: string,
-  question: string,
-  toArgs: (value: string) => unknown[] = (value) => [value],
-): Tool {
-  return {
-    id: name,
-    label,
-    icon,
-    isAvailable: (editor) => name in editor.schema.nodes,
-    isActive: () => false,
-    canExec: (editor) => canExecCommand(editor, command, ...toArgs("")),
-    run: (editor) => {
-      const value = window.prompt(question, "https://")?.trim()
-      editor.focus()
-      if (value && value !== "https://") execCommand(editor, command, ...toArgs(value))
-    },
   }
 }
 

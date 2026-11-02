@@ -12,7 +12,6 @@ import {
 import { defineBold } from "prosekit/extensions/bold"
 import { defineCodeBlock } from "prosekit/extensions/code-block"
 import { defineHeading } from "prosekit/extensions/heading"
-import { defineImage } from "prosekit/extensions/image"
 import { defineItalic } from "prosekit/extensions/italic"
 import { defineLink } from "prosekit/extensions/link"
 import { defineList } from "prosekit/extensions/list"
@@ -20,8 +19,8 @@ import { defineParagraph } from "prosekit/extensions/paragraph"
 import { defineTable } from "prosekit/extensions/table"
 import { defineText } from "prosekit/extensions/text"
 
-import { defineGeogebra, defineVideo } from "./embeds.ts"
 import { defineMath } from "./math.ts"
+import { defineGeogebra, defineImage, defineVideo } from "./media.ts"
 import { defineBox, defineSpoiler } from "./titled-block.ts"
 
 export interface Marks {

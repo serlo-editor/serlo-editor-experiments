@@ -808,21 +808,54 @@ summary {
 .rich-text-field__content table,
 .preview-rich-text table {
   width: 100%;
-  border-collapse: collapse;
+  overflow: hidden;
+  font-size: inherit;
+  line-height: 1.4;
+  table-layout: fixed;
+  border: 1px solid #c8c8cc;
+  border-spacing: 0;
+  border-collapse: separate;
+  border-radius: var(--radius-2);
 }
 
 .rich-text-field__content :is(td, th),
 .preview-rich-text :is(td, th) {
-  padding: 0.4em 0.6em;
+  position: relative;
+  padding: 0.5em 0.6em;
   text-align: left;
   vertical-align: top;
-  border: 1px solid #d4d4d4;
+  border-right: 1px solid #d6d6da;
+  border-bottom: 1px solid #d6d6da;
+}
+
+.rich-text-field__content tr > :last-child,
+.preview-rich-text tr > :last-child {
+  border-right: none;
+}
+
+.rich-text-field__content tr:last-child > *,
+.preview-rich-text tr:last-child > * {
+  border-bottom: none;
 }
 
 .rich-text-field__content th,
 .preview-rich-text th {
   font-weight: 600;
-  background: #f5f5f5;
+  background: #f3f6fd;
+}
+
+.rich-text-field__content :is(td, th) p,
+.preview-rich-text :is(td, th) p {
+  margin: 0;
+}
+
+/* cell selection (drag across cells) */
+.ProseMirror .selectedCell::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background: rgb(99 102 241 / 12%);
 }
 
 .rich-text-field__content img,
@@ -844,27 +877,12 @@ summary {
   aspect-ratio: 4 / 3;
 }
 
-/* clicks select the embed in the editor instead of reaching the iframe */
-.ProseMirror .embed iframe {
-  pointer-events: none;
+/* spoiler: a node view with a toggle in the editor, <details> in the preview */
+:root {
+  /* lets `height: auto` animate */
+  interpolate-size: allow-keywords;
 }
 
-.ProseMirror .embed.ProseMirror-selectednode {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 2px;
-  border-radius: var(--radius-1);
-}
-
-.embed__invalid {
-  padding: 0.75em 1em;
-  margin: 0;
-  font-size: 0.9em;
-  color: var(--color-text-muted);
-  border: 1px dashed var(--color-border);
-  border-radius: var(--radius-1);
-}
-
-/* spoiler: a card in the editor, <details> in the preview */
 .spoiler,
 .box {
   position: relative;
@@ -878,7 +896,7 @@ summary {
   position: relative;
   min-height: 1.5em;
   padding: 0.5em 0.8em;
-  font-weight: 600;
+  margin: 0;
   line-height: 1.5;
   background: #f3f6fd;
   border-bottom: 1px solid #e2e6f4;
@@ -886,33 +904,63 @@ summary {
 
 .spoiler__title {
   padding-left: 1.7em;
-  cursor: pointer;
+  font-weight: 600;
   list-style: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
 }
 
 .spoiler__title::-webkit-details-marker {
   display: none;
 }
 
-/* the disclosure triangle */
-.spoiler__title::before {
-  position: absolute;
-  top: 50%;
-  left: 0.7em;
+/* the disclosure triangle: a ::before of the summary in the preview, a button in the editor */
+summary.spoiler__title::before,
+.spoiler__toggle::before {
+  display: block;
+  width: 0;
+  height: 0;
   content: "";
   border-top: 0.29em solid transparent;
   border-bottom: 0.29em solid transparent;
   border-left: 0.38em solid currentColor;
-  transform: translateY(-50%) rotate(90deg);
   transition: transform 0.2s ease;
 }
 
-details.spoiler:not([open]) .spoiler__title {
+summary.spoiler__title::before {
+  position: absolute;
+  top: 50%;
+  left: 0.7em;
+  transform: translateY(-50%);
+}
+
+details.spoiler[open] > summary.spoiler__title::before {
+  transform: translateY(-50%) rotate(90deg);
+}
+
+details.spoiler:not([open]) > .spoiler__title,
+.spoiler:not([data-open]) .spoiler__title {
   border-bottom-color: transparent;
 }
 
-details.spoiler:not([open]) .spoiler__title::before {
-  transform: translateY(-50%);
+.spoiler__toggle {
+  position: absolute;
+  top: 0.5em;
+  left: 0.55em;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1.5em;
+  padding: 0;
+  color: inherit;
+  background: none;
+  border: 0;
+}
+
+.spoiler[data-open] > .spoiler__toggle::before {
+  transform: rotate(90deg);
 }
 
 .spoiler__content,
@@ -920,9 +968,43 @@ details.spoiler:not([open]) .spoiler__title::before {
   padding: 0.6em 0.8em;
 }
 
+/* opening and closing slides the content out of and into the title */
+details.spoiler::details-content {
+  block-size: 0;
+  overflow: hidden;
+  transition:
+    block-size 0.2s ease,
+    content-visibility 0.2s allow-discrete;
+}
+
+details.spoiler[open]::details-content {
+  block-size: auto;
+}
+
+.ProseMirror .spoiler__content {
+  height: auto;
+  overflow: hidden;
+  transition:
+    height 0.2s ease,
+    padding 0.2s ease;
+}
+
+.ProseMirror .spoiler:not([data-open]) .spoiler__content {
+  height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
 .spoiler__content > * + *,
 .box__content > * + * {
   margin-top: 0.75em;
+}
+
+/* the title bar keeps its height without a title, and contains the floated badge */
+.box__title {
+  display: flow-root;
+  min-height: calc(1.5em + 1em);
+  font-weight: 400;
 }
 
 /* placeholder for an empty title */
@@ -937,14 +1019,31 @@ details.spoiler:not([open]) .spoiler__title::before {
 
 /* room for the type picker, which is not part of the title */
 .ProseMirror .box__title {
-  padding-right: 8rem;
+  padding-right: 10rem;
 }
 
 .box__picker {
   position: absolute;
-  top: 0.45em;
+  top: 0.5em;
   right: 0.6em;
   z-index: 1;
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+  height: 1.5em;
+  color: #4f46e5;
+}
+
+.box__picker-icon {
+  display: flex;
+}
+
+.box__picker svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.box__picker select {
   padding: 0.1rem 0.3rem;
   font-size: 0.75rem;
   color: #525252;
@@ -953,9 +1052,120 @@ details.spoiler:not([open]) .spoiler__title::before {
   border-radius: 0.375rem;
 }
 
+/* the type badge, floated so the title text flows around it */
 .box__badge {
+  display: flex;
   float: right;
+  gap: 0.3em;
+  align-items: center;
+  height: 1.5em;
   margin-left: 0.8em;
   font-size: 0.85em;
+  line-height: 1;
   color: #4f46e5;
+  user-select: none;
+}
+
+.box__badge svg {
+  width: 1.1em;
+  height: 1.1em;
+}
+
+/* images and embeds: an editing card in the editor, the media itself in the preview */
+.media-card {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.6rem;
+  font-size: 1rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: var(--radius-2);
+}
+
+.media-card--selected {
+  outline: 2px solid #c7d2fe;
+  outline-offset: 2px;
+}
+
+.media-card__thumbnail {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 7rem;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  color: #9ca3af;
+  background: #e5e7eb;
+  border-radius: var(--radius-1);
+}
+
+.media-card__thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0;
+}
+
+.media-card__thumbnail svg {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.media-card__fields {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.media-card__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.media-card__input {
+  width: 100%;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  color: #374151;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  outline: none;
+}
+
+.media-card__input:focus {
+  border-color: #c7d2fe;
+  box-shadow: 0 0 0 2px #e0e7ff;
+}
+
+.media-card__hint {
+  font-size: 0.75rem;
+  color: #b45309;
+}
+
+.media-card__remove {
+  display: grid;
+  flex: none;
+  align-self: flex-start;
+  padding: 0.25rem;
+  color: #9ca3af;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  place-items: center;
+}
+
+.media-card__remove:hover {
+  color: #b91c1c;
+  background: #fee2e2;
+}
+
+.media-card__remove svg {
+  width: 1rem;
+  height: 1rem;
 }

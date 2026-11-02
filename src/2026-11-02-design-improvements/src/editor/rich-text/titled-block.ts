@@ -8,6 +8,9 @@ import {
 } from "prosekit/core"
 import type { Node as ProseMirrorNode } from "prosekit/pm/model"
 import { type Command, TextSelection } from "prosekit/pm/state"
+import type { EditorView } from "prosekit/pm/view"
+
+import { createIcon, isIconName } from "./icons.ts"
 
 /** Box types with their label; the type adds a badge to the title row. */
 export const boxTypes = [
@@ -38,6 +41,7 @@ export function defineSpoiler(): Extension {
         toggleTitledBlock({ wrapper: "spoiler", title: "spoilerTitle", content: "spoilerContent" }),
     }),
     defineTitleKeymap("spoilerTitle"),
+    defineSpoilerToggle(),
   )
 }
 
@@ -63,6 +67,11 @@ export function defineBox(): Extension {
 
 export function boxTypeLabel(type: string) {
   return boxTypes.find(({ value }) => value === type)?.label ?? ""
+}
+
+/** The type's icon, `null` for the blank box. */
+export function createBoxIcon(type: string) {
+  return isIconName(type) ? createIcon(type) : null
 }
 
 interface TitledBlockNames {
@@ -186,6 +195,61 @@ function defineTitleKeymap(title: string): Extension {
   })
 }
 
+/**
+ * In the editor, a spoiler is open unless the author collapses it with its arrow. That state
+ * is local to the editor and not part of the document; learners always start collapsed.
+ */
+function defineSpoilerToggle(): Extension {
+  return defineNodeView({
+    name: "spoiler",
+    constructor: (_node, view, getPos) => {
+      const dom = document.createElement("div")
+      dom.className = "spoiler"
+      dom.dataset.open = ""
+      const toggle = document.createElement("button")
+      toggle.type = "button"
+      toggle.className = "spoiler__toggle"
+      toggle.contentEditable = "false"
+      toggle.setAttribute("aria-label", "Spoiler auf- oder zuklappen")
+      toggle.setAttribute("aria-expanded", "true")
+      // keep the cursor where it is, the click only opens or closes
+      toggle.addEventListener("mousedown", (event) => event.preventDefault())
+      toggle.addEventListener("click", () => {
+        const isOpen = dom.dataset.open === undefined
+        if (isOpen) dom.dataset.open = ""
+        else delete dom.dataset.open
+        toggle.setAttribute("aria-expanded", String(isOpen))
+        if (!isOpen) moveCursorOutOfContent(view, getPos())
+      })
+      const contentDOM = document.createElement("div")
+      dom.append(toggle, contentDOM)
+
+      return {
+        dom,
+        contentDOM,
+        stopEvent: (event) => event.target instanceof Node && toggle.contains(event.target),
+        // the open state lives on the wrapper only, the toggle is not part of the document
+        ignoreMutation: (mutation) =>
+          (mutation.type === "attributes" && mutation.target === dom) ||
+          (mutation.type !== "selection" && toggle.contains(mutation.target)),
+      }
+    },
+  })
+}
+
+/** A collapsed spoiler hides its content, so a cursor in there moves to the end of the title. */
+function moveCursorOutOfContent(view: EditorView, pos?: number) {
+  if (pos === undefined) return
+  const spoiler = view.state.doc.nodeAt(pos)
+  const title = spoiler?.firstChild
+  if (!spoiler || !title) return
+  const { from } = view.state.selection
+  const contentStart = pos + 1 + title.nodeSize
+  if (from < contentStart || from > pos + spoiler.nodeSize) return
+  const titleEnd = pos + 1 + title.nodeSize - 1
+  view.dispatch(view.state.tr.setSelection(TextSelection.create(view.state.doc, titleEnd)))
+}
+
 /** The editor shows a type picker on each box, which is not part of the document. */
 function defineBoxTypePicker(): Extension {
   return defineNodeView({
@@ -194,25 +258,30 @@ function defineBoxTypePicker(): Extension {
       let node = initialNode
       const dom = document.createElement("div")
       dom.className = "box"
-      const picker = document.createElement("select")
+      const picker = document.createElement("label")
       picker.className = "box__picker"
       picker.contentEditable = "false"
-      picker.setAttribute("aria-label", "Art der Box")
-      for (const { value, label } of boxTypes) picker.append(new Option(label, value))
-      picker.addEventListener("change", () => {
+      const icon = document.createElement("span")
+      icon.className = "box__picker-icon"
+      const select = document.createElement("select")
+      select.setAttribute("aria-label", "Art der Box")
+      for (const { value, label } of boxTypes) select.append(new Option(label, value))
+      select.addEventListener("change", () => {
         const pos = getPos()
         if (pos === undefined) return
         view.dispatch(
-          view.state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, type: picker.value }),
+          view.state.tr.setNodeMarkup(pos, undefined, { ...node.attrs, type: select.value }),
         )
       })
+      picker.append(icon, select)
       const contentDOM = document.createElement("div")
       dom.append(picker, contentDOM)
 
       const sync = () => {
         const type = String(node.attrs.type)
         dom.dataset.box = type
-        picker.value = type
+        select.value = type
+        icon.replaceChildren(...[createBoxIcon(type)].filter((child) => child !== null))
       }
       sync()
 
