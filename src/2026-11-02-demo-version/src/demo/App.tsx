@@ -48,7 +48,13 @@ export default function App() {
   const session = sessionsByType?.get(exerciseType)?.session
   if (connectionError)
     return <main className="app">Verbindung fehlgeschlagen: {connectionError}</main>
-  if (!session) return <main className="app">Loading...</main>
+  if (!session)
+    return (
+      <main className="app app--loading" aria-busy="true">
+        <span className="spinner" aria-hidden="true" />
+        Loading...
+      </main>
+    )
 
   return (
     <main className="app">
