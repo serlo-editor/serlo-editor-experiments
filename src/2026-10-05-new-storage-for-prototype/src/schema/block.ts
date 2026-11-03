@@ -1,9 +1,9 @@
-import { createElement, type ReactNode } from "react"
+import type { ReactNode } from "react"
 
 import { isObject } from "../utils/guard.ts"
 import { object, type ObjectSnapshot, type SchemaMap, type StoredObject } from "./object.ts"
 import { string } from "./primitives.ts"
-import type { Schema, SnapshotOf, StoredValueOf } from "./types.ts"
+import type { Schema, SnapshotOf } from "./types.ts"
 
 export type BlockSnapshot<Type extends string, Fields extends SchemaMap> = {
   readonly id: string
@@ -30,14 +30,6 @@ export interface BlockDefinition<Type extends string, Fields extends SchemaMap> 
   /** Builds a detached snapshot with fresh identity; create(store, snapshot) preserves IDs. */
   createSnapshot(fields: ObjectSnapshot<Fields>): BlockSnapshot<Type, Fields>
   render(props: { value: StoredBlock<Type, Fields> }): ReactNode
-}
-
-// Parent owns rerender scheduling until subscription support is added.
-//
-// TODO: Add subscription support so child blocks can rerender themselves when state changes.
-
-export function BlockView({ value }: { value: StoredBlock<string, SchemaMap> }) {
-  return createElement(value.definition.render, { value, key: value.id })
 }
 
 /** Object schema with immutable identity, discriminator, and local renderer metadata. */
@@ -101,48 +93,4 @@ export function block<const Type extends string, Fields extends SchemaMap>({
     },
   }
   return definition
-}
-
-type AnyBlockDefinition = BlockDefinition<any, any>
-
-/** Explicit union; each child carries its locally bound renderer definition. */
-export function blockUnion<const Definitions extends readonly AnyBlockDefinition[]>(
-  definitions: Definitions,
-): Schema<SnapshotOf<Definitions[number]>, StoredValueOf<Definitions[number]>, "map"> {
-  const byType = new Map<string, Definitions[number]>()
-  if (definitions.length === 0) throw new TypeError("Expected at least one child block definition.")
-  for (const definition of definitions) {
-    if (byType.has(definition.type))
-      throw new TypeError(`Duplicate block type: ${definition.type}.`)
-    byType.set(definition.type, definition)
-  }
-
-  const select = (snapshot: unknown): Definitions[number] => {
-    if (
-      !isObject(snapshot) ||
-      !Object.hasOwn(snapshot, "type") ||
-      typeof snapshot.type !== "string"
-    ) {
-      throw new TypeError("Expected child block type.")
-    }
-    const definition = byType.get(snapshot.type)
-    if (!definition) throw new TypeError(`Unknown child block type: ${snapshot.type}.`)
-    return definition
-  }
-
-  return {
-    create(store, snapshot) {
-      // Selection erases the concrete member while preserving the public snapshot union.
-      const schema: Schema<any, any, "map"> = select(snapshot)
-      return schema.create(store, snapshot)
-    },
-    bind(store, ref) {
-      const typeRef = store.map.getField(ref, "type")
-      const definition = select({
-        type: typeRef === undefined ? undefined : store.cell.get(typeRef),
-      })
-      // Stored discriminator selects exactly one member of the inferred stored-value union.
-      return definition.bind(store, ref) as StoredValueOf<Definitions[number]>
-    },
-  }
 }
