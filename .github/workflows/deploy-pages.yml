@@ -29,8 +29,8 @@ jobs:
       - uses: actions/configure-pages@v5
       - run: bun run build:pages
         env:
-          # Public Liveblocks key for collaboration demos; unset falls back to in-page sync.
-          LIVEBLOCKS_PUBLIC: ${{ vars.LIVEBLOCKS_PUBLIC }}
+          # Host of the demo sync server (server/ in the experiment); unset falls back to local sync.
+          PUBLIC_SYNC_HOST: ${{ vars.PUBLIC_SYNC_HOST }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: .pages

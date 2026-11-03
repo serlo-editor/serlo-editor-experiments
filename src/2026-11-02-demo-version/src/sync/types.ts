@@ -10,7 +10,7 @@ export interface SyncBackend {
 export interface SyncConnection {
   readonly doc: Y.Doc
   readonly awareness: Awareness
-  /** Resolves once remote state is loaded and all local changes are acknowledged. */
+  /** Resolves once the room's current state is loaded, so seeding can't compete with it. */
   synced(): Promise<void>
   disconnect(): void
 }
