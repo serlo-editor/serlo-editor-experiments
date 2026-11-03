@@ -11,16 +11,11 @@ import type { SnapshotOf, StoredValueOf } from "./types.ts"
 
 describeWithStores("record schemas", (getStore) => {
   test("creates, reads, replaces, removes, and re-adds entries", () => {
-    const resolved: string[] = []
-    const schema = record((key) => {
-      resolved.push(key)
-      return string()
-    })
+    const schema = record(string())
     const { root } = createDocument(getStore(), schema, {})
     expect(root.snapshot()).toEqual({})
     expect(root.get("missing")).toBeUndefined()
     root.remove("missing")
-    expect(resolved).toEqual([])
 
     root.set("answer", "Initial")
     const original = root.get("answer")!
@@ -41,53 +36,52 @@ describeWithStores("record schemas", (getStore) => {
     expect(root.keys).toBeUndefined()
   })
 
-  test("resolves different node kinds and infers snapshot and stored-value unions", () => {
-    const text = string()
-    const selected = array(string())
-    const profile = object({ count: number(), active: boolean() })
-    const schema = record((key) => {
-      if (key === "text") return text
-      if (key === "selected") return selected
-      if (key === "profile") return profile
-      throw new Error(`Unknown key: ${key}.`)
+  test("infers object child snapshots and stored values", () => {
+    const child = object({
+      text: string(),
+      selected: array(string()),
+      count: number(),
+      active: boolean(),
     })
+    const schema = record(child)
     const initial: SnapshotOf<typeof schema> = {
-      text: "",
-      selected: [],
-      profile: { count: 0, active: false },
+      answer: { text: "", selected: [], count: 0, active: false },
     }
     const { root } = createDocument(getStore(), schema, initial)
     expect(root.snapshot()).toEqual(initial)
 
-    const choices = root.get("selected")
-    if (!choices || !("insert" in choices)) throw new Error("Expected stored array.")
-    choices.insert(0, "option-a")
-    const details = root.get("profile")
-    if (!details || !("field" in details)) throw new Error("Expected stored object.")
-    details.field("count").set(1)
+    const answer = root.get("answer")
+    answer satisfies StoredValueOf<typeof child> | undefined
+    answer!.field("selected").insert(0, "option-a")
+    answer!.field("count").set(1)
     expect(root.snapshot()).toEqual({
-      text: "",
-      selected: ["option-a"],
-      profile: { count: 1, active: false },
+      answer: { text: "", selected: ["option-a"], count: 1, active: false },
     })
+    root.set("another", { text: "Other", selected: [], count: 2, active: true })
+    expect(root.get("another")!.field("active").get()).toBe(true)
 
-    root.get("text") satisfies
-      | StoredValueOf<typeof text>
-      | StoredValueOf<typeof selected>
-      | StoredValueOf<typeof profile>
-      | undefined
-    // @ts-expect-error Dynamic IDs cannot narrow the stored-value union to a string.
-    const onlyText: StoredValueOf<typeof text> = root.get("text")
-    // @ts-expect-error Number snapshots do not belong to the resolver's snapshot union.
-    const invalid: SnapshotOf<typeof schema> = { text: 42 }
-    // @ts-expect-error Set accepts only the resolver's snapshot union.
+    // @ts-expect-error Missing entries require an undefined check.
+    const required: StoredValueOf<typeof child> = answer
+    // @ts-expect-error Number snapshots do not match the child schema.
+    const invalid: SnapshotOf<typeof schema> = { answer: 42 }
+    // @ts-expect-error Set accepts only snapshots matching the child schema.
     const wrongSetter: (key: string, value: number) => void = root.set
-    void [onlyText, invalid, wrongSetter]
+    void [required, invalid, wrongSetter]
+  })
+
+  test("creates, edits, and replaces array children", () => {
+    const schema = record(array(string()))
+    const { root } = createDocument(getStore(), schema, { selected: ["option-a"] })
+    root.get("selected")!.insert(1, "option-b")
+    expect(root.snapshot()).toEqual({ selected: ["option-a", "option-b"] })
+    root.set("selected", ["option-c"])
+    expect(root.get("selected")!.length).toBe(1)
+    expect(root.snapshot()).toEqual({ selected: ["option-c"] })
   })
 
   test("supports empty, Unicode, and prototype-name keys without inherited entries", () => {
     const keys = ["", "世界 👋", "__proto__", "constructor", "toString", "hasOwnProperty"]
-    const schema = record(() => string())
+    const schema = record(string())
     const { root } = createDocument(getStore(), schema, {})
     for (const key of keys) {
       expect(root.get(key)).toBeUndefined()
@@ -101,14 +95,22 @@ describeWithStores("record schemas", (getStore) => {
     expect(root.snapshot()).toEqual({})
   })
 
-  test("propagates resolver failures and permits removing orphaned entries", () => {
+  test("propagates child schema failures and permits removing unreadable entries", () => {
     const store = getStore()
-    const error = new Error("Unknown exercise.")
+    const child = string()
+    const error = new Error("Unavailable child schema.")
     let available = true
-    const schema = record(() => {
-      if (!available) throw error
-      return string()
-    })
+    const guarded: typeof child = {
+      create(store, snapshot) {
+        if (!available) throw error
+        return child.create(store, snapshot)
+      },
+      bind(store, ref) {
+        if (!available) throw error
+        return child.bind(store, ref)
+      },
+    }
+    const schema = record(guarded)
     const { root } = createDocument(store, schema, { answer: "Initial" })
     const revision = store.getRevision()
     available = false
@@ -127,13 +129,18 @@ describeWithStores("record schemas", (getStore) => {
     expect(root.snapshot()).toEqual({ answer: "Recovered" })
   })
 
-  test("rejects invalid record snapshots and explicit undefined before resolution", () => {
+  test("rejects invalid record snapshots and explicit undefined before child creation", () => {
     const store = getStore()
+    const child = string()
     let calls = 0
-    const schema = record(() => {
-      calls++
-      return string()
-    })
+    const counted: typeof child = {
+      ...child,
+      create(store, snapshot) {
+        calls++
+        return child.create(store, snapshot)
+      },
+    }
+    const schema = record(counted)
     for (const invalid of [null, [], false, 0, ""]) {
       expect(() => {
         // @ts-expect-error Record snapshots must be objects keyed by strings.
@@ -155,11 +162,7 @@ describeWithStores("record schemas", (getStore) => {
 
   test("reads leave revisions unchanged and each entry write notifies once", () => {
     const store = getStore()
-    const { root } = createDocument(
-      store,
-      record(() => object({ text: string() })),
-      {},
-    )
+    const { root } = createDocument(store, record(object({ text: string() })), {})
     const revision = store.getRevision()
     const observed: unknown[] = []
     store.subscribe(() => observed.push(root.snapshot()))
@@ -178,17 +181,19 @@ describeWithStores("record schemas", (getStore) => {
   })
 })
 
-test("read-only records initialize and preserve falsy refs but reject writes before resolution", () => {
+test("read-only records initialize but reject writes before child creation", () => {
   const store = new ReadonlyNodeStore()
+  const child = array(string())
   let calls = 0
-  const schema = record((key) => {
-    calls++
-    if (key === "active") return boolean()
-    if (key === "count") return number()
-    if (key === "tags") return array(string())
-    return string()
-  })
-  const initial = { active: false, count: 0, text: "", tags: ["tag"], ["__proto__"]: "safe" }
+  const counted: typeof child = {
+    ...child,
+    create(store, snapshot) {
+      calls++
+      return child.create(store, snapshot)
+    },
+  }
+  const schema = record(counted)
+  const initial = { tags: ["tag"], ["__proto__"]: ["safe"] }
   const document = createDocument(store, schema, initial)
   expect(document.snapshot()).toEqual(initial)
   for (const [key, value] of Object.entries(initial)) {
@@ -196,8 +201,8 @@ test("read-only records initialize and preserve falsy refs but reject writes bef
   }
   expect(document.root.get("constructor")).toBeUndefined()
   const beforeWrite = calls
-  expect(() => document.root.set("text", "Changed")).toThrow("Storage is read-only.")
-  expect(() => document.root.remove("text")).toThrow("Storage is read-only.")
+  expect(() => document.root.set("tags", ["Changed"])).toThrow("Storage is read-only.")
+  expect(() => document.root.remove("tags")).toThrow("Storage is read-only.")
   expect(calls).toBe(beforeWrite)
   const snapshot = document.snapshot()
   const tags = snapshot.tags
@@ -208,6 +213,15 @@ test("read-only records initialize and preserve falsy refs but reject writes bef
   expect(store.getRevision()).toBe(0)
 })
 
+test("read-only records preserve falsy primitive refs", () => {
+  const active = createDocument(new ReadonlyNodeStore(), record(boolean()), { answer: false })
+  const count = createDocument(new ReadonlyNodeStore(), record(number()), { answer: 0 })
+  const text = createDocument(new ReadonlyNodeStore(), record(string()), { answer: "" })
+  expect(active.root.get("answer")!.get()).toBe(false)
+  expect(count.root.get("answer")!.get()).toBe(0)
+  expect(text.root.get("answer")!.get()).toBe("")
+})
+
 test("Yjs records reopen, observe remote edits, and converge after concurrent additions", () => {
   const firstDoc = new Y.Doc()
   const secondDoc = new Y.Doc()
@@ -216,7 +230,7 @@ test("Yjs records reopen, observe remote edits, and converge after concurrent ad
   try {
     const firstStore = new YjsNodeStore({ doc: firstDoc, awareness: firstAwareness })
     const secondStore = new YjsNodeStore({ doc: secondDoc, awareness: secondAwareness })
-    const schema = record(() => string())
+    const schema = record(string())
     const first = createDocument(firstStore, schema, { answer: "Initial" })
     Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
     const second = createDocument(secondStore, schema, { ignored: "Ignored" })
