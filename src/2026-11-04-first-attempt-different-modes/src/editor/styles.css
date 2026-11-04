@@ -20,6 +20,15 @@
   --color-accent: #5364c8;
   --color-accent-contrast: #ffffff;
   --color-lavender: #f4f4ff;
+  --color-success: #275638;
+  --color-success-surface: #edf7f0;
+  --color-success-border: #bddcc7;
+  --color-error: #a52c24;
+  --color-error-surface: #fff1ef;
+  --color-error-border: #efc4bf;
+  --color-warning: #8a570c;
+  --color-warning-surface: #fff7e6;
+  --color-warning-border: #ead5a6;
   --space-1: 0.5rem;
   --space-2: 1rem;
   --space-3: 1.5rem;
@@ -147,12 +156,14 @@ summary {
   opacity: 0.45;
 }
 
-.editor-content {
+.editor-content,
+.learner-content {
   display: flex;
   flex-direction: column;
   gap: 3rem;
   font-size: 1.05rem;
   line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 .editor-rich-text {
@@ -188,8 +199,9 @@ summary {
   font-size: 0.75rem;
   font-weight: 700;
   line-height: 1.3;
-  color: var(--color-text-muted);
-  border: 1px solid #b9b9bd;
+  color: var(--color-accent);
+  background: var(--color-lavender);
+  border: 1px solid var(--color-border);
   border-radius: 0.4rem;
 }
 
@@ -201,14 +213,6 @@ summary {
   place-items: center;
   border: 1px solid currentColor;
   border-radius: 50%;
-}
-
-.editor-content .exercise > .exercise-badge {
-  padding: 0;
-  font-size: 0.85rem;
-  font-weight: 500;
-  color: var(--color-accent);
-  border: 0;
 }
 
 .exercise__field-label {
@@ -270,19 +274,19 @@ summary {
   padding: 0.3rem 0.5rem;
   font-size: 0.8rem;
   font-weight: 700;
-  color: var(--color-text-muted);
-  background: #f4f4f4;
+  color: var(--color-error);
+  background: var(--color-error-surface);
   border-radius: 0.3rem;
 }
 
 .correctness--correct {
-  color: #275638;
-  background: #e1f8e8;
+  color: var(--color-success);
+  background: var(--color-success-surface);
 }
 
 .correctness input {
   width: 0.9rem;
   height: 0.9rem;
   margin: 0;
-  accent-color: #275638;
+  accent-color: var(--color-success);
 }

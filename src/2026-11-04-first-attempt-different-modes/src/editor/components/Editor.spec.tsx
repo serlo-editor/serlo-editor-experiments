@@ -73,6 +73,31 @@ test("exercise renderers join response documents, retain input focus, and enforc
         ?.textContent,
     ).toContain("Richtig")
     expect(host.querySelector(".toolbar")).not.toBeNull()
+    expect(
+      Array.from(host.querySelectorAll(".feedback-card"), (element) =>
+        element.getAttribute("data-result"),
+      ),
+    ).toEqual(["correct", "incorrect", null])
+    flushSync(() =>
+      setExerciseFeedback(
+        student.feedback.document.root,
+        gapExercise.id,
+        "gap-feedback",
+        "result",
+        "incorrect",
+      ),
+    )
+    expect(host.querySelector(".feedback-card")?.getAttribute("data-result")).toBe("incorrect")
+    flushSync(() =>
+      setExerciseFeedback(
+        student.feedback.document.root,
+        gapExercise.id,
+        "gap-feedback",
+        "result",
+        "automatic",
+      ),
+    )
+    expect(host.querySelector(".feedback-card")?.getAttribute("data-result")).toBe("correct")
     flushSync(() => {
       setExerciseFeedback(
         student.feedback.document.root,
@@ -105,6 +130,11 @@ test("exercise renderers join response documents, retain input focus, and enforc
     expect(host.querySelector(".feedback-comment strong")?.textContent).toBe("Gut gemacht!")
 
     render("viewing")
+    expect(
+      Array.from(host.querySelectorAll(".feedback-card"), (element) =>
+        element.getAttribute("data-result"),
+      ),
+    ).toEqual(["correct", "incorrect", null])
     expect(host.querySelector(".ProseMirror")).toBeNull()
     expect(host.querySelector(".feedback-card .preview-rich-text strong")?.textContent).toBe(
       "Gut gemacht!",
@@ -114,6 +144,11 @@ test("exercise renderers join response documents, retain input focus, and enforc
     expect(host.querySelector<HTMLInputElement>(".preview-gap")?.value).toBe("Paris")
     expect(host.querySelector<HTMLInputElement>(".preview-gap")?.disabled).toBe(true)
     render("answering")
+    expect(
+      Array.from(host.querySelectorAll(".feedback-card"), (element) =>
+        element.getAttribute("data-result"),
+      ),
+    ).toEqual(["correct", "incorrect", null])
     expect(host.querySelector<HTMLInputElement>(".preview-gap")?.disabled).toBe(false)
     expect(host.querySelector<HTMLInputElement>(".preview-gap")?.value).toBe("Paris")
     expect(content.document.snapshot()).toEqual(initial)

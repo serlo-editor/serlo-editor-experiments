@@ -31,14 +31,14 @@ export function ExerciseFeedback({
   if (mode !== "feedback") {
     if (!comment.getEditor().state.doc.textContent.trim() && result === "unassessed") return null
     return (
-      <aside className="feedback-card" aria-label="Feedback zur Aufgabe">
-        <strong>{label}</strong>
+      <aside className="feedback-card" data-result={result} aria-label="Feedback zur Aufgabe">
+        <strong className="feedback-card__result">{label}</strong>
         <StaticRichText value={comment} />
       </aside>
     )
   }
   return (
-    <fieldset className="feedback-card">
+    <fieldset className="feedback-card" data-result={result}>
       <legend>Feedback zur Aufgabe</legend>
       <label>
         Bewertung
