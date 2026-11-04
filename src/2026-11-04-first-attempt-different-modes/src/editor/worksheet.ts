@@ -33,6 +33,20 @@ export function createStudent(
   return { id, name, ...documents }
 }
 
+/** Run once per mode switch, before binding any peers; current and earlier data stay intact. */
+export function clearFollowingDocuments(mode: Mode, student: Student) {
+  if (mode === "authoring") {
+    const answers = student.answers.document.root
+    for (const key of Object.keys(answers.snapshot())) answers.remove(key)
+  }
+  if (mode === "authoring" || mode === "answering") {
+    const feedback = student.feedback.document.root
+    const exercises = feedback.field("exercises")
+    for (const key of Object.keys(exercises.snapshot())) exercises.remove(key)
+    feedback.field("overall").getEditor().setContent(feedbackText())
+  }
+}
+
 /** Keep locked documents live through read-only projections of their independent stores. */
 export function createModeDocuments(
   mode: Mode,

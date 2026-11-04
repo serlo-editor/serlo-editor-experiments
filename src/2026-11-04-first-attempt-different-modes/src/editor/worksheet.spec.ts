@@ -4,7 +4,93 @@ import { initialContent } from "../demo/initial-content"
 import { createDemoSessions } from "../demo/sessions"
 import { feedbackText, setChoiceAnswer, setExerciseFeedback, setGapAnswer } from "./responses"
 import { YjsNodeStore } from "./storage"
-import { createModeDocuments, createStudent } from "./worksheet"
+import { clearFollowingDocuments, createModeDocuments, createStudent } from "./worksheet"
+
+test("mode switches clear only downstream documents across Yjs peers and Flat storage", () => {
+  const sessions = createDemoSessions(initialContent)
+  try {
+    const content = sessions.first.document.snapshot()
+    const contentRevision = sessions.first.store.getRevision()
+    const choice = sessions.first.document.root
+      .children()
+      .find((value) => value.type === "multiple-choice")!
+    const emptyFeedback = { overall: feedbackText(), exercises: {} }
+    const otherStudent = createStudent("other-student", "Other student")
+    setChoiceAnswer(otherStudent.answers.document.root, choice.id, "three", true)
+    const otherAnswers = otherStudent.answers.document.snapshot()
+
+    for (const student of [sessions.student, createStudent("flat", "Flat student")]) {
+      const viewing = createModeDocuments("viewing", sessions.second, student)
+      setChoiceAnswer(student.answers.document.root, choice.id, "four", true)
+      createModeDocuments("feedback", sessions.first, student)
+      setExerciseFeedback(
+        student.feedback.document.root,
+        choice.id,
+        "choice-feedback",
+        "result",
+        "partial",
+      )
+      setExerciseFeedback(
+        student.feedback.document.root,
+        choice.id,
+        "choice-feedback",
+        "comment",
+        "Old comment",
+      )
+      student.feedback.document.root
+        .field("overall")
+        .getEditor()
+        .setContent(feedbackText("Old overall"))
+      const answers = student.answers.document.snapshot()
+      const feedback = student.feedback.document.snapshot()
+
+      clearFollowingDocuments("viewing", student)
+      clearFollowingDocuments("feedback", student)
+      expect(student.answers.document.snapshot()).toEqual(answers)
+      expect(student.feedback.document.snapshot()).toEqual(feedback)
+
+      clearFollowingDocuments("answering", student)
+      expect(student.answers.document.snapshot()).toEqual(answers)
+      expect(student.feedback.document.snapshot()).toEqual(emptyFeedback)
+      expect(viewing.feedback!.document.snapshot()).toEqual(emptyFeedback)
+      if (student === sessions.student) {
+        expect(sessions.secondStudent.answers.document.snapshot()).toEqual(answers)
+        expect(sessions.secondStudent.feedback.document.snapshot()).toEqual(emptyFeedback)
+      }
+
+      const reviewing = createModeDocuments("feedback", sessions.first, student)
+      const exercise = reviewing.feedback!.document.root.field("exercises").get(choice.id)!
+      expect(exercise.field("result").get()).toBe("automatic")
+      expect(exercise.field("automaticResult").get()).toBe("correct")
+      expect(exercise.field("comment").snapshot()).toEqual(feedbackText())
+      expect(reviewing.feedback!.document.root.field("overall").snapshot()).toEqual(feedbackText())
+
+      // Reset through the other replica too; no new stores or content documents needed.
+      clearFollowingDocuments(
+        "authoring",
+        student === sessions.student ? sessions.secondStudent : student,
+      )
+      expect(student.answers.document.snapshot()).toEqual({})
+      expect(student.feedback.document.snapshot()).toEqual(emptyFeedback)
+      expect(viewing.answers!.document.snapshot()).toEqual({})
+      expect(viewing.feedback!.document.snapshot()).toEqual(emptyFeedback)
+      const regraded = createModeDocuments("feedback", sessions.first, student)
+      expect(
+        regraded
+          .feedback!.document.root.field("exercises")
+          .get(choice.id)!
+          .field("automaticResult")
+          .get(),
+      ).toBe("incorrect")
+    }
+    expect(otherStudent.answers.document.snapshot()).toEqual(otherAnswers)
+    expect(sessions.first.document.snapshot()).toEqual(content)
+    expect(sessions.second.document.snapshot()).toEqual(content)
+    expect(sessions.first.store.getRevision()).toBe(contentRevision)
+  } finally {
+    sessions.destroy()
+  }
+})
 
 test("Yjs peers synchronize all three documents and keep read-only modes live", () => {
   const sessions = createDemoSessions(initialContent)
@@ -91,7 +177,7 @@ test("Yjs peers synchronize all three documents and keep read-only modes live", 
 })
 
 // Exercise the real session/store composition, not only disabled UI controls.
-test("mode transitions isolate writes, preserve identities, and keep student documents separate", () => {
+test("mode bindings isolate writes, preserve identities, and keep student documents separate", () => {
   const sessions = createDemoSessions(initialContent)
   try {
     const alice = sessions.student

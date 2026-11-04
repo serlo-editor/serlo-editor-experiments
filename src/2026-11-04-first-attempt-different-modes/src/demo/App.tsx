@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react"
 
-import { createModeDocuments, Editor, type Mode, type WorksheetDocuments } from "../editor"
+import {
+  clearFollowingDocuments,
+  createModeDocuments,
+  Editor,
+  type Mode,
+  type WorksheetDocuments,
+} from "../editor"
 import { useStorage } from "../editor/use-storage"
 import { initialContent } from "./initial-content"
 import { createDemoSessions } from "./sessions"
@@ -45,13 +51,15 @@ export default function App() {
                 key={item.id}
                 type="button"
                 aria-pressed={mode === item.id}
-                onClick={() =>
+                onClick={() => {
+                  if (item.id === mode) return
+                  clearFollowingDocuments(item.id, sessions.student)
                   setWorkspace({
                     sessions,
                     first: createModeDocuments(item.id, sessions.first, sessions.student),
                     second: createModeDocuments(item.id, sessions.second, sessions.secondStudent),
                   })
-                }
+                }}
               >
                 {item.label}
               </button>
@@ -139,8 +147,8 @@ function Documents({ worksheet }: { worksheet: WorksheetDocuments }) {
       </dl>
       <p className="documents__note">
         Alle drei Dokumente synchronisieren unabhängig über Yjs. Schreibgeschützte Ansichten bleiben
-        live aktuell. Antworten und Feedback referenzieren Aufgaben über stabile IDs; inhaltliche
-        Änderungen können Antworten ungültig machen.
+        live aktuell. Beim Moduswechsel werden Daten nachfolgender Modi gelöscht: zurück zum Inhalt
+        löscht Antworten und Feedback, zurück zu den Aufgaben löscht Feedback.
       </p>
       <DocumentJSON label="Inhalt" document={worksheet.content.document} />
       {worksheet.answers && (

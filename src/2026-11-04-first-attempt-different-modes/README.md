@@ -28,7 +28,16 @@ collaboration and document JSON; both peers work on the same student's attempt.
 4. **Feedback ansehen:** both peers view answers and formatted feedback with
    every document read-only. All locked documents remain live views of their source.
 
-Answers and feedback persist across mode switches.
+Mode switches keep the selected mode's data and all earlier data, but clear
+later documents on both peers:
+
+- Returning to **Inhalt bearbeiten** clears answers and all feedback.
+- Returning to **Aufgaben lösen** keeps answers and clears assessments, comments,
+  and overall feedback.
+- Switching between **Feedback geben** and **Feedback ansehen** keeps feedback.
+- Clicking the already active mode changes nothing.
+
+Re-entering feedback after a reset computes fresh automatic assessments.
 
 | Mode             | Content       | Answers       | Feedback      |
 | ---------------- | ------------- | ------------- | ------------- |
@@ -48,7 +57,7 @@ source values.
 
 ## Structure
 
-- `src/editor/worksheet.ts`: worksheet composition, student documents, mode bindings.
+- `src/editor/worksheet.ts`: worksheet composition, student documents, downstream resets, mode bindings.
 - `src/editor/documents.ts`: backend-neutral binding and live read-only projections.
 - `src/editor/responses.ts`: answer/feedback schemas and targeted field updates.
 - `src/editor/grading.ts`: automatic gap and multiple-choice assessments.
@@ -82,9 +91,10 @@ Multiple choice requires every current option's selected state to match its
 `isCorrect` flag. Missing answers are incorrect; exercises without gaps/options
 remain unassessed. Removed answer keys are ignored.
 
-Automatic results and manual overrides are stored separately. Switching modes or
-regrading preserves comments and overrides; selecting **Automatisch** restores the
-automatic assessment. Exercise comments and overall feedback store ProseMirror JSON,
+Automatic results and manual overrides are stored separately. Regrading and
+switching between feedback editing/viewing preserve comments and overrides;
+returning to answering or authoring deletes them. Selecting **Automatisch** restores
+the automatic assessment. Exercise comments and overall feedback store ProseMirror JSON,
 including bold/italic formatting and lists. Viewing mode serializes that formatting
 without mounting editable views.
 
@@ -94,8 +104,11 @@ All three document pairs live for the app session, independently of mode and pan
 visibility. Locked bindings forward source subscriptions and refresh their cached
 `ReadonlyNodeStore` projections on source revisions, including remote changes.
 Read-only projections reject writes even through programmatic schema methods;
-previously obtained values remain immutable snapshots. Switching modes preserves
-writable source data, response identities, comments, and assessment overrides.
+previously obtained values remain immutable snapshots. Mode switches preserve
+current and earlier source data and identities; downstream resets use the existing
+stores, so deletions synchronize through Yjs without replacing sessions.
+`clearFollowingDocuments()` runs once per actual mode switch before binding both
+peers; `createModeDocuments()` only composes permissions and initializes grading.
 
 Sessions disconnect all three transports and destroy awareness/Yjs documents on
 teardown. Yjs stores unmount every cached rich-text view when their document is
@@ -103,10 +116,11 @@ destroyed, including feedback comments. Read-only projection caches become
 collectible with their mode. No generic backend disposal or unused-fragment
 garbage collection is added.
 
-Content edits after answering do not migrate existing responses. Unchanged IDs
-retain associations after sibling edits. Removed exercise/option/gap responses
-remain stored but are not rendered; semantic changes under an existing ID can
-make responses stale. Publication/versioning, stale-response policy, copy/paste ID
+Returning to content editing clears responses rather than migrating them. Direct
+programmatic content edits outside demo mode switches do not reset or migrate
+responses: unchanged IDs retain associations after sibling edits, removed responses
+remain stored but hidden, and semantic changes under an existing ID can make
+responses stale. Publication/versioning, stale-response policy, copy/paste ID
 normalization, submissions, analytics UI, durable persistence, network providers,
 and cross-document atomic transactions are outside this prototype.
 
@@ -116,7 +130,7 @@ student-facing authorization boundary. Grading is deterministic and local; no
 alternative gap solutions, semantic matching, or scoring model is implemented.
 
 `worksheet.spec.ts` checks real store boundaries, bidirectional Yjs response sync,
-live read-only projections, response isolation, identities, mode round trips, and
-student separation. Rich-text tests cover Yjs replacement content with and without
+live read-only projections, downstream resets across Yjs and Flat storage, response
+isolation, identities, mode round trips, and student separation. Rich-text tests cover Yjs replacement content with and without
 mounted views, remote changes, cursor isolation, and teardown. Existing schema/storage
 suites cover the shared backend APIs.
