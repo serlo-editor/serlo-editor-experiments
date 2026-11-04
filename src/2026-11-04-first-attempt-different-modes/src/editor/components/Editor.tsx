@@ -42,7 +42,7 @@ export function Editor({
         {name}
       </h2>
       <section className="editor-frame surface">
-        {worksheet.mode === "authoring" && (
+        {(worksheet.mode === "authoring" || worksheet.mode === "feedback") && (
           <div className="editor-toolbar-shell">
             <Toolbar editor={focused?.editor ?? null} />
           </div>

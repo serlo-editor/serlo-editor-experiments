@@ -1,6 +1,7 @@
 import { Root } from "./content"
 import { bindDocument, type BoundDocument } from "./documents"
-import { Answers, Feedback } from "./responses"
+import { gradeExercises } from "./grading"
+import { Answers, Feedback, feedbackText } from "./responses"
 import { FlatNodeStore, ReadonlyNodeStore } from "./storage"
 
 export type Mode = "authoring" | "answering" | "feedback" | "viewing"
@@ -23,7 +24,10 @@ export function createStudent(id: string, name: string): Student {
     id,
     name,
     answers: bindDocument(new FlatNodeStore(), Answers, {}),
-    feedback: bindDocument(new FlatNodeStore(), Feedback, { overall: "", exercises: {} }),
+    feedback: bindDocument(new FlatNodeStore(), Feedback, {
+      overall: feedbackText(),
+      exercises: {},
+    }),
   }
 }
 
@@ -34,6 +38,13 @@ export function createModeDocuments(
   student: Student,
 ): WorksheetDocuments {
   if (mode === "authoring") return { mode, content }
+  if (mode === "feedback") {
+    gradeExercises(
+      content.document.root,
+      student.answers.document.root,
+      student.feedback.document.root,
+    )
+  }
   return {
     mode,
     content: bindDocument(new ReadonlyNodeStore(), Root, content.document.snapshot()),

@@ -7,7 +7,7 @@ import { createRoot } from "react-dom/client"
 import { initialContent } from "../../demo/initial-content"
 import { Root } from "../content"
 import { bindDocument } from "../documents"
-import { setExerciseFeedback } from "../responses"
+import { feedbackText, setExerciseFeedback } from "../responses"
 import { FlatNodeStore } from "../storage"
 import { createModeDocuments, createStudent, type Mode } from "../worksheet"
 import { Editor } from "./Editor"
@@ -39,7 +39,7 @@ test("exercise renderers join response documents, retain input focus, and enforc
     expect(host.querySelectorAll(".exercise")).toHaveLength(2)
     // Rendering unanswered exercises must not allocate answer or feedback entries.
     expect(student.answers.document.snapshot()).toEqual({})
-    expect(student.feedback.document.snapshot()).toEqual({ overall: "", exercises: {} })
+    expect(student.feedback.document.snapshot()).toEqual({ overall: feedbackText(), exercises: {} })
     const gap = host.querySelector<HTMLInputElement>(".preview-gap")!
     gap.focus()
     flushSync(() => {
@@ -67,7 +67,12 @@ test("exercise renderers join response documents, retain input focus, and enforc
         (input) => input.disabled,
       ),
     ).toBe(true)
-    expect(host.querySelectorAll("textarea")).toHaveLength(3)
+    expect(host.querySelectorAll(".feedback-comment .ProseMirror")).toHaveLength(3)
+    expect(
+      host.querySelector<HTMLSelectElement>(".feedback-card select")?.selectedOptions[0]
+        ?.textContent,
+    ).toContain("Richtig")
+    expect(host.querySelector(".toolbar")).not.toBeNull()
     flushSync(() => {
       setExerciseFeedback(
         student.feedback.document.root,
@@ -76,12 +81,34 @@ test("exercise renderers join response documents, retain input focus, and enforc
         "comment",
         "Gut gemacht!",
       )
-      student.feedback.document.root.field("overall").set("Weiter so.")
+      student.feedback.document.root
+        .field("overall")
+        .getEditor()
+        .setContent(feedbackText("Weiter so."))
     })
-    expect(host.querySelector<HTMLTextAreaElement>("textarea")?.value).toBe("Gut gemacht!")
+    expect(host.querySelector(".feedback-comment .ProseMirror")?.textContent).toBe("Gut gemacht!")
+    const comment = student.feedback.document.root
+      .field("exercises")
+      .get(gapExercise.id)!
+      .field("comment")
+    flushSync(() =>
+      comment.getEditor().setContent({
+        type: "doc",
+        content: [
+          {
+            type: "paragraph",
+            content: [{ type: "text", text: "Gut gemacht!", marks: [{ type: "bold" }] }],
+          },
+        ],
+      }),
+    )
+    expect(host.querySelector(".feedback-comment strong")?.textContent).toBe("Gut gemacht!")
 
     render("viewing")
-    expect(host.querySelector("textarea")).toBeNull()
+    expect(host.querySelector(".ProseMirror")).toBeNull()
+    expect(host.querySelector(".feedback-card .preview-rich-text strong")?.textContent).toBe(
+      "Gut gemacht!",
+    )
     expect(host.querySelector(".learner-content")?.textContent).toContain("Gut gemacht!")
     expect(host.querySelector(".learner-content")?.textContent).toContain("Weiter so.")
     expect(host.querySelector<HTMLInputElement>(".preview-gap")?.value).toBe("Paris")

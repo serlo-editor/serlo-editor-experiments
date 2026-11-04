@@ -2,7 +2,7 @@ import { expect, test } from "bun:test"
 
 import { initialContent } from "../demo/initial-content"
 import { createDemoSessions } from "../demo/sessions"
-import { setChoiceAnswer, setExerciseFeedback, setGapAnswer } from "./responses"
+import { feedbackText, setChoiceAnswer, setExerciseFeedback, setGapAnswer } from "./responses"
 import { createModeDocuments, createStudent } from "./worksheet"
 
 // Exercise the real session/store composition, not only disabled UI controls.
@@ -34,9 +34,12 @@ test("mode transitions isolate writes, preserve identities, and keep student doc
     expect(() => readonlyChoice.field("question").getEditor().setContent({ type: "doc" })).toThrow(
       "Storage is read-only.",
     )
-    expect(() => answering.feedback!.document.root.field("overall").set("Not allowed")).toThrow(
-      "Storage is read-only.",
-    )
+    expect(() =>
+      answering
+        .feedback!.document.root.field("overall")
+        .getEditor()
+        .setContent(feedbackText("Not allowed")),
+    ).toThrow("Storage is read-only.")
 
     setGapAnswer(answering.answers!.document.root, gap.id, "capital-france", "Paris")
     setChoiceAnswer(answering.answers!.document.root, choice.id, "four", true)
@@ -71,20 +74,26 @@ test("mode transitions isolate writes, preserve identities, and keep student doc
       "comment",
       "Gut gemacht!",
     )
-    reviewing.feedback!.document.root.field("overall").set("Weiter so.")
+    reviewing
+      .feedback!.document.root.field("overall")
+      .getEditor()
+      .setContent(feedbackText("Weiter so."))
     const feedback = alice.feedback.document.snapshot()
     expect(alice.answers.document.snapshot()).toEqual(answers)
     expect(source.document.snapshot()).toEqual(original)
-    expect(bob.feedback.document.snapshot()).toEqual({ overall: "", exercises: {} })
+    expect(bob.feedback.document.snapshot()).toEqual({ overall: feedbackText(), exercises: {} })
 
     const viewing = createModeDocuments("viewing", source, alice)
     expect(viewing.answers!.document.snapshot()).toEqual(answers)
     expect(viewing.feedback!.document.snapshot()).toEqual(feedback)
     expect(() => viewing.content.document.root.remove(0)).toThrow("Storage is read-only.")
     expect(() => viewing.answers!.document.root.remove(choice.id)).toThrow("Storage is read-only.")
-    expect(() => viewing.feedback!.document.root.field("overall").set("Changed")).toThrow(
-      "Storage is read-only.",
-    )
+    expect(() =>
+      viewing
+        .feedback!.document.root.field("overall")
+        .getEditor()
+        .setContent(feedbackText("Changed")),
+    ).toThrow("Storage is read-only.")
     expect(createModeDocuments("answering", source, alice).answers!.document.snapshot()).toEqual(
       answers,
     )

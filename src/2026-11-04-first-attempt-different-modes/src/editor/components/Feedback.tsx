@@ -1,11 +1,14 @@
 import { setExerciseFeedback } from "../responses"
+import type { StoredRichText } from "../schema/rich-text"
 import { useWorksheet } from "../worksheet-context"
+import { RichText } from "./RichText"
+import { StaticRichText } from "./StaticRichText"
 
 const results = [
   { value: "unassessed", label: "Noch nicht bewertet" },
   { value: "correct", label: "Richtig" },
   { value: "partial", label: "Teilweise richtig" },
-  { value: "incorrect", label: "Noch einmal versuchen" },
+  { value: "incorrect", label: "Falsch" },
 ]
 
 export function ExerciseFeedback({
@@ -19,14 +22,18 @@ export function ExerciseFeedback({
   if (!feedback) return null
   const entry = feedback.document.root.field("exercises").get(exerciseId)
   if (entry && entry.type !== kind) return <p role="alert">Feedback passt nicht zur Aufgabe.</p>
-  const comment = entry?.field("comment").get() ?? ""
-  const result = entry?.field("result").get() ?? "unassessed"
+  if (!entry) return null
+  const comment = entry.field("comment")
+  const selectedResult = entry.field("result").get()
+  const automaticResult = entry.field("automaticResult").get()
+  const result = selectedResult === "automatic" ? automaticResult : selectedResult
+  const label = results.find((item) => item.value === result)?.label ?? result
   if (mode !== "feedback") {
-    if (!comment && result === "unassessed") return null
+    if (!comment.getEditor().state.doc.textContent.trim() && result === "unassessed") return null
     return (
       <aside className="feedback-card" aria-label="Feedback zur Aufgabe">
-        <strong>{results.find((item) => item.value === result)?.label ?? result}</strong>
-        {comment && <p>{comment}</p>}
+        <strong>{label}</strong>
+        <StaticRichText value={comment} />
       </aside>
     )
   }
@@ -36,7 +43,7 @@ export function ExerciseFeedback({
       <label>
         Bewertung
         <select
-          value={result}
+          value={selectedResult}
           onChange={(event) =>
             setExerciseFeedback(
               feedback.document.root,
@@ -47,6 +54,9 @@ export function ExerciseFeedback({
             )
           }
         >
+          <option value="automatic">
+            Automatisch: {results.find((item) => item.value === automaticResult)?.label}
+          </option>
           {results.map((item) => (
             <option key={item.value} value={item.value}>
               {item.label}
@@ -54,22 +64,7 @@ export function ExerciseFeedback({
           ))}
         </select>
       </label>
-      <label>
-        Kommentar
-        <textarea
-          value={comment}
-          placeholder="Rückmeldung zu dieser Antwort …"
-          onChange={(event) =>
-            setExerciseFeedback(
-              feedback.document.root,
-              exerciseId,
-              kind,
-              "comment",
-              event.currentTarget.value,
-            )
-          }
-        />
-      </label>
+      <FeedbackComment label="Kommentar" value={comment} />
     </fieldset>
   )
 }
@@ -79,20 +74,24 @@ export function OverallFeedback() {
   if (!feedback) return null
   const overall = feedback.document.root.field("overall")
   if (mode !== "feedback")
-    return overall.get() ? (
+    return overall.getEditor().state.doc.textContent.trim() ? (
       <aside className="feedback-card">
         <h3>Gesamtfeedback</h3>
-        <p>{overall.get()}</p>
+        <StaticRichText value={overall} />
       </aside>
     ) : null
   return (
-    <label className="feedback-card">
-      Gesamtfeedback
-      <textarea
-        value={overall.get()}
-        placeholder="Zusammenfassende Rückmeldung …"
-        onChange={(event) => overall.set(event.currentTarget.value)}
-      />
-    </label>
+    <section className="feedback-card">
+      <FeedbackComment label="Gesamtfeedback" value={overall} />
+    </section>
+  )
+}
+
+function FeedbackComment({ label, value }: { label: string; value: StoredRichText }) {
+  return (
+    <div className="feedback-comment" role="group" aria-label={label}>
+      <span>{label}</span>
+      <RichText value={value} />
+    </div>
   )
 }

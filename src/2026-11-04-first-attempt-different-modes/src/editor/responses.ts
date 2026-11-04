@@ -1,4 +1,5 @@
-import { block, blockUnion, boolean, object, record, string } from "./schema"
+import { richText as definition, type RichTextJSON } from "./rich-text"
+import { block, blockUnion, boolean, object, record, richText, string } from "./schema"
 import type { StoredValueOf } from "./schema/types"
 
 export const GapAnswer = block({
@@ -16,7 +17,13 @@ export const ChoiceAnswer = block({
 // Record keys reference content block IDs; response block IDs identify responses themselves.
 export const Answers = record(blockUnion([GapAnswer, ChoiceAnswer]))
 
-const feedbackFields = { comment: string(), result: string() }
+const comment = richText({
+  definition: definition.block({
+    marks: { bold: true, italic: true },
+    blocks: { paragraph: true, orderedList: true, bulletList: true },
+  }),
+})
+const feedbackFields = { comment, result: string(), automaticResult: string() }
 export const GapFeedback = block({
   type: "gap-feedback",
   fields: feedbackFields,
@@ -29,7 +36,7 @@ export const ChoiceFeedback = block({
 })
 
 export const Feedback = object({
-  overall: string(),
+  overall: comment,
   exercises: record(blockUnion([GapFeedback, ChoiceFeedback])),
 })
 
@@ -70,13 +77,39 @@ export function setExerciseFeedback(
   field: "comment" | "result",
   text: string,
 ) {
+  const entry = ensureExerciseFeedback(feedback, exerciseId, kind)
+  if (field === "comment") entry.field("comment").getEditor().setContent(feedbackText(text))
+  else entry.field("result").set(text)
+}
+
+export function ensureExerciseFeedback(
+  feedback: StoredValueOf<typeof Feedback>,
+  exerciseId: string,
+  kind: "gap-feedback" | "choice-feedback",
+) {
   const exercises = feedback.field("exercises")
   let entry = exercises.get(exerciseId)
   if (!entry) {
     const definition = kind === "gap-feedback" ? GapFeedback : ChoiceFeedback
-    exercises.set(exerciseId, definition.createSnapshot({ comment: "", result: "unassessed" }))
+    exercises.set(
+      exerciseId,
+      definition.createSnapshot({
+        comment: feedbackText(),
+        result: "automatic",
+        automaticResult: "unassessed",
+      }),
+    )
     entry = exercises.get(exerciseId)
   }
   if (entry?.type !== kind) throw new Error("Incompatible feedback type.")
-  entry.field(field).set(text)
+  return entry
+}
+
+export function feedbackText(text = ""): RichTextJSON {
+  return {
+    type: "doc",
+    content: [
+      text ? { type: "paragraph", content: [{ type: "text", text }] } : { type: "paragraph" },
+    ],
+  }
 }

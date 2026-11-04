@@ -20,8 +20,9 @@ bun run build
 2. **Aufgaben lösen:** fill gaps and choose answers.
    Content is a read-only snapshot; only the answer document is writable.
    Answers persist across mode switches.
-3. **Feedback geben:** inspect frozen answers, assess each exercise, write comments,
-   and add overall feedback. Only the feedback document is writable.
+3. **Feedback geben:** inspect frozen answers and automatic right/wrong assessments.
+   Override assessments when needed; write rich-text comments and overall feedback
+   using the formatting toolbar. Only the feedback document is writable.
 4. **Feedback ansehen:** view own answers and feedback with every document read-only.
 
 | Mode             | Content   | Answers      | Feedback     |
@@ -42,6 +43,7 @@ synchronized Yjs documents need separate `Y.Doc`s.
 - `src/editor/worksheet.ts`: worksheet composition, student documents, mode bindings.
 - `src/editor/documents.ts`: backend-neutral document binding.
 - `src/editor/responses.ts`: answer/feedback schemas and targeted field updates.
+- `src/editor/grading.ts`: automatic gap and multiple-choice assessments.
 - `src/editor/content/`: text, gap, and multiple-choice block definitions/renderers.
 - `src/editor/worksheet-context.ts`: application context joining documents for renderers.
 - `src/editor/components/`: generic `BlockView` dispatch plus mode-aware interactions,
@@ -57,11 +59,26 @@ IDs and distinct variants. Multiple-choice options carry explicit `optionId`s;
 gap marks carry persistent IDs. Neither rich-text editor IDs nor array indices
 are used as cross-document response references.
 
-Missing response entries are created on interaction, never during render.
-Subsequent interactions edit existing children rather than replacing entire answer
-blocks. React subscribes to all provided stores. Gap DOM updates preserve focus
+Missing answers are created on interaction; exercise feedback is initialized on
+entry into feedback mode, never during render. Subsequent interactions edit existing
+children rather than replacing entire answer blocks. React subscribes to all provided stores. Gap DOM updates preserve focus
 and selection while answers change; read-only content is serialized without
 mounting additional ProseMirror views.
+
+## Automatic grading and rich-text feedback
+
+Entering feedback mode refreshes automatic assessments. Gap solutions come from
+text carrying the same gap ID, including text split by formatting marks. Comparison
+ignores letter case and leading/trailing/repeated whitespace; every gap must match.
+Multiple choice requires every current option's selected state to match its
+`isCorrect` flag. Missing answers are incorrect; exercises without gaps/options
+remain unassessed. Removed answer keys are ignored.
+
+Automatic results and manual overrides are stored separately. Switching modes or
+regrading preserves comments and overrides; selecting **Automatisch** restores the
+automatic assessment. Exercise comments and overall feedback store ProseMirror JSON,
+including bold/italic formatting and lists. Viewing mode serializes that formatting
+without mounting editable views.
 
 ## Lifetime and limits
 
@@ -82,7 +99,8 @@ and cross-document atomic transactions are outside this prototype.
 
 Mode restrictions and read-only storage prevent unintended edits, not unauthorized
 access. Debug JSON intentionally includes solutions and must not be exposed as a
-student-facing authorization boundary. No automatic grading is performed.
+student-facing authorization boundary. Grading is deterministic and local; no
+alternative gap solutions, semantic matching, or scoring model is implemented.
 
 `worksheet.spec.ts` checks real store boundaries, collaborative teacher edits,
 response isolation, identities, mode round trips, and student separation. Existing

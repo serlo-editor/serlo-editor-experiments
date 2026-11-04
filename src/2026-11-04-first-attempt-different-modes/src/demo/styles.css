@@ -167,18 +167,24 @@
   margin: 0;
   white-space: pre-wrap;
 }
-.feedback-card label {
+.feedback-card label,
+.feedback-comment {
   display: flex;
   flex-direction: column;
   gap: 0.4rem;
 }
-.feedback-card textarea {
-  width: 100%;
-  min-height: 6rem;
+.feedback-comment .editor-rich-text {
   padding: 0.75rem;
-  resize: vertical;
+  background: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-1);
+}
+.feedback-comment .ProseMirror {
+  min-height: 6rem;
+}
+.feedback-comment:has(.ProseMirror:focus-visible) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
 }
 select {
   max-width: 100%;
