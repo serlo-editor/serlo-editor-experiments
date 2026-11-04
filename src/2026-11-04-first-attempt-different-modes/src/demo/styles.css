@@ -182,9 +182,8 @@
 .feedback-comment .ProseMirror {
   min-height: 6rem;
 }
-.feedback-comment:has(.ProseMirror:focus-visible) {
-  outline: 2px solid var(--color-accent);
-  outline-offset: 3px;
+.feedback-comment .editor-rich-text:has(.ProseMirror:focus-visible) {
+  border-color: var(--color-accent);
 }
 select {
   max-width: 100%;
