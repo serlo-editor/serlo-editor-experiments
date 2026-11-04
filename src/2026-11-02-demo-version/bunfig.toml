@@ -1,0 +1,4 @@
+[serve.static]
+# Inline only `PUBLIC_*` env vars into the dev bundle, never other secrets in `.env`.
+# `bun build` ignores this and gets the same filter via `--env` in package.json.
+env = "PUBLIC_*"

@@ -1,0 +1,11 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "serlo-editor-demo-sync",
+  "main": "index.ts",
+  "compatibility_date": "2026-10-01",
+  "durable_objects": {
+    "bindings": [{ "name": "Document", "class_name": "Document" }],
+  },
+  // SQLite-backed Durable Objects are available on the free plan.
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Document"] }],
+}
