@@ -14,43 +14,51 @@ bun run build
 
 ## Try the workflow
 
-1. **Inhalt bearbeiten:** edit rich text, mark gaps, and set correct choices.
-   Two teacher peers synchronize content and editor-scoped awareness through Yjs.
-   Right pane switches between collaboration and document JSON.
-2. **Aufgaben lösen:** fill gaps and choose answers.
-   Content is a read-only snapshot; only the answer document is writable.
-   Answers persist across mode switches.
-3. **Feedback geben:** inspect frozen answers and automatic right/wrong assessments.
-   Override assessments when needed; write rich-text comments and overall feedback
-   using the formatting toolbar. Only the feedback document is writable.
-4. **Feedback ansehen:** view own answers and feedback with every document read-only.
+Every mode provides two synchronized Yjs peers. The right pane switches between
+collaboration and document JSON; both peers work on the same student's attempt.
 
-| Mode             | Content   | Answers      | Feedback     |
-| ---------------- | --------- | ------------ | ------------ |
-| Authoring        | Yjs       | Not provided | Not provided |
-| Answering        | Read-only | Flat         | Read-only    |
-| Adding feedback  | Read-only | Read-only    | Flat         |
-| Viewing feedback | Read-only | Read-only    | Read-only    |
+1. **Inhalt bearbeiten:** edit rich text, mark gaps, and set correct choices.
+   Content and editor-scoped awareness synchronize through Yjs.
+2. **Aufgaben lösen:** fill gaps and choose answers together. Only the answer
+   document is writable; changes appear immediately in the other peer.
+3. **Feedback geben:** inspect answers and automatic right/wrong assessments.
+   Collaboratively override assessments and write rich-text comments and overall
+   feedback using the formatting toolbar. Only the feedback document is writable;
+   rich-text presence is scoped to the corresponding comment.
+4. **Feedback ansehen:** both peers view answers and formatted feedback with
+   every document read-only. All locked documents remain live views of their source.
+
+Answers and feedback persist across mode switches.
+
+| Mode             | Content       | Answers       | Feedback      |
+| ---------------- | ------------- | ------------- | ------------- |
+| Authoring        | Yjs writable  | Not provided  | Not provided  |
+| Answering        | Yjs read-only | Yjs writable  | Yjs read-only |
+| Adding feedback  | Yjs read-only | Yjs read-only | Yjs writable  |
+| Viewing feedback | Yjs read-only | Yjs read-only | Yjs read-only |
 
 The demo uses one student with separate answer and feedback stores.
 Document roles are worksheet properties, not storage node kinds or schema
-metadata. `bindDocument()` accepts any supported backend independently; demo uses
-Flat for responses. Each logical document needs its own store/root; independently
-synchronized Yjs documents need separate `Y.Doc`s.
+metadata. `bindDocument()` accepts any supported backend independently;
+`createStudent()` accepts injected answer/feedback bindings and defaults to Flat
+when none are supplied. The demo uses three independent `Y.Doc` pairs, each with
+its own store, root, awareness, and transport. Read-only bindings subscribe to the
+source store and cache immutable projections per revision; they expose no writable
+source values.
 
 ## Structure
 
 - `src/editor/worksheet.ts`: worksheet composition, student documents, mode bindings.
-- `src/editor/documents.ts`: backend-neutral document binding.
+- `src/editor/documents.ts`: backend-neutral binding and live read-only projections.
 - `src/editor/responses.ts`: answer/feedback schemas and targeted field updates.
 - `src/editor/grading.ts`: automatic gap and multiple-choice assessments.
 - `src/editor/content/`: text, gap, and multiple-choice block definitions/renderers.
 - `src/editor/worksheet-context.ts`: application context joining documents for renderers.
 - `src/editor/components/`: generic `BlockView` dispatch plus mode-aware interactions,
   toolbar, serialized content views, and feedback fields.
-- `src/editor/session.ts`: collaborative content/awareness lifetime.
+- `src/editor/session.ts`: schema-independent Yjs document/awareness lifetime.
 - `src/editor/storage/`, `schema/`, `rich-text/`: independent backend/schema core.
-- `src/demo/`: two teacher replicas, one student, mode controls, document inspector.
+- `src/demo/`: two replicas per document, one student, mode controls, document inspector.
 
 Content drives traversal in every mode, including exercises with no answer yet.
 Renderers read worksheet context and resolve responses through content block IDs.
@@ -82,13 +90,18 @@ without mounting editable views.
 
 ## Lifetime and limits
 
-Writable documents live for app session. Mode entry snapshots every document that
-must be read-only into a fresh `ReadonlyNodeStore`; this is not a live mirror.
-Returning to another mode takes new snapshots and preserves writable source data.
-Read-only backends reject writes even through programmatic schema methods.
-Teacher sessions disconnect transport, unmount views, and destroy awareness/Yjs
-documents on teardown. Read-only view caches become collectible with their mode.
-No generic backend disposal or unused-fragment garbage collection is added.
+All three document pairs live for the app session, independently of mode and pane
+visibility. Locked bindings forward source subscriptions and refresh their cached
+`ReadonlyNodeStore` projections on source revisions, including remote changes.
+Read-only projections reject writes even through programmatic schema methods;
+previously obtained values remain immutable snapshots. Switching modes preserves
+writable source data, response identities, comments, and assessment overrides.
+
+Sessions disconnect all three transports and destroy awareness/Yjs documents on
+teardown. Yjs stores unmount every cached rich-text view when their document is
+destroyed, including feedback comments. Read-only projection caches become
+collectible with their mode. No generic backend disposal or unused-fragment
+garbage collection is added.
 
 Content edits after answering do not migrate existing responses. Unchanged IDs
 retain associations after sibling edits. Removed exercise/option/gap responses
@@ -102,6 +115,8 @@ access. Debug JSON intentionally includes solutions and must not be exposed as a
 student-facing authorization boundary. Grading is deterministic and local; no
 alternative gap solutions, semantic matching, or scoring model is implemented.
 
-`worksheet.spec.ts` checks real store boundaries, collaborative teacher edits,
-response isolation, identities, mode round trips, and student separation. Existing
-schema/storage suites cover the shared backend APIs.
+`worksheet.spec.ts` checks real store boundaries, bidirectional Yjs response sync,
+live read-only projections, response isolation, identities, mode round trips, and
+student separation. Rich-text tests cover Yjs replacement content with and without
+mounted views, remote changes, cursor isolation, and teardown. Existing schema/storage
+suites cover the shared backend APIs.

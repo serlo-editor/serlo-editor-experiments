@@ -4,7 +4,10 @@ import * as Y from "yjs"
 import type { EditorSession } from "../editor"
 
 /** Explicit transport origin forwards null-origin writes, but never echoes received updates. */
-export function syncCDRTs(first: EditorSession, second: EditorSession) {
+export function syncCDRTs(
+  first: Pick<EditorSession, "doc" | "awareness">,
+  second: Pick<EditorSession, "doc" | "awareness">,
+) {
   const origin = Symbol("demo-transport")
   const forwardFirst = (update: Uint8Array, source: unknown) => {
     if (source !== origin) Y.applyUpdate(second.doc, update, origin)

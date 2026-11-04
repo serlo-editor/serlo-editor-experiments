@@ -226,6 +226,25 @@ describe("stored rich-text editors", () => {
     expect(reopened.snapshot()).toEqual(content("Shared"))
   })
 
+  test("Yjs replacement content synchronizes with and without mounted views", () => {
+    const firstDoc = createDoc()
+    const secondDoc = createDoc()
+    const schema = richText(options)
+    const first = createDocument(createYjsStore(firstDoc), schema, content("Initial"))
+    Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
+    const second = createDocument(createYjsStore(secondDoc), schema, content("Ignored"))
+    const editor = first.root.getEditor()
+    editor.setContent(content("Headless"))
+    Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
+    expect(first.snapshot()).toEqual(content("Headless"))
+    expect(second.snapshot()).toEqual(content("Headless"))
+    mount(editor).setContent(content("Mounted"))
+    Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
+    expect(second.snapshot()).toEqual(content("Mounted"))
+    firstDoc.destroy()
+    expect(editor.mounted).toBe(false)
+  })
+
   test("Yjs snapshots refresh unmounted cached editors after remote changes", () => {
     const firstDoc = createDoc()
     const secondDoc = createDoc()

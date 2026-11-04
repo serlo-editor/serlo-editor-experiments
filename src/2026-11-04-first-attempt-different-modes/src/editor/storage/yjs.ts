@@ -1,5 +1,6 @@
 import { defineMountHandler } from "prosekit/core"
 import { type Awareness, defineYjs } from "prosekit/extensions/yjs"
+import { Selection } from "prosekit/pm/state"
 import { prosemirrorToYXmlFragment, yXmlFragmentToProseMirrorRootNode } from "y-prosemirror"
 import * as Y from "yjs"
 
@@ -36,6 +37,10 @@ export class YjsNodeStore implements YjsNodeStoreContract {
   constructor({ doc, awareness }: { awareness: Awareness; doc: Y.Doc }) {
     this.doc = doc
     this.awareness = awareness
+    doc.on("destroy", () => {
+      for (const editor of this.editors.values()) editor.unmount()
+      this.editors.clear()
+    })
     // Store follows document lifetime; track local and remote changes without subscribers.
     doc.on("afterTransaction", (transaction: Y.Transaction) => {
       if (this.hasStorageChanges(transaction)) this.changes.publish()
@@ -81,7 +86,7 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     const fragment = this.doc.getXmlFragment(name)
     let editor = this.editors.get(id)
     if (!editor) {
-      editor = createRichTextEditor({
+      const created = createRichTextEditor({
         ...config,
         extensions: [
           ...(config.extensions ?? []),
@@ -93,7 +98,20 @@ export class YjsNodeStore implements YjsNodeStoreContract {
           defineSafeYjsTeardown(),
         ],
       })
-      this.editors.set(id, editor)
+      created.setContent = (...args) => {
+        // Parse outside the Yjs plugin: replacing EditorState would reload the old fragment.
+        const replacement = createRichTextEditor(config)
+        replacement.setContent(...args)
+        this.transact(() => prosemirrorToYXmlFragment(replacement.state.doc, fragment))
+        refreshUnmountedEditor(created, fragment)
+        const selection = Selection.fromJSON(
+          created.state.doc,
+          replacement.state.selection.toJSON(),
+        )
+        created.updateState(created.state.apply(created.state.tr.setSelection(selection)))
+      }
+      this.editors.set(id, created)
+      editor = created
     }
 
     refreshUnmountedEditor(editor, fragment)

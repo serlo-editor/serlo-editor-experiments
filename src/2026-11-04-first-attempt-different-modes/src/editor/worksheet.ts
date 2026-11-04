@@ -1,8 +1,8 @@
 import { Root } from "./content"
-import { bindDocument, type BoundDocument } from "./documents"
+import { bindDocument, bindReadonlyDocument, type BoundDocument } from "./documents"
 import { gradeExercises } from "./grading"
 import { Answers, Feedback, feedbackText } from "./responses"
-import { FlatNodeStore, ReadonlyNodeStore } from "./storage"
+import { FlatNodeStore } from "./storage"
 
 export type Mode = "authoring" | "answering" | "feedback" | "viewing"
 export type Student = {
@@ -19,19 +19,21 @@ export type WorksheetDocuments = {
 }
 
 /** Each student/attempt owns independent answer and feedback storage. */
-export function createStudent(id: string, name: string): Student {
-  return {
-    id,
-    name,
+export function createStudent(
+  id: string,
+  name: string,
+  documents: Pick<Student, "answers" | "feedback"> = {
     answers: bindDocument(new FlatNodeStore(), Answers, {}),
     feedback: bindDocument(new FlatNodeStore(), Feedback, {
       overall: feedbackText(),
       exercises: {},
     }),
-  }
+  },
+): Student {
+  return { id, name, ...documents }
 }
 
-/** Snapshot read-only documents at mode entry; never rebind a writable root under another schema. */
+/** Keep locked documents live through read-only projections of their independent stores. */
 export function createModeDocuments(
   mode: Mode,
   content: BoundDocument<typeof Root>,
@@ -47,14 +49,10 @@ export function createModeDocuments(
   }
   return {
     mode,
-    content: bindDocument(new ReadonlyNodeStore(), Root, content.document.snapshot()),
+    content: bindReadonlyDocument(content, Root),
     answers:
-      mode === "answering"
-        ? student.answers
-        : bindDocument(new ReadonlyNodeStore(), Answers, student.answers.document.snapshot()),
+      mode === "answering" ? student.answers : bindReadonlyDocument(student.answers, Answers),
     feedback:
-      mode === "feedback"
-        ? student.feedback
-        : bindDocument(new ReadonlyNodeStore(), Feedback, student.feedback.document.snapshot()),
+      mode === "feedback" ? student.feedback : bindReadonlyDocument(student.feedback, Feedback),
   }
 }
