@@ -31,14 +31,10 @@
 }
 .app__preview {
   background: var(--color-surface-subtle);
-  border-left: 1px solid var(--color-border);
+  box-shadow: inset 1px 0 0 var(--color-border);
 }
-.app__preview .editor-card {
-  background: transparent;
-}
-.app__preview .editor-frame {
-  padding: 1.5rem;
-  border-radius: var(--radius-2);
+.app__preview--collaboration {
+  background: var(--color-surface);
 }
 .app__view-switch {
   display: flex;
@@ -66,8 +62,11 @@
   background: var(--color-surface);
   box-shadow: var(--shadow-1);
 }
-.app__side-switch {
-  margin-bottom: 2rem;
+.app__header-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
 }
 
 .learner-content {
@@ -244,8 +243,7 @@ summary:focus-visible {
     grid-template-columns: minmax(0, 1fr);
   }
   .app__preview {
-    border-top: 1px solid var(--color-border);
-    border-left: 0;
+    box-shadow: inset 0 1px 0 var(--color-border);
   }
   .multiple-choice-options li {
     flex-wrap: wrap;

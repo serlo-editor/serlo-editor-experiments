@@ -34,35 +34,21 @@ export default function App() {
     <main className="app">
       <header className="app__header">
         <h1>Ein Arbeitsblatt · drei Dokumente</h1>
-        <nav className="app__view-switch" aria-label="Arbeitsmodus">
-          {modes.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              aria-pressed={mode === item.id}
-              onClick={() => setMode(item.id)}
-            >
-              {item.label}
-            </button>
-          ))}
-        </nav>
-      </header>
-      <div className="app__workspace">
-        <section className="app__authoring" aria-label="Aktiver Arbeitsbereich">
-          <Editor
-            key={mode}
-            worksheet={worksheet}
-            name={mode === "authoring" ? sessions.first.name : (current?.label.slice(3) ?? "")}
-            color={mode === "feedback" ? "#b45309" : sessions.first.color}
-          />
-        </section>
-        <aside className="app__preview" aria-label="Zusammenarbeit und Dokumente">
+        <div className="app__header-controls">
+          <nav className="app__view-switch" aria-label="Arbeitsmodus">
+            {modes.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-pressed={mode === item.id}
+                onClick={() => setMode(item.id)}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
           {mode === "authoring" && (
-            <div
-              className="app__view-switch app__side-switch"
-              role="group"
-              aria-label="Rechter Bereich"
-            >
+            <div className="app__view-switch" role="group" aria-label="Rechter Bereich">
               <button
                 type="button"
                 aria-pressed={rightPane === "collaboration"}
@@ -79,6 +65,25 @@ export default function App() {
               </button>
             </div>
           )}
+        </div>
+      </header>
+      <div className="app__workspace">
+        <section className="app__authoring" aria-label="Aktiver Arbeitsbereich">
+          <Editor
+            key={mode}
+            worksheet={worksheet}
+            name={mode === "authoring" ? sessions.first.name : (current?.label.slice(3) ?? "")}
+            color={mode === "feedback" ? "#b45309" : sessions.first.color}
+          />
+        </section>
+        <aside
+          className={
+            mode === "authoring" && rightPane === "collaboration"
+              ? "app__preview app__preview--collaboration"
+              : "app__preview"
+          }
+          aria-label="Zusammenarbeit und Dokumente"
+        >
           {mode === "authoring" && (
             <div hidden={rightPane !== "collaboration"}>
               <Editor
