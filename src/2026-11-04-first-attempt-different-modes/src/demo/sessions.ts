@@ -16,7 +16,7 @@ export function createDemoSessions(snapshot: RootSnapshot) {
     return {
       first,
       second,
-      students: [createStudent("alice", "Alice"), createStudent("bob", "Bob")],
+      student: createStudent("student", "Schüler:in"),
       destroy() {
         disconnect()
         first.destroy()

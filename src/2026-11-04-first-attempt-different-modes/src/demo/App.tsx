@@ -5,34 +5,16 @@ import { useStorage } from "../editor/use-storage"
 import { initialContent } from "./initial-content"
 import { createDemoSessions } from "./sessions"
 
-const modes: { id: Mode; label: string; description: string }[] = [
-  {
-    id: "authoring",
-    label: "1. Inhalt bearbeiten",
-    description:
-      "Lehrkräfte bearbeiten gemeinsam den Inhalt. Antworten und Feedback bleiben getrennt.",
-  },
-  {
-    id: "answering",
-    label: "2. Aufgaben lösen",
-    description: "Nur Antworten sind bearbeitbar. Der Inhalt ist ein schreibgeschützter Snapshot.",
-  },
-  {
-    id: "feedback",
-    label: "3. Feedback geben",
-    description: "Inhalt und Antworten sind gesperrt. Nur Feedback wird bearbeitet.",
-  },
-  {
-    id: "viewing",
-    label: "4. Feedback ansehen",
-    description: "Schüleransicht: Inhalt, eigene Antworten und Feedback sind schreibgeschützt.",
-  },
+const modes: { id: Mode; label: string }[] = [
+  { id: "authoring", label: "1. Inhalt bearbeiten" },
+  { id: "answering", label: "2. Aufgaben lösen" },
+  { id: "feedback", label: "3. Feedback geben" },
+  { id: "viewing", label: "4. Feedback ansehen" },
 ]
 
 export default function App() {
   const [sessions, setSessions] = useState<ReturnType<typeof createDemoSessions> | null>(null)
   const [mode, setMode] = useState<Mode>("authoring")
-  const [studentId, setStudentId] = useState("alice")
   const [rightPane, setRightPane] = useState<"documents" | "collaboration">("collaboration")
 
   useEffect(() => {
@@ -41,12 +23,11 @@ export default function App() {
     return () => next.destroy()
   }, [])
 
-  const student = sessions?.students.find((item) => item.id === studentId)
   const worksheet = useMemo(
-    () => (sessions && student ? createModeDocuments(mode, sessions.first, student) : null),
-    [sessions, mode, student],
+    () => (sessions ? createModeDocuments(mode, sessions.first, sessions.student) : null),
+    [sessions, mode],
   )
-  if (!sessions || !student || !worksheet) return <main className="app">Loading...</main>
+  if (!sessions || !worksheet) return <main className="app">Loading...</main>
   const current = modes.find((item) => item.id === mode)
 
   return (
@@ -66,34 +47,12 @@ export default function App() {
           ))}
         </nav>
       </header>
-      <div className="app__mode-info">
-        <p>{current?.description}</p>
-        {mode !== "authoring" && (
-          <label>
-            Schüler:in
-            <select value={studentId} onChange={(event) => setStudentId(event.currentTarget.value)}>
-              {sessions.students.map((item) => (
-                <option key={item.id} value={item.id}>
-                  {item.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
-        <span className="app__saved-note">
-          Moduswechsel erhält Antworten und Feedback · nur im Arbeitsspeicher
-        </span>
-      </div>
       <div className="app__workspace">
         <section className="app__authoring" aria-label="Aktiver Arbeitsbereich">
           <Editor
-            key={`${mode}:${student.id}`}
+            key={mode}
             worksheet={worksheet}
-            name={
-              mode === "authoring"
-                ? sessions.first.name
-                : `${student.name} · ${current?.label.slice(3)}`
-            }
+            name={mode === "authoring" ? sessions.first.name : (current?.label.slice(3) ?? "")}
             color={mode === "feedback" ? "#b45309" : sessions.first.color}
           />
         </section>
@@ -130,7 +89,7 @@ export default function App() {
             </div>
           )}
           <div hidden={mode === "authoring" && rightPane !== "documents"}>
-            <Documents worksheet={worksheet} studentName={student.name} />
+            <Documents worksheet={worksheet} />
           </div>
         </aside>
       </div>
@@ -138,20 +97,14 @@ export default function App() {
   )
 }
 
-function Documents({
-  worksheet,
-  studentName,
-}: {
-  worksheet: WorksheetDocuments
-  studentName: string
-}) {
+function Documents({ worksheet }: { worksheet: WorksheetDocuments }) {
   useStorage(worksheet.content.store)
   useStorage(worksheet.answers?.store)
   useStorage(worksheet.feedback?.store)
   return (
     <section className="documents">
       <h2>Unabhängige Dokumente</h2>
-      <p>Ein gemeinsamer Inhalt, eigene Antworten und eigenes Feedback für {studentName}.</p>
+      <p>Inhalt, Antworten und Feedback werden getrennt gespeichert.</p>
       <dl className="document-status">
         <dt>Inhalt</dt>
         <dd>{worksheet.mode === "authoring" ? "Yjs · bearbeitbar" : "Read-only · gesperrt"}</dd>

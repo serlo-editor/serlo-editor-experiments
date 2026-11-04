@@ -3,14 +3,14 @@ import { expect, test } from "bun:test"
 import { initialContent } from "../demo/initial-content"
 import { createDemoSessions } from "../demo/sessions"
 import { setChoiceAnswer, setExerciseFeedback, setGapAnswer } from "./responses"
-import { createModeDocuments } from "./worksheet"
+import { createModeDocuments, createStudent } from "./worksheet"
 
 // Exercise the real session/store composition, not only disabled UI controls.
 test("mode transitions isolate writes, preserve identities, and keep student documents separate", () => {
   const sessions = createDemoSessions(initialContent)
   try {
-    const alice = sessions.students[0]!
-    const bob = sessions.students[1]!
+    const alice = sessions.student
+    const bob = createStudent("other-student", "Other student")
     const source = sessions.first
     const choice = source.document.root
       .children()
@@ -100,7 +100,7 @@ test("mode transitions isolate writes, preserve identities, and keep student doc
 test("response joins survive read-only rebinding and sibling insertions; mismatched variants reject writes", () => {
   const sessions = createDemoSessions(initialContent)
   try {
-    const student = sessions.students[0]!
+    const student = sessions.student
     const source = sessions.first
     const choice = source.document.root
       .children()

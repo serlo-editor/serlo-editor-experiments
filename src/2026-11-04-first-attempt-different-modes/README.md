@@ -17,11 +17,11 @@ bun run build
 1. **Inhalt bearbeiten:** edit rich text, mark gaps, and set correct choices.
    Two teacher peers synchronize content and editor-scoped awareness through Yjs.
    Right pane switches between collaboration and document JSON.
-2. **Aufgaben lösen:** select Alice or Bob, fill gaps, and choose answers.
-   Content is a read-only snapshot; only selected student's answer document is
-   writable. Answers persist across mode and student switches.
+2. **Aufgaben lösen:** fill gaps and choose answers.
+   Content is a read-only snapshot; only the answer document is writable.
+   Answers persist across mode switches.
 3. **Feedback geben:** inspect frozen answers, assess each exercise, write comments,
-   and add overall feedback. Only selected student's feedback document is writable.
+   and add overall feedback. Only the feedback document is writable.
 4. **Feedback ansehen:** view own answers and feedback with every document read-only.
 
 | Mode             | Content   | Answers      | Feedback     |
@@ -31,8 +31,8 @@ bun run build
 | Adding feedback  | Read-only | Read-only    | Flat         |
 | Viewing feedback | Read-only | Read-only    | Read-only    |
 
-Alice and Bob share one content document, but own separate answer and feedback
-stores. Document roles are worksheet properties, not storage node kinds or schema
+The demo uses one student with separate answer and feedback stores.
+Document roles are worksheet properties, not storage node kinds or schema
 metadata. `bindDocument()` accepts any supported backend independently; demo uses
 Flat for responses. Each logical document needs its own store/root; independently
 synchronized Yjs documents need separate `Y.Doc`s.
@@ -48,7 +48,7 @@ synchronized Yjs documents need separate `Y.Doc`s.
   toolbar, serialized content views, and feedback fields.
 - `src/editor/session.ts`: collaborative content/awareness lifetime.
 - `src/editor/storage/`, `schema/`, `rich-text/`: independent backend/schema core.
-- `src/demo/`: two teacher replicas, two students, mode controls, document inspector.
+- `src/demo/`: two teacher replicas, one student, mode controls, document inspector.
 
 Content drives traversal in every mode, including exercises with no answer yet.
 Renderers read worksheet context and resolve responses through content block IDs.
