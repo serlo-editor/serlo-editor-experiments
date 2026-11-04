@@ -1,6 +1,6 @@
 import * as Y from "yjs"
 
-import { createSession } from "../editor"
+import { createSession, createStudent } from "../editor"
 import type { RootSnapshot } from "../editor/content"
 import { syncCDRTs } from "./sync-cdrts"
 
@@ -16,6 +16,7 @@ export function createDemoSessions(snapshot: RootSnapshot) {
     return {
       first,
       second,
+      students: [createStudent("alice", "Alice"), createStudent("bob", "Bob")],
       destroy() {
         disconnect()
         first.destroy()

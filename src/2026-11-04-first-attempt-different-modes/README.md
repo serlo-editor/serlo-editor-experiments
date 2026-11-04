@@ -1,8 +1,8 @@
-# Designed editor with new storage
+# Worksheet modes with separate documents
 
-Reimplementation of `2026-10-24-current-prototype-with-new-design`, using the
-storage/schema core copied from `2026-10-05-new-storage-for-prototype`.
-Source experiments remain independent and unchanged.
+Reimplements `2026-10-24-designed-prototype-with-new-storage` with independent
+content, answer, and feedback documents. Storage/schema core comes from
+`2026-10-05-new-storage-for-prototype`. Source experiments remain unchanged.
 
 ## Run and check
 
@@ -12,45 +12,78 @@ bun run fix
 bun run build
 ```
 
+## Try the workflow
+
+1. **Inhalt bearbeiten:** edit rich text, mark gaps, and set correct choices.
+   Two teacher peers synchronize content and editor-scoped awareness through Yjs.
+   Right pane switches between collaboration and document JSON.
+2. **Aufgaben lösen:** select Alice or Bob, fill gaps, and choose answers.
+   Content is a read-only snapshot; only selected student's answer document is
+   writable. Answers persist across mode and student switches.
+3. **Feedback geben:** inspect frozen answers, assess each exercise, write comments,
+   and add overall feedback. Only selected student's feedback document is writable.
+4. **Feedback ansehen:** view own answers and feedback with every document read-only.
+
+| Mode             | Content   | Answers      | Feedback     |
+| ---------------- | --------- | ------------ | ------------ |
+| Authoring        | Yjs       | Not provided | Not provided |
+| Answering        | Read-only | Flat         | Read-only    |
+| Adding feedback  | Read-only | Read-only    | Flat         |
+| Viewing feedback | Read-only | Read-only    | Read-only    |
+
+Alice and Bob share one content document, but own separate answer and feedback
+stores. Document roles are worksheet properties, not storage node kinds or schema
+metadata. `bindDocument()` accepts any supported backend independently; demo uses
+Flat for responses. Each logical document needs its own store/root; independently
+synchronized Yjs documents need separate `Y.Doc`s.
+
 ## Structure
 
-- `src/editor/storage/`: backend-neutral cells, arrays, maps, transactions,
-  revisions, and subscriptions. `FlatNodeStore` supports local use and tests;
-  `YjsNodeStore` owns collaborative content on one document with shared awareness.
-- `src/editor/schema/`: typed handles, snapshots, units, and rich text.
-- `src/editor/content/`: text, gap, and multiple-choice unit definitions and
-  local authoring renderers. Root is an array of explicit child-unit variants.
-  Unit IDs key content; rich-text IDs key option rows and scope remote cursors.
-- `src/editor/content/`: typed unit definitions and initial snapshots. This demo
-  seeds content directly from those definitions; external JSON import/export is
-  not part of this prototype.
-- `src/editor/session.ts`: document/awareness lifetime, document binding, export.
-- `src/editor/components/`: authoring UI and local toolbar/focus state.
-- `src/demo/`: two in-memory synchronized peers and interactive learner preview.
+- `src/editor/worksheet.ts`: worksheet composition, student documents, mode bindings.
+- `src/editor/documents.ts`: backend-neutral document binding.
+- `src/editor/responses.ts`: answer/feedback schemas and targeted field updates.
+- `src/editor/content/`: text, gap, and multiple-choice block definitions/renderers.
+- `src/editor/worksheet-context.ts`: application context joining documents for renderers.
+- `src/editor/components/`: generic `BlockView` dispatch plus mode-aware interactions,
+  toolbar, serialized content views, and feedback fields.
+- `src/editor/session.ts`: collaborative content/awareness lifetime.
+- `src/editor/storage/`, `schema/`, `rich-text/`: independent backend/schema core.
+- `src/demo/`: two teacher replicas, two students, mode controls, document inspector.
 
-First peer initializes content once. Second peer imports first peer's Yjs state
-before binding its root. Transport uses an explicit origin to avoid echo without
-losing null-origin edits; awareness starts synchronized and remains editor-scoped.
-React subscribes to store-local revisions. Focus/selection and learner answers
-never enter structural content or a replicated update counter.
+Content drives traversal in every mode, including exercises with no answer yet.
+Renderers read worksheet context and resolve responses through content block IDs.
+Answer and feedback record keys are content IDs; response blocks have their own
+IDs and distinct variants. Multiple-choice options carry explicit `optionId`s;
+gap marks carry persistent IDs. Neither rich-text editor IDs nor array indices
+are used as cross-document response references.
 
-Preview reads typed handles and serializes rich-text JSON with its ProseMirror
-schema. It never mounts another editor view. Learner answers have no grading or
-persistence; reset remounts preview. Collaboration remains mounted while hidden.
+Missing response entries are created on interaction, never during render.
+Subsequent interactions edit existing children rather than replacing entire answer
+blocks. React subscribes to all provided stores. Gap DOM updates preserve focus
+and selection while answers change; read-only content is serialized without
+mounting additional ProseMirror views.
 
 ## Lifetime and limits
 
-App creates sessions in an effect, including under StrictMode. Rich-text components
-register local callbacks and mount/unmount views; session destruction disconnects
-transport, unmounts cached editors, and destroys awareness/documents. Editors and
-revision tracking follow session/document lifetime; no automatic fragment garbage
-collection or backend disposal API is added.
+Writable documents live for app session. Mode entry snapshots every document that
+must be read-only into a fresh `ReadonlyNodeStore`; this is not a live mirror.
+Returning to another mode takes new snapshots and preserves writable source data.
+Read-only backends reject writes even through programmatic schema methods.
+Teacher sessions disconnect transport, unmount views, and destroy awareness/Yjs
+documents on teardown. Read-only view caches become collectible with their mode.
+No generic backend disposal or unused-fragment garbage collection is added.
 
-Transactions do not roll back. Collaborative rich-text writes require mounted
-views. Imports validate the whole content tree before creating shared documents,
-but this does not turn arbitrary backend transactions into atomic imports.
-Document-wide React subscriptions are deliberate; granular subscriptions can be
-added if rendering cost warrants them.
+Content edits after answering do not migrate existing responses. Unchanged IDs
+retain associations after sibling edits. Removed exercise/option/gap responses
+remain stored but are not rendered; semantic changes under an existing ID can
+make responses stale. Publication/versioning, stale-response policy, copy/paste ID
+normalization, submissions, analytics UI, durable persistence, network providers,
+and cross-document atomic transactions are outside this prototype.
 
-No persistence, network provider, legacy Yjs-layout migration, generic node index,
-external JSON import/export, new debug panels, or global undo redesign.
+Mode restrictions and read-only storage prevent unintended edits, not unauthorized
+access. Debug JSON intentionally includes solutions and must not be exposed as a
+student-facing authorization boundary. No automatic grading is performed.
+
+`worksheet.spec.ts` checks real store boundaries, collaborative teacher edits,
+response isolation, identities, mode round trips, and student separation. Existing
+schema/storage suites cover the shared backend APIs.

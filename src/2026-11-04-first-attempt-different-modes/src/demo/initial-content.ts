@@ -1,7 +1,7 @@
 import { FillInTheBlank, MultipleChoice, TextContent, type RootSnapshot } from "../editor/content"
 
 export const initialContent: RootSnapshot = [
-  TextContent.createUnit({
+  TextContent.createSnapshot({
     content: {
       type: "doc",
       content: [
@@ -17,7 +17,7 @@ export const initialContent: RootSnapshot = [
       ],
     },
   }),
-  FillInTheBlank.createUnit({
+  FillInTheBlank.createSnapshot({
     content: {
       type: "doc",
       content: [
@@ -25,14 +25,18 @@ export const initialContent: RootSnapshot = [
           type: "paragraph",
           content: [
             { type: "text", text: "The capital of France is " },
-            { type: "text", text: "Paris", marks: [{ type: "gap" }] },
+            {
+              type: "text",
+              text: "Paris",
+              marks: [{ type: "gap", attrs: { id: "capital-france" } }],
+            },
             { type: "text", text: "." },
           ],
         },
       ],
     },
   }),
-  MultipleChoice.createUnit({
+  MultipleChoice.createSnapshot({
     question: {
       type: "doc",
       content: [
@@ -44,6 +48,7 @@ export const initialContent: RootSnapshot = [
     },
     options: [
       {
+        optionId: "three",
         isCorrect: false,
         text: {
           type: "doc",
@@ -51,6 +56,7 @@ export const initialContent: RootSnapshot = [
         },
       },
       {
+        optionId: "four",
         isCorrect: true,
         text: {
           type: "doc",
@@ -58,6 +64,7 @@ export const initialContent: RootSnapshot = [
         },
       },
       {
+        optionId: "five",
         isCorrect: false,
         text: {
           type: "doc",
