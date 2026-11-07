@@ -78,13 +78,12 @@ immutable projections per revision; they expose no writable source values.
 
 ## Structure
 
-- `src/editor/worksheet.ts`: worksheet composition, downstream resets, mode bindings.
 - `src/editor/worksheet-mode.ts`: mode values shared by worksheet and blocks.
 - `src/editor/documents.ts`: backend-neutral binding and live read-only projections.
 - `src/editor/schema/exercise.tsx`: exercise facade joins unit, answer, and feedback handles by unit ID when rendering.
 - `src/editor/blocks/`: text, gap-fill, and multiple-choice definitions alongside renderers, styles, and block-specific answer/grading logic; `shared/` holds UI, fields, and styles used by both exercises.
 - `src/editor/responses.ts`: answer/feedback document composition and feedback initialization.
-- `src/demo/grading.ts`: demo-level assessment traversal and dispatch to block-specific grading.
+- `src/editor/worksheet.ts`: worksheet composition, downstream resets, mode bindings, and automatic assessment traversal.
 - `src/editor/worksheet-context.ts`: application context joining documents for renderers.
 - `src/editor/components/`: reusable rich-text views, exercise badge, editor, and toolbar.
 - `src/editor/session.ts`: schema-independent Yjs document/awareness lifetime.

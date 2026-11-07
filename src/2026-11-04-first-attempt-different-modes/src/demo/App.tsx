@@ -1,13 +1,8 @@
 import { useEffect, useState } from "react"
 
-import {
-  clearFollowingDocuments,
-  createModeDocuments,
-  Editor,
-  WorksheetMode,
-  type WorksheetDocuments,
-} from "../editor"
+import { createModeDocuments, Editor, WorksheetMode, type WorksheetDocuments } from "../editor"
 import { useStorage } from "../editor/use-storage"
+import { clearFollowingDocuments } from "./clear-following-documents"
 import { initialContent } from "./initial-content"
 import { createDemoSessions } from "./sessions"
 
