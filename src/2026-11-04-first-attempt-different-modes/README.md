@@ -22,9 +22,11 @@ Requires Bun 1.4.2+ with experimental [`Bun.WebView`](https://bun.com/docs/runti
 macOS uses system WebKit; Linux and Windows need Chrome, Chromium, Edge, or Brave.
 Set `BUN_CHROME_PATH` if Bun cannot find your browser.
 
-`e2e/worksheet.e2e.ts` builds self-contained HTML in a temporary directory, opens
-fresh browser views, and cleans up afterward. No dev server, fixed port, or new
-test dependency is needed. Tests use native clicks, typing, and key presses to cover:
+`e2e/worksheet.e2e.ts` builds self-contained HTML in a unique temporary directory
+under `dist/`, opens fresh browser views, and cleans up afterward. Fixtures stay
+inside the project because Snap browsers cannot see the host's `/tmp` directory.
+No dev server, fixed port, or new test dependency is needed. Tests use native
+clicks, typing, and key presses to cover:
 
 - Collaborative content editing and answering, input focus, and document inspection.
 - Automatic grading, manual overrides, formatted comments, overall feedback, and read-only viewing.

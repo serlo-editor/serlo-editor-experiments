@@ -1,10 +1,12 @@
 import { afterAll, afterEach, beforeAll, beforeEach, expect, test } from "bun:test"
-import { mkdtemp, rm } from "node:fs/promises"
-import { tmpdir } from "node:os"
+import { mkdir, mkdtemp, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 
-const directory = await mkdtemp(join(tmpdir(), "worksheet-e2e-"))
+// Snap browsers have a private /tmp; use the shared project directory instead.
+const dist = join(import.meta.dir, "../dist")
+await mkdir(dist, { recursive: true })
+const directory = await mkdtemp(join(dist, "worksheet-e2e-"))
 const first = '[aria-label="Editor 1"]'
 const second = '[aria-label="Editor 2"]'
 const modes = '[aria-label="Arbeitsmodus"]'
