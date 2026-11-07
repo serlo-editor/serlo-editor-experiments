@@ -68,18 +68,17 @@ Re-entering feedback after a reset computes fresh automatic assessments.
 | Adding feedback  | Yjs read-only | Yjs read-only | Yjs writable  |
 | Viewing feedback | Yjs read-only | Yjs read-only | Yjs read-only |
 
-The demo uses one student with separate answer and feedback stores.
+The demo uses one attempt with separate answer and feedback stores.
 Document roles are worksheet properties, not storage node kinds or schema
-metadata. `bindDocument()` accepts any supported backend independently;
-`createStudent()` accepts injected answer/feedback bindings and defaults to Flat
-when none are supplied. The demo uses three independent `Y.Doc` pairs, each with
-its own store, root, awareness, and transport. Read-only bindings subscribe to the
-source store and cache immutable projections per revision; they expose no writable
-source values.
+metadata. `bindDocument()` accepts any supported backend independently; the
+worksheet receives a pair of answer/feedback bindings. The demo uses three
+independent `Y.Doc` pairs, each with its own store, root, awareness, and
+transport. Read-only bindings subscribe to the source store and cache
+immutable projections per revision; they expose no writable source values.
 
 ## Structure
 
-- `src/editor/worksheet.ts`: worksheet composition, student documents, downstream resets, mode bindings.
+- `src/editor/worksheet.ts`: worksheet composition, response documents, downstream resets, mode bindings.
 - `src/editor/documents.ts`: backend-neutral binding and live read-only projections.
 - `src/editor/schema/exercise.tsx`: exercise facade joins unit, answer, and feedback handles by unit ID when rendering.
 - `src/editor/content/`: text block and exercise definitions with unit, answer, and feedback schemas grouped together.

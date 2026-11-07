@@ -9,7 +9,8 @@ import { Root } from "../content"
 import { bindDocument } from "../documents"
 import { feedbackText, setChoiceAnswer, setExerciseFeedback } from "../responses"
 import { FlatNodeStore } from "../storage"
-import { createModeDocuments, createStudent, WorksheetMode } from "../worksheet"
+import { createFlatResponses } from "../test-responses"
+import { createModeDocuments, WorksheetMode } from "../worksheet"
 import { Editor } from "./Editor"
 
 test("exercise renderers join response documents, retain input focus, and enforce mode controls", async () => {
@@ -29,17 +30,20 @@ test("exercise renderers join response documents, retain input focus, and enforc
   try {
     const content = bindDocument(new FlatNodeStore(), Root, initialContent)
     const initial = content.document.snapshot()
-    const student = createStudent("alice", "Alice")
+    const responses = createFlatResponses()
     const render = (mode: WorksheetMode) => {
-      const worksheet = createModeDocuments(mode, content, student)
+      const worksheet = createModeDocuments(mode, content, responses)
       flushSync(() => reactRoot.render(<Editor key={mode} worksheet={worksheet} name="Alice" />))
     }
     render(WorksheetMode.Answering)
     expect(host.querySelector(".ProseMirror")).toBeNull()
     expect(host.querySelectorAll(".exercise")).toHaveLength(2)
     // Rendering unanswered exercises must not allocate answer or feedback entries.
-    expect(student.answers.document.snapshot()).toEqual({})
-    expect(student.feedback.document.snapshot()).toEqual({ overall: feedbackText(), exercises: {} })
+    expect(responses.answers.document.snapshot()).toEqual({})
+    expect(responses.feedback.document.snapshot()).toEqual({
+      overall: feedbackText(),
+      exercises: {},
+    })
     const gap = host.querySelector<HTMLInputElement>(".preview-gap")!
     gap.focus()
     flushSync(() => {
@@ -54,7 +58,7 @@ test("exercise renderers join response documents, retain input focus, and enforc
     const gapExercise = content.document.root
       .children()
       .find((value) => value.type === "fill-in-the-blank")!
-    const answer = student.answers.document.root.get(gapExercise.id)
+    const answer = responses.answers.document.root.get(gapExercise.id)
     if (answer?.type !== "gap-answer") throw new Error("Expected gap answer.")
     expect(answer.field("values").get("capital-france")?.get()).toBe("Paris")
     expect(content.document.snapshot()).toEqual(initial)
@@ -80,7 +84,7 @@ test("exercise renderers join response documents, retain input focus, and enforc
     ).toEqual(["correct", "incorrect", null])
     flushSync(() =>
       setExerciseFeedback(
-        student.feedback.document.root,
+        responses.feedback.document.root,
         gapExercise.id,
         "gap-feedback",
         "result",
@@ -90,7 +94,7 @@ test("exercise renderers join response documents, retain input focus, and enforc
     expect(host.querySelector(".feedback-card")?.getAttribute("data-result")).toBe("incorrect")
     flushSync(() =>
       setExerciseFeedback(
-        student.feedback.document.root,
+        responses.feedback.document.root,
         gapExercise.id,
         "gap-feedback",
         "result",
@@ -100,19 +104,19 @@ test("exercise renderers join response documents, retain input focus, and enforc
     expect(host.querySelector(".feedback-card")?.getAttribute("data-result")).toBe("correct")
     flushSync(() => {
       setExerciseFeedback(
-        student.feedback.document.root,
+        responses.feedback.document.root,
         gapExercise.id,
         "gap-feedback",
         "comment",
         "Gut gemacht!",
       )
-      student.feedback.document.root
+      responses.feedback.document.root
         .field("overall")
         .getEditor()
         .setContent(feedbackText("Weiter so."))
     })
     expect(host.querySelector(".feedback-comment .ProseMirror")?.textContent).toBe("Gut gemacht!")
-    const comment = student.feedback.document.root
+    const comment = responses.feedback.document.root
       .field("exercises")
       .get(gapExercise.id)!
       .field("comment")
@@ -154,17 +158,17 @@ test("exercise renderers join response documents, retain input focus, and enforc
     expect(content.document.snapshot()).toEqual(initial)
 
     flushSync(() => {
-      student.answers.document.root.remove(gapExercise.id)
-      setChoiceAnswer(student.answers.document.root, gapExercise.id, "wrong", true)
+      responses.answers.document.root.remove(gapExercise.id)
+      setChoiceAnswer(responses.answers.document.root, gapExercise.id, "wrong", true)
     })
     expect(host.querySelector('[role="alert"]')?.textContent).toBe(
       "Antwort passt nicht zur Aufgabe.",
     )
     flushSync(() => {
-      student.answers.document.root.remove(gapExercise.id)
-      student.feedback.document.root.field("exercises").remove(gapExercise.id)
+      responses.answers.document.root.remove(gapExercise.id)
+      responses.feedback.document.root.field("exercises").remove(gapExercise.id)
       setExerciseFeedback(
-        student.feedback.document.root,
+        responses.feedback.document.root,
         gapExercise.id,
         "choice-feedback",
         "result",

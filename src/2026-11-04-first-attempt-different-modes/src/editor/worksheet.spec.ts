@@ -4,12 +4,8 @@ import { initialContent } from "../demo/initial-content"
 import { createDemoSessions } from "../demo/sessions"
 import { feedbackText, setChoiceAnswer, setExerciseFeedback, setGapAnswer } from "./responses"
 import { YjsNodeStore } from "./storage"
-import {
-  clearFollowingDocuments,
-  createModeDocuments,
-  createStudent,
-  WorksheetMode,
-} from "./worksheet"
+import { createFlatResponses } from "./test-responses"
+import { clearFollowingDocuments, createModeDocuments, WorksheetMode } from "./worksheet"
 
 test("mode switches clear only downstream documents across Yjs peers and Flat storage", () => {
   const sessions = createDemoSessions(initialContent)
@@ -20,50 +16,50 @@ test("mode switches clear only downstream documents across Yjs peers and Flat st
       .children()
       .find((value) => value.type === "multiple-choice")!
     const emptyFeedback = { overall: feedbackText(), exercises: {} }
-    const otherStudent = createStudent("other-student", "Other student")
-    setChoiceAnswer(otherStudent.answers.document.root, choice.id, "three", true)
-    const otherAnswers = otherStudent.answers.document.snapshot()
+    const otherResponses = createFlatResponses()
+    setChoiceAnswer(otherResponses.answers.document.root, choice.id, "three", true)
+    const otherAnswers = otherResponses.answers.document.snapshot()
 
-    for (const student of [sessions.student, createStudent("flat", "Flat student")]) {
-      const viewing = createModeDocuments(WorksheetMode.ViewingFeedback, sessions.second, student)
-      setChoiceAnswer(student.answers.document.root, choice.id, "four", true)
-      createModeDocuments(WorksheetMode.GivingFeedback, sessions.first, student)
+    for (const responses of [sessions.responses, createFlatResponses()]) {
+      const viewing = createModeDocuments(WorksheetMode.ViewingFeedback, sessions.second, responses)
+      setChoiceAnswer(responses.answers.document.root, choice.id, "four", true)
+      createModeDocuments(WorksheetMode.GivingFeedback, sessions.first, responses)
       setExerciseFeedback(
-        student.feedback.document.root,
+        responses.feedback.document.root,
         choice.id,
         "choice-feedback",
         "result",
         "partial",
       )
       setExerciseFeedback(
-        student.feedback.document.root,
+        responses.feedback.document.root,
         choice.id,
         "choice-feedback",
         "comment",
         "Old comment",
       )
-      student.feedback.document.root
+      responses.feedback.document.root
         .field("overall")
         .getEditor()
         .setContent(feedbackText("Old overall"))
-      const answers = student.answers.document.snapshot()
-      const feedback = student.feedback.document.snapshot()
+      const answers = responses.answers.document.snapshot()
+      const feedback = responses.feedback.document.snapshot()
 
-      clearFollowingDocuments(WorksheetMode.ViewingFeedback, student)
-      clearFollowingDocuments(WorksheetMode.GivingFeedback, student)
-      expect(student.answers.document.snapshot()).toEqual(answers)
-      expect(student.feedback.document.snapshot()).toEqual(feedback)
+      clearFollowingDocuments(WorksheetMode.ViewingFeedback, responses)
+      clearFollowingDocuments(WorksheetMode.GivingFeedback, responses)
+      expect(responses.answers.document.snapshot()).toEqual(answers)
+      expect(responses.feedback.document.snapshot()).toEqual(feedback)
 
-      clearFollowingDocuments(WorksheetMode.Answering, student)
-      expect(student.answers.document.snapshot()).toEqual(answers)
-      expect(student.feedback.document.snapshot()).toEqual(emptyFeedback)
+      clearFollowingDocuments(WorksheetMode.Answering, responses)
+      expect(responses.answers.document.snapshot()).toEqual(answers)
+      expect(responses.feedback.document.snapshot()).toEqual(emptyFeedback)
       expect(viewing.feedback!.document.snapshot()).toEqual(emptyFeedback)
-      if (student === sessions.student) {
-        expect(sessions.secondStudent.answers.document.snapshot()).toEqual(answers)
-        expect(sessions.secondStudent.feedback.document.snapshot()).toEqual(emptyFeedback)
+      if (responses === sessions.responses) {
+        expect(sessions.secondResponses.answers.document.snapshot()).toEqual(answers)
+        expect(sessions.secondResponses.feedback.document.snapshot()).toEqual(emptyFeedback)
       }
 
-      const reviewing = createModeDocuments(WorksheetMode.GivingFeedback, sessions.first, student)
+      const reviewing = createModeDocuments(WorksheetMode.GivingFeedback, sessions.first, responses)
       const exercise = reviewing.feedback!.document.root.field("exercises").get(choice.id)!
       expect(exercise.field("result").get()).toBe("automatic")
       expect(exercise.field("automaticResult").get()).toBe("correct")
@@ -73,13 +69,13 @@ test("mode switches clear only downstream documents across Yjs peers and Flat st
       // Reset through the other replica too; no new stores or content documents needed.
       clearFollowingDocuments(
         WorksheetMode.EditingContent,
-        student === sessions.student ? sessions.secondStudent : student,
+        responses === sessions.responses ? sessions.secondResponses : responses,
       )
-      expect(student.answers.document.snapshot()).toEqual({})
-      expect(student.feedback.document.snapshot()).toEqual(emptyFeedback)
+      expect(responses.answers.document.snapshot()).toEqual({})
+      expect(responses.feedback.document.snapshot()).toEqual(emptyFeedback)
       expect(viewing.answers!.document.snapshot()).toEqual({})
       expect(viewing.feedback!.document.snapshot()).toEqual(emptyFeedback)
-      const regraded = createModeDocuments(WorksheetMode.GivingFeedback, sessions.first, student)
+      const regraded = createModeDocuments(WorksheetMode.GivingFeedback, sessions.first, responses)
       expect(
         regraded
           .feedback!.document.root.field("exercises")
@@ -88,7 +84,7 @@ test("mode switches clear only downstream documents across Yjs peers and Flat st
           .get(),
       ).toBe("incorrect")
     }
-    expect(otherStudent.answers.document.snapshot()).toEqual(otherAnswers)
+    expect(otherResponses.answers.document.snapshot()).toEqual(otherAnswers)
     expect(sessions.first.document.snapshot()).toEqual(content)
     expect(sessions.second.document.snapshot()).toEqual(content)
     expect(sessions.first.store.getRevision()).toBe(contentRevision)
@@ -100,24 +96,24 @@ test("mode switches clear only downstream documents across Yjs peers and Flat st
 test("Yjs peers synchronize all three documents and keep read-only modes live", () => {
   const sessions = createDemoSessions(initialContent)
   try {
-    const first = createModeDocuments(WorksheetMode.Answering, sessions.first, sessions.student)
+    const first = createModeDocuments(WorksheetMode.Answering, sessions.first, sessions.responses)
     const second = createModeDocuments(
       WorksheetMode.Answering,
       sessions.second,
-      sessions.secondStudent,
+      sessions.secondResponses,
     )
     const viewing = createModeDocuments(
       WorksheetMode.ViewingFeedback,
       sessions.second,
-      sessions.secondStudent,
+      sessions.secondResponses,
     )
     const stores = [
       sessions.first.store,
       sessions.second.store,
-      sessions.student.answers.store,
-      sessions.secondStudent.answers.store,
-      sessions.student.feedback.store,
-      sessions.secondStudent.feedback.store,
+      sessions.responses.answers.store,
+      sessions.secondResponses.answers.store,
+      sessions.responses.feedback.store,
+      sessions.secondResponses.feedback.store,
     ]
     expect(new Set(stores).size).toBe(6)
     expect(stores.every((store) => store instanceof YjsNodeStore)).toBe(true)
@@ -139,15 +135,15 @@ test("Yjs peers synchronize all three documents and keep read-only modes live", 
     expect(answerUpdates).toBeGreaterThan(0)
     unsubscribe()
     expect(sessions.first.store.getRevision()).toBe(contentRevision)
-    const answersRevision = sessions.student.answers.store.getRevision()
+    const answersRevision = sessions.responses.answers.store.getRevision()
     const reviewing = createModeDocuments(
       WorksheetMode.GivingFeedback,
       sessions.first,
-      sessions.student,
+      sessions.responses,
     )
     const feedback = reviewing.feedback!
     const initialized = feedback.document.snapshot()
-    createModeDocuments(WorksheetMode.GivingFeedback, sessions.second, sessions.secondStudent)
+    createModeDocuments(WorksheetMode.GivingFeedback, sessions.second, sessions.secondResponses)
     expect(feedback.document.snapshot()).toEqual(initialized)
     const previousView = viewing.feedback!.document
     setExerciseFeedback(feedback.document.root, gap.id, "gap-feedback", "result", "partial")
@@ -155,7 +151,7 @@ test("Yjs peers synchronize all three documents and keep read-only modes live", 
     feedback.document.root.field("overall").getEditor().setContent(feedbackText("Weiter so."))
     expect(viewing.feedback!.document).not.toBe(previousView)
     expect(viewing.feedback!.document).toBe(viewing.feedback!.document)
-    expect(sessions.secondStudent.feedback.document.snapshot()).toEqual(
+    expect(sessions.secondResponses.feedback.document.snapshot()).toEqual(
       feedback.document.snapshot(),
     )
     expect(viewing.feedback!.document.snapshot()).toEqual(feedback.document.snapshot())
@@ -166,7 +162,7 @@ test("Yjs peers synchronize all three documents and keep read-only modes live", 
     expect(
       viewing.feedback!.document.root.field("exercises").get(gap.id)!.field("comment").snapshot(),
     ).toEqual(feedbackText("Gut gemacht!"))
-    expect(sessions.student.answers.store.getRevision()).toBe(answersRevision)
+    expect(sessions.responses.answers.store.getRevision()).toBe(answersRevision)
     const readonlyRevision = viewing.feedback!.store.getRevision()
     expect(() =>
       viewing
@@ -197,8 +193,8 @@ test("Yjs peers synchronize all three documents and keep read-only modes live", 
 test("mode bindings isolate writes, preserve identities, and keep student documents separate", () => {
   const sessions = createDemoSessions(initialContent)
   try {
-    const alice = sessions.student
-    const bob = createStudent("other-student", "Other student")
+    const aliceResponses = sessions.responses
+    const bobResponses = createFlatResponses()
     const source = sessions.first
     const choice = source.document.root
       .children()
@@ -210,7 +206,7 @@ test("mode bindings isolate writes, preserve identities, and keep student docume
     const original = source.document.snapshot()
     const revision = source.store.getRevision()
 
-    const answering = createModeDocuments(WorksheetMode.Answering, source, alice)
+    const answering = createModeDocuments(WorksheetMode.Answering, source, aliceResponses)
     expect(answering.content.document.snapshot()).toEqual(original)
     expect(() => answering.content.document.root.remove(0)).toThrow("Storage is read-only.")
     const readonlyChoice = answering.content.document.root
@@ -231,15 +227,15 @@ test("mode bindings isolate writes, preserve identities, and keep student docume
 
     setGapAnswer(answering.answers!.document.root, gap.id, "capital-france", "Paris")
     setChoiceAnswer(answering.answers!.document.root, choice.id, "four", true)
-    const answerId = alice.answers.document.root.get(choice.id)!.id
+    const answerId = aliceResponses.answers.document.root.get(choice.id)!.id
     setChoiceAnswer(answering.answers!.document.root, choice.id, "three", false)
-    expect(alice.answers.document.root.get(choice.id)!.id).toBe(answerId)
-    const answers = alice.answers.document.snapshot()
+    expect(aliceResponses.answers.document.root.get(choice.id)!.id).toBe(answerId)
+    const answers = aliceResponses.answers.document.snapshot()
     expect(source.document.snapshot()).toEqual(original)
     expect(source.store.getRevision()).toBe(revision)
-    expect(bob.answers.document.snapshot()).toEqual({})
+    expect(bobResponses.answers.document.snapshot()).toEqual({})
 
-    const reviewing = createModeDocuments(WorksheetMode.GivingFeedback, source, alice)
+    const reviewing = createModeDocuments(WorksheetMode.GivingFeedback, source, aliceResponses)
     expect(reviewing.answers!.document.snapshot()).toEqual(answers)
     expect(() => reviewing.answers!.document.root.remove(choice.id)).toThrow(
       "Storage is read-only.",
@@ -266,12 +262,15 @@ test("mode bindings isolate writes, preserve identities, and keep student docume
       .feedback!.document.root.field("overall")
       .getEditor()
       .setContent(feedbackText("Weiter so."))
-    const feedback = alice.feedback.document.snapshot()
-    expect(alice.answers.document.snapshot()).toEqual(answers)
+    const feedback = aliceResponses.feedback.document.snapshot()
+    expect(aliceResponses.answers.document.snapshot()).toEqual(answers)
     expect(source.document.snapshot()).toEqual(original)
-    expect(bob.feedback.document.snapshot()).toEqual({ overall: feedbackText(), exercises: {} })
+    expect(bobResponses.feedback.document.snapshot()).toEqual({
+      overall: feedbackText(),
+      exercises: {},
+    })
 
-    const viewing = createModeDocuments(WorksheetMode.ViewingFeedback, source, alice)
+    const viewing = createModeDocuments(WorksheetMode.ViewingFeedback, source, aliceResponses)
     expect(viewing.answers!.document.snapshot()).toEqual(answers)
     expect(viewing.feedback!.document.snapshot()).toEqual(feedback)
     expect(() => viewing.content.document.root.remove(0)).toThrow("Storage is read-only.")
@@ -283,16 +282,22 @@ test("mode bindings isolate writes, preserve identities, and keep student docume
         .setContent(feedbackText("Changed")),
     ).toThrow("Storage is read-only.")
     expect(
-      createModeDocuments(WorksheetMode.Answering, source, alice).answers!.document.snapshot(),
+      createModeDocuments(
+        WorksheetMode.Answering,
+        source,
+        aliceResponses,
+      ).answers!.document.snapshot(),
     ).toEqual(answers)
     expect(
       createModeDocuments(
         WorksheetMode.GivingFeedback,
         source,
-        alice,
+        aliceResponses,
       ).feedback!.document.snapshot(),
     ).toEqual(feedback)
-    expect(createModeDocuments(WorksheetMode.EditingContent, source, alice).answers).toBeUndefined()
+    expect(
+      createModeDocuments(WorksheetMode.EditingContent, source, aliceResponses).answers,
+    ).toBeUndefined()
   } finally {
     sessions.destroy()
   }
@@ -301,13 +306,13 @@ test("mode bindings isolate writes, preserve identities, and keep student docume
 test("response joins survive read-only rebinding and sibling insertions; mismatched variants reject writes", () => {
   const sessions = createDemoSessions(initialContent)
   try {
-    const student = sessions.student
+    const responses = sessions.responses
     const source = sessions.first
     const choice = source.document.root
       .children()
       .find((value) => value.type === "multiple-choice")!
-    setChoiceAnswer(student.answers.document.root, choice.id, "four", true)
-    const answers = student.answers.document.snapshot()
+    setChoiceAnswer(responses.answers.document.root, choice.id, "four", true)
+    const answers = responses.answers.document.snapshot()
     const original = choice.snapshot()
     source.document.root.remove(0)
     const options = choice.field("options")
@@ -316,7 +321,7 @@ test("response joins survive read-only rebinding and sibling insertions; mismatc
       isCorrect: false,
       text: { type: "doc", content: [{ type: "inlineBlock" }] },
     })
-    const rebound = createModeDocuments(WorksheetMode.Answering, source, student)
+    const rebound = createModeDocuments(WorksheetMode.Answering, source, responses)
     const reboundChoice = rebound.content.document.root
       .children()
       .find((value) => value.type === "multiple-choice")!
@@ -324,13 +329,13 @@ test("response joins survive read-only rebinding and sibling insertions; mismatc
     expect(reboundChoice.field("options").children()[1]!.field("optionId").get()).toBe(
       original.options[0]!.optionId,
     )
-    expect(student.answers.document.snapshot()).toEqual(answers)
+    expect(responses.answers.document.snapshot()).toEqual(answers)
     expect(() =>
-      setGapAnswer(student.answers.document.root, choice.id, "gap", "Wrong variant"),
+      setGapAnswer(responses.answers.document.root, choice.id, "gap", "Wrong variant"),
     ).toThrow("Incompatible answer type.")
-    expect(student.answers.document.snapshot()).toEqual(answers)
+    expect(responses.answers.document.snapshot()).toEqual(answers)
     setExerciseFeedback(
-      student.feedback.document.root,
+      responses.feedback.document.root,
       choice.id,
       "choice-feedback",
       "comment",
@@ -338,7 +343,7 @@ test("response joins survive read-only rebinding and sibling insertions; mismatc
     )
     expect(() =>
       setExerciseFeedback(
-        student.feedback.document.root,
+        responses.feedback.document.root,
         choice.id,
         "gap-feedback",
         "comment",

@@ -30,11 +30,11 @@ export default function App() {
     const sessions = createDemoSessions(initialContent)
     setWorkspace({
       sessions,
-      first: createModeDocuments(WorksheetMode.EditingContent, sessions.first, sessions.student),
+      first: createModeDocuments(WorksheetMode.EditingContent, sessions.first, sessions.responses),
       second: createModeDocuments(
         WorksheetMode.EditingContent,
         sessions.second,
-        sessions.secondStudent,
+        sessions.secondResponses,
       ),
     })
     return () => sessions.destroy()
@@ -57,11 +57,11 @@ export default function App() {
                 aria-pressed={mode === item.id}
                 onClick={() => {
                   if (item.id === mode) return
-                  clearFollowingDocuments(item.id, sessions.student)
+                  clearFollowingDocuments(item.id, sessions.responses)
                   setWorkspace({
                     sessions,
-                    first: createModeDocuments(item.id, sessions.first, sessions.student),
-                    second: createModeDocuments(item.id, sessions.second, sessions.secondStudent),
+                    first: createModeDocuments(item.id, sessions.first, sessions.responses),
+                    second: createModeDocuments(item.id, sessions.second, sessions.secondResponses),
                   })
                 }}
               >

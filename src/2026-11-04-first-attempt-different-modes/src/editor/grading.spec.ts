@@ -5,11 +5,12 @@ import { Root } from "./content"
 import { bindDocument } from "./documents"
 import { setChoiceAnswer, setExerciseFeedback, setGapAnswer } from "./responses"
 import { FlatNodeStore } from "./storage"
-import { createModeDocuments, createStudent, WorksheetMode } from "./worksheet"
+import { createFlatResponses } from "./test-responses"
+import { createModeDocuments, WorksheetMode } from "./worksheet"
 
 test("automatic grading rejects missing/wrong answers and requires every choice to match", () => {
-  const { gap, choice, student, grade } = fixture()
-  const answers = student.answers.document.root
+  const { gap, choice, responses, grade } = fixture()
+  const answers = responses.answers.document.root
   expect(grade()).toEqual({ gap: "incorrect", choice: "incorrect" })
   setGapAnswer(answers, gap.id, "capital-france", "  pArIs  ")
   setChoiceAnswer(answers, choice.id, "four", true)
@@ -30,7 +31,7 @@ test("automatic grading rejects missing/wrong answers and requires every choice 
 })
 
 test("gap grading combines text split by marks, normalizes whitespace, and checks every gap", () => {
-  const { gap, student, grade } = fixture()
+  const { gap, responses, grade } = fixture()
   gap
     .field("content")
     .getEditor()
@@ -52,7 +53,7 @@ test("gap grading combines text split by marks, normalizes whitespace, and check
         },
       ],
     })
-  const answers = student.answers.document.root
+  const answers = responses.answers.document.root
   setGapAnswer(answers, gap.id, "city", "new   york")
   expect(grade().gap).toBe("incorrect")
   setGapAnswer(answers, gap.id, "capital", "Paris")
@@ -62,9 +63,9 @@ test("gap grading combines text split by marks, normalizes whitespace, and check
 })
 
 test("feedback re-entry refreshes automatic grades while preserving rich comments and overrides", () => {
-  const { gap, student, grade } = fixture()
+  const { gap, responses, grade } = fixture()
   grade()
-  const feedback = student.feedback.document.root
+  const feedback = responses.feedback.document.root
   setExerciseFeedback(feedback, gap.id, "gap-feedback", "result", "partial")
   const entry = feedback.field("exercises").get(gap.id)!
   const comment = entry.field("comment")
@@ -78,7 +79,7 @@ test("feedback re-entry refreshes automatic grades while preserving rich comment
     ],
   })
   const snapshot = comment.snapshot()
-  setGapAnswer(student.answers.document.root, gap.id, "capital-france", "Paris")
+  setGapAnswer(responses.answers.document.root, gap.id, "capital-france", "Paris")
   expect(grade().gap).toBe("correct")
   const rebound = feedback.field("exercises").get(gap.id)!
   expect(rebound.id).toBe(entry.id)
@@ -88,7 +89,7 @@ test("feedback re-entry refreshes automatic grades while preserving rich comment
   const viewing = createModeDocuments(
     WorksheetMode.ViewingFeedback,
     bindDocument(new FlatNodeStore(), Root, []),
-    student,
+    responses,
   )
   expect(() =>
     viewing
@@ -112,16 +113,16 @@ test("empty exercises are unassessed rather than vacuously correct", () => {
 
 function fixture() {
   const content = bindDocument(new FlatNodeStore(), Root, initialContent)
-  const student = createStudent("student", "Student")
+  const responses = createFlatResponses()
   const gap = content.document.root.children().find((value) => value.type === "fill-in-the-blank")!
   const choice = content.document.root.children().find((value) => value.type === "multiple-choice")!
   return {
     gap,
     choice,
-    student,
+    responses,
     grade() {
-      createModeDocuments(WorksheetMode.GivingFeedback, content, student)
-      const entries = student.feedback.document.root.field("exercises")
+      createModeDocuments(WorksheetMode.GivingFeedback, content, responses)
+      const entries = responses.feedback.document.root.field("exercises")
       return {
         gap: entries.get(gap.id)!.field("automaticResult").get(),
         choice: entries.get(choice.id)!.field("automaticResult").get(),

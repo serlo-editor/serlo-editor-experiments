@@ -1,6 +1,5 @@
 import * as Y from "yjs"
 
-import { createStudent } from "../editor"
 import { Root, type RootSnapshot } from "../editor/content"
 import { Answers, Feedback, feedbackText } from "../editor/responses"
 import type { Schema, StoredValue } from "../editor/schema/types"
@@ -23,14 +22,8 @@ export function createDemoSessions(snapshot: RootSnapshot) {
     return {
       first: content.first,
       second: content.second,
-      student: createStudent("student", "Schüler:in", {
-        answers: answers.first,
-        feedback: feedback.first,
-      }),
-      secondStudent: createStudent("student", "Schüler:in", {
-        answers: answers.second,
-        feedback: feedback.second,
-      }),
+      responses: { answers: answers.first, feedback: feedback.first },
+      secondResponses: { answers: answers.second, feedback: feedback.second },
       destroy,
     }
   } catch (error) {

@@ -3,7 +3,7 @@ export { createSession, type EditorSession } from "./session"
 export {
   clearFollowingDocuments,
   createModeDocuments,
-  createStudent,
   WorksheetMode,
+  type ResponseDocuments,
   type WorksheetDocuments,
 } from "./worksheet"
