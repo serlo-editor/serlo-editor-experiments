@@ -1,4 +1,4 @@
-import { DOMSerializer } from "prosekit/pm/model"
+import { DOMSerializer, type Schema } from "prosekit/pm/model"
 import { useCallback, useLayoutEffect, useRef } from "react"
 
 import type { gapAnswerFields } from "../content/exercises"
@@ -24,10 +24,7 @@ export function StaticRichText({
   const content = JSON.stringify(value.snapshot())
   const Tag = inline ? "span" : "div"
   useLayoutEffect(() => {
-    const fragment = DOMSerializer.fromSchema(schema).serializeFragment(
-      schema.nodeFromJSON(JSON.parse(content)).content,
-    )
-    host.current?.replaceChildren(fragment)
+    host.current?.replaceChildren(serializeContent(schema, content))
   }, [content, schema])
   return <Tag ref={setHost} className="preview-rich-text" />
 }
@@ -79,9 +76,7 @@ function GapInputs({
 
   // Rebuild only when authored content changes, never on keystrokes: preserve focus/selection.
   useLayoutEffect(() => {
-    const fragment = DOMSerializer.fromSchema(schema).serializeFragment(
-      schema.nodeFromJSON(JSON.parse(content)).content,
-    )
+    const fragment = serializeContent(schema, content)
     inputs.current.clear()
     fragment.querySelectorAll<HTMLElement>(".gap-mark").forEach((gap) => {
       const id = gap.dataset.gapId
@@ -115,4 +110,10 @@ function GapInputs({
     }
   }, [content, schema, values, disabled])
   return <div ref={host} className="preview-rich-text" />
+}
+
+function serializeContent(schema: Schema, content: string) {
+  return DOMSerializer.fromSchema(schema).serializeFragment(
+    schema.nodeFromJSON(JSON.parse(content)).content,
+  )
 }

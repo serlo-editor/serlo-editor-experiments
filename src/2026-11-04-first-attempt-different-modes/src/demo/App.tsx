@@ -131,26 +131,12 @@ function Documents({ worksheet }: { worksheet: WorksheetDocuments }) {
       <p>Inhalt, Antworten und Feedback werden getrennt gespeichert.</p>
       <dl className="document-status">
         <dt>Inhalt</dt>
-        <dd>
-          {worksheet.mode === WorksheetMode.EditingContent
-            ? "Yjs · bearbeitbar"
-            : "Yjs · schreibgeschützt"}
-        </dd>
+        <dd>{documentStatus(true, worksheet.mode === WorksheetMode.EditingContent)}</dd>
         <dt>Antworten</dt>
-        <dd>
-          {worksheet.answers
-            ? worksheet.mode === WorksheetMode.Answering
-              ? "Yjs · bearbeitbar"
-              : "Yjs · schreibgeschützt"
-            : "Nicht eingebunden"}
-        </dd>
+        <dd>{documentStatus(!!worksheet.answers, worksheet.mode === WorksheetMode.Answering)}</dd>
         <dt>Feedback</dt>
         <dd>
-          {worksheet.feedback
-            ? worksheet.mode === WorksheetMode.GivingFeedback
-              ? "Yjs · bearbeitbar"
-              : "Yjs · schreibgeschützt"
-            : "Nicht eingebunden"}
+          {documentStatus(!!worksheet.feedback, worksheet.mode === WorksheetMode.GivingFeedback)}
         </dd>
       </dl>
       <p className="documents__note">
@@ -170,6 +156,11 @@ function Documents({ worksheet }: { worksheet: WorksheetDocuments }) {
       </p>
     </section>
   )
+}
+
+function documentStatus(available: boolean, editable: boolean) {
+  if (!available) return "Nicht eingebunden"
+  return editable ? "Yjs · bearbeitbar" : "Yjs · schreibgeschützt"
 }
 
 function DocumentJSON({ label, document }: { label: string; document: { snapshot(): unknown } }) {

@@ -24,16 +24,17 @@ export type WorksheetDocuments = {
 
 /** Run once per mode switch, before binding any peers; current and earlier data stay intact. */
 export function clearFollowingDocuments(mode: WorksheetMode, responses: ResponseDocuments) {
+  if (mode !== WorksheetMode.EditingContent && mode !== WorksheetMode.Answering) return
+
   if (mode === WorksheetMode.EditingContent) {
     const answers = responses.answers.document.root
     for (const key of Object.keys(answers.snapshot())) answers.remove(key)
   }
-  if (mode === WorksheetMode.EditingContent || mode === WorksheetMode.Answering) {
-    const feedback = responses.feedback.document.root
-    const exercises = feedback.field("exercises")
-    for (const key of Object.keys(exercises.snapshot())) exercises.remove(key)
-    feedback.field("overall").getEditor().setContent(feedbackText())
-  }
+
+  const feedback = responses.feedback.document.root
+  const exercises = feedback.field("exercises")
+  for (const key of Object.keys(exercises.snapshot())) exercises.remove(key)
+  feedback.field("overall").getEditor().setContent(feedbackText())
 }
 
 /** Keep locked documents live through read-only projections of their independent stores. */
