@@ -21,10 +21,20 @@ export function createDemoSessions(snapshot: RootSnapshot) {
     const feedback = createSessionPair(Feedback, { overall: feedbackText(), exercises: {} })
     cleanups.push(feedback.destroy)
     return {
-      first: content.first,
-      second: content.second,
-      responses: { answers: answers.first, feedback: feedback.first },
-      secondResponses: { answers: answers.second, feedback: feedback.second },
+      first: {
+        name: content.first.name,
+        color: content.first.color,
+        content: content.first,
+        answers: answers.first,
+        feedback: feedback.first,
+      },
+      second: {
+        name: content.second.name,
+        color: content.second.color,
+        content: content.second,
+        answers: answers.second,
+        feedback: feedback.second,
+      },
       destroy,
     }
   } catch (error) {

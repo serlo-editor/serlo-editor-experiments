@@ -91,9 +91,9 @@ function ChoiceView({
                   <input
                     type="checkbox"
                     checked={answer?.field("selected").get(optionId)?.get() ?? false}
-                    disabled={mode !== WorksheetMode.Answering || !answers}
+                    disabled={mode !== WorksheetMode.Answering}
                     onChange={(event) => {
-                      if (mode === WorksheetMode.Answering && answers)
+                      if (mode === WorksheetMode.Answering)
                         setChoiceAnswer(
                           answers.document.root,
                           unit.id,

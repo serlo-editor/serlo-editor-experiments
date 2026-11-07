@@ -39,8 +39,8 @@ export function exercise<
     ...unit,
     render: function ExerciseView({ value }) {
       const { mode, answers, feedback: feedbackDocument } = useWorksheet()
-      const answerValue = answers?.document.root.get(value.id)
-      const feedbackValue = feedbackDocument?.document.root.field("exercises").get(value.id)
+      const answerValue = answers.document.root.get(value.id)
+      const feedbackValue = feedbackDocument.document.root.field("exercises").get(value.id)
       if (answerValue && answerValue.type !== answer.type)
         return <p role="alert">Antwort passt nicht zur Aufgabe.</p>
       if (feedbackValue && feedbackValue.type !== feedback.type)

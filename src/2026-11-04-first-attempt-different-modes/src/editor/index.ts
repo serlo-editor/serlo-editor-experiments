@@ -1,8 +1,9 @@
 export { Editor } from "./components/Editor"
 export { createSession, type EditorSession } from "./session"
 export {
-  createModeDocuments,
+  createWorksheet,
+  prepareWorksheetMode,
   WorksheetMode,
-  type ResponseDocuments,
-  type WorksheetDocuments,
+  type Worksheet,
+  type WorksheetSources,
 } from "./worksheet"

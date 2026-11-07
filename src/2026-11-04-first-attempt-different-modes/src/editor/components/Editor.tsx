@@ -5,7 +5,7 @@ import type { RichTextEditor } from "../rich-text"
 import { BlockView } from "../schema"
 import type { RichTextId } from "../storage/types"
 import { useStorage } from "../use-storage"
-import { WorksheetMode, type WorksheetDocuments } from "../worksheet"
+import { WorksheetMode, type Worksheet } from "../worksheet"
 import { WorksheetContext } from "../worksheet-context"
 import { FocusContext } from "./RichText"
 import { Toolbar } from "./Toolbar"
@@ -15,13 +15,13 @@ export function Editor({
   name,
   color = "#5364c8",
 }: {
-  worksheet: WorksheetDocuments
+  worksheet: Worksheet
   name: string
   color?: string
 }) {
   useStorage(worksheet.content.store)
-  useStorage(worksheet.answers?.store)
-  useStorage(worksheet.feedback?.store)
+  useStorage(worksheet.answers.store)
+  useStorage(worksheet.feedback.store)
   const [focused, setFocused] = useState<{ id: RichTextId; editor: RichTextEditor } | null>(null)
   const updateFocus = useCallback((id: RichTextId, editor: RichTextEditor, hasFocus: boolean) => {
     setFocused((previous) => (hasFocus ? { id, editor } : previous?.id === id ? null : previous))

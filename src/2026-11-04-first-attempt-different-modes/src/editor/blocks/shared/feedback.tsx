@@ -71,7 +71,6 @@ export function ExerciseFeedback({
 
 export function OverallFeedback() {
   const { mode, feedback } = useWorksheet()
-  if (!feedback) return null
   const overall = feedback.document.root.field("overall")
   if (mode !== WorksheetMode.GivingFeedback)
     return overall.getEditor().state.doc.textContent.trim() ? (

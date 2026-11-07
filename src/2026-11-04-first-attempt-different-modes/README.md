@@ -48,7 +48,8 @@ collaboration and document JSON; both peers work on the same student's attempt.
    feedback using the formatting toolbar. Only the feedback document is writable;
    rich-text presence is scoped to the corresponding comment.
 4. **Feedback ansehen:** both peers view answers and formatted feedback with
-   every document read-only. All locked documents remain live views of their source.
+   every document read-only. All three documents remain available in every mode;
+   locked documents are live, immutable projections of their source.
 
 Mode switches keep the selected mode's data and all earlier data, but clear
 later documents on both peers:
@@ -63,7 +64,7 @@ Re-entering feedback after a reset computes fresh automatic assessments.
 
 | Mode             | Content       | Answers       | Feedback      |
 | ---------------- | ------------- | ------------- | ------------- |
-| Authoring        | Yjs writable  | Not provided  | Not provided  |
+| Authoring        | Yjs writable  | Yjs read-only | Yjs read-only |
 | Answering        | Yjs read-only | Yjs writable  | Yjs read-only |
 | Adding feedback  | Yjs read-only | Yjs read-only | Yjs writable  |
 | Viewing feedback | Yjs read-only | Yjs read-only | Yjs read-only |
@@ -71,9 +72,9 @@ Re-entering feedback after a reset computes fresh automatic assessments.
 The demo uses one attempt with separate answer and feedback stores.
 Document roles are worksheet properties, not storage node kinds or schema
 metadata. `bindDocument()` accepts any supported backend independently; the
-worksheet receives a pair of answer/feedback bindings. The demo uses three
+worksheet groups all three bindings per peer. The demo uses three
 independent `Y.Doc` pairs, each with its own store, root, awareness, and
-transport. Read-only bindings subscribe to the source store and cache
+transport. Read-only bindings forward source subscriptions and cache
 immutable projections per revision; they expose no writable source values.
 
 ## Structure
@@ -97,9 +98,9 @@ IDs and distinct variants. Multiple-choice options carry explicit `optionId`s;
 gap marks carry persistent IDs. Neither rich-text editor IDs nor array indices
 are used as cross-document response references.
 
-Missing answers are created on interaction; exercise feedback is initialized on
+Missing answer entries are created on interaction; exercise feedback is initialized on
 entry into feedback mode, never during render. Subsequent interactions edit existing
-children rather than replacing entire answer blocks. React subscribes to all provided stores. Gap DOM updates preserve focus
+children rather than replacing entire answer blocks. React subscribes to all three stores. Gap DOM updates preserve focus
 and selection while answers change; read-only content is serialized without
 mounting additional ProseMirror views.
 
@@ -128,8 +129,9 @@ Read-only projections reject writes even through programmatic schema methods;
 previously obtained values remain immutable snapshots. Mode switches preserve
 current and earlier source data and identities; downstream resets use the existing
 stores, so deletions synchronize through Yjs without replacing sessions.
-`clearFollowingDocuments()` runs once per actual mode switch before binding both
-peers; `createModeDocuments()` only composes permissions and initializes grading.
+`prepareWorksheetMode()` runs once per actual mode switch on the first peer,
+clearing downstream documents and grading when entering feedback mode;
+`createWorksheet()` only composes mode-specific permissions.
 
 Sessions disconnect all three transports and destroy awareness/Yjs documents on
 teardown. Yjs stores unmount every cached rich-text view when their document is

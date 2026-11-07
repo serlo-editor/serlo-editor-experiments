@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react"
 
-import { createModeDocuments, Editor, WorksheetMode, type WorksheetDocuments } from "../editor"
+import {
+  createWorksheet,
+  Editor,
+  prepareWorksheetMode,
+  WorksheetMode,
+  type Worksheet,
+} from "../editor"
 import { useStorage } from "../editor/use-storage"
-import { clearFollowingDocuments } from "./clear-following-documents"
 import { initialContent } from "./initial-content"
 import { createDemoSessions } from "./sessions"
 
@@ -16,8 +21,8 @@ const modes: { id: WorksheetMode; label: string }[] = [
 export default function App() {
   const [workspace, setWorkspace] = useState<{
     sessions: ReturnType<typeof createDemoSessions>
-    first: WorksheetDocuments
-    second: WorksheetDocuments
+    first: Worksheet
+    second: Worksheet
   } | null>(null)
   const [rightPane, setRightPane] = useState<"documents" | "collaboration">("collaboration")
 
@@ -25,12 +30,8 @@ export default function App() {
     const sessions = createDemoSessions(initialContent)
     setWorkspace({
       sessions,
-      first: createModeDocuments(WorksheetMode.EditingContent, sessions.first, sessions.responses),
-      second: createModeDocuments(
-        WorksheetMode.EditingContent,
-        sessions.second,
-        sessions.secondResponses,
-      ),
+      first: createWorksheet(WorksheetMode.EditingContent, sessions.first),
+      second: createWorksheet(WorksheetMode.EditingContent, sessions.second),
     })
     return () => sessions.destroy()
   }, [])
@@ -52,11 +53,11 @@ export default function App() {
                 aria-pressed={mode === item.id}
                 onClick={() => {
                   if (item.id === mode) return
-                  clearFollowingDocuments(item.id, sessions.responses)
+                  prepareWorksheetMode(mode, item.id, sessions.first)
                   setWorkspace({
                     sessions,
-                    first: createModeDocuments(item.id, sessions.first, sessions.responses),
-                    second: createModeDocuments(item.id, sessions.second, sessions.secondResponses),
+                    first: createWorksheet(item.id, sessions.first),
+                    second: createWorksheet(item.id, sessions.second),
                   })
                 }}
               >
@@ -116,23 +117,21 @@ export default function App() {
   )
 }
 
-function Documents({ worksheet }: { worksheet: WorksheetDocuments }) {
+function Documents({ worksheet }: { worksheet: Worksheet }) {
   useStorage(worksheet.content.store)
-  useStorage(worksheet.answers?.store)
-  useStorage(worksheet.feedback?.store)
+  useStorage(worksheet.answers.store)
+  useStorage(worksheet.feedback.store)
   return (
     <section className="documents">
       <h2>Unabhängige Dokumente</h2>
       <p>Inhalt, Antworten und Feedback werden getrennt gespeichert.</p>
       <dl className="document-status">
         <dt>Inhalt</dt>
-        <dd>{documentStatus(true, worksheet.mode === WorksheetMode.EditingContent)}</dd>
+        <dd>{documentStatus(worksheet.mode === WorksheetMode.EditingContent)}</dd>
         <dt>Antworten</dt>
-        <dd>{documentStatus(!!worksheet.answers, worksheet.mode === WorksheetMode.Answering)}</dd>
+        <dd>{documentStatus(worksheet.mode === WorksheetMode.Answering)}</dd>
         <dt>Feedback</dt>
-        <dd>
-          {documentStatus(!!worksheet.feedback, worksheet.mode === WorksheetMode.GivingFeedback)}
-        </dd>
+        <dd>{documentStatus(worksheet.mode === WorksheetMode.GivingFeedback)}</dd>
       </dl>
       <p className="documents__note">
         Alle drei Dokumente synchronisieren unabhängig über Yjs. Schreibgeschützte Ansichten bleiben
@@ -140,12 +139,8 @@ function Documents({ worksheet }: { worksheet: WorksheetDocuments }) {
         löscht Antworten und Feedback, zurück zu den Aufgaben löscht Feedback.
       </p>
       <DocumentJSON label="Inhalt" document={worksheet.content.document} />
-      {worksheet.answers && (
-        <DocumentJSON label="Antworten" document={worksheet.answers.document} />
-      )}
-      {worksheet.feedback && (
-        <DocumentJSON label="Feedback" document={worksheet.feedback.document} />
-      )}
+      <DocumentJSON label="Antworten" document={worksheet.answers.document} />
+      <DocumentJSON label="Feedback" document={worksheet.feedback.document} />
       <p className="documents__note">
         Debug-Ansicht enthält auch Lösungen. Schreibschutz ist keine Zugriffskontrolle.
       </p>
@@ -153,9 +148,8 @@ function Documents({ worksheet }: { worksheet: WorksheetDocuments }) {
   )
 }
 
-function documentStatus(available: boolean, editable: boolean) {
-  if (!available) return "Nicht eingebunden"
-  return editable ? "Yjs · bearbeitbar" : "Yjs · schreibgeschützt"
+function documentStatus(editable: boolean) {
+  return editable ? "Yjs · bearbeitbar" : "Live-Ansicht · schreibgeschützt"
 }
 
 function DocumentJSON({ label, document }: { label: string; document: { snapshot(): unknown } }) {

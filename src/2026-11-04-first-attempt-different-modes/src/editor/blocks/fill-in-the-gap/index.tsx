@@ -77,9 +77,9 @@ function GapText({
     <GapInputs
       value={value}
       values={answer?.field("values").snapshot() ?? {}}
-      disabled={mode !== WorksheetMode.Answering || !answers}
+      disabled={mode !== WorksheetMode.Answering}
       onChange={(gapId, text) => {
-        if (mode === WorksheetMode.Answering && answers)
+        if (mode === WorksheetMode.Answering)
           setGapAnswer(answers.document.root, exerciseId, gapId, text)
       }}
     />
