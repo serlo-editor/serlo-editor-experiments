@@ -1,7 +1,7 @@
 import { Root } from "./blocks"
 import { gradeGap } from "./blocks/fill-in-the-gap"
 import { gradeChoice } from "./blocks/multiple-choice"
-import { bindReadonlyDocument, type BoundDocument } from "./documents"
+import { type BoundDocument } from "./documents"
 import { Answers, ensureExerciseFeedback, Feedback } from "./responses"
 import type { StoredValueOf } from "./schema/types"
 import { WorksheetMode } from "./worksheet-mode"
@@ -55,14 +55,8 @@ export function createModeDocuments(
   }
   return {
     mode,
-    content: bindReadonlyDocument(content, Root),
-    answers:
-      mode === WorksheetMode.Answering
-        ? responses.answers
-        : bindReadonlyDocument(responses.answers, Answers),
-    feedback:
-      mode === WorksheetMode.GivingFeedback
-        ? responses.feedback
-        : bindReadonlyDocument(responses.feedback, Feedback),
+    content,
+    answers: responses.answers,
+    feedback: responses.feedback,
   }
 }
