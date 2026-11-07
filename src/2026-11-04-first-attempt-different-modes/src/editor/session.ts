@@ -1,7 +1,7 @@
 import { Awareness } from "y-protocols/awareness"
 import * as Y from "yjs"
 
-import { Root, type RootSnapshot } from "./content"
+import { Root, type RootSnapshot } from "./blocks"
 import { bindDocument } from "./documents"
 import type { Schema, StoredValue } from "./schema/types"
 import { type NodeKind, YjsNodeStore } from "./storage"

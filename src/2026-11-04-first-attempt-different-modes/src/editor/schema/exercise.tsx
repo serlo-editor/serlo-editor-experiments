@@ -1,7 +1,7 @@
 import { createElement, type ReactNode } from "react"
 
-import { WorksheetMode } from "../worksheet"
 import { useWorksheet } from "../worksheet-context"
+import type { WorksheetMode } from "../worksheet-mode"
 import { block, type BlockDefinition, type StoredBlock } from "./block"
 import type { SchemaMap } from "./object"
 

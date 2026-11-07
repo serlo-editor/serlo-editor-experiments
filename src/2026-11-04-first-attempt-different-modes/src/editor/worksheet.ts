@@ -1,14 +1,11 @@
-import { Root } from "./content"
+import { Root } from "./blocks"
+import { feedbackText } from "./blocks/shared/feedback"
 import { bindReadonlyDocument, type BoundDocument } from "./documents"
 import { gradeExercises } from "./grading"
-import { Answers, Feedback, feedbackText } from "./responses"
+import { Answers, Feedback } from "./responses"
+import { WorksheetMode } from "./worksheet-mode"
 
-export enum WorksheetMode {
-  EditingContent = "editing-content",
-  Answering = "answering",
-  GivingFeedback = "giving-feedback",
-  ViewingFeedback = "viewing-feedback",
-}
+export { WorksheetMode } from "./worksheet-mode"
 
 export type ResponseDocuments = {
   answers: BoundDocument<typeof Answers>

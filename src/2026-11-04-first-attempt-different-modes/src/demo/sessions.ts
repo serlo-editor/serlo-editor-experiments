@@ -1,7 +1,8 @@
 import * as Y from "yjs"
 
-import { Root, type RootSnapshot } from "../editor/content"
-import { Answers, Feedback, feedbackText } from "../editor/responses"
+import { Root, type RootSnapshot } from "../editor/blocks"
+import { feedbackText } from "../editor/blocks/shared/feedback"
+import { Answers, Feedback } from "../editor/responses"
 import type { Schema, StoredValue } from "../editor/schema/types"
 import { createDocumentSession } from "../editor/session"
 import type { NodeKind } from "../editor/storage"

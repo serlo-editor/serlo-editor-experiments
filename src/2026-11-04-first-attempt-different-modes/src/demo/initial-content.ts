@@ -1,4 +1,4 @@
-import { FillInTheBlank, MultipleChoice, TextContent, type RootSnapshot } from "../editor/content"
+import { FillInTheBlank, MultipleChoice, TextContent, type RootSnapshot } from "../editor/blocks"
 
 export const initialContent: RootSnapshot = [
   TextContent.createSnapshot({

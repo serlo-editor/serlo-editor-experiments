@@ -1,12 +1,12 @@
 import { useCallback, useState } from "react"
 
+import { OverallFeedback } from "../blocks/shared/feedback"
 import type { RichTextEditor } from "../rich-text"
 import { BlockView } from "../schema"
 import type { RichTextId } from "../storage/types"
 import { useStorage } from "../use-storage"
 import { WorksheetMode, type WorksheetDocuments } from "../worksheet"
 import { WorksheetContext } from "../worksheet-context"
-import { OverallFeedback } from "./Feedback"
 import { FocusContext } from "./RichText"
 import { Toolbar } from "./Toolbar"
 

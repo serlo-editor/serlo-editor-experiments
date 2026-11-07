@@ -1,11 +1,20 @@
-import type { feedbackFields } from "../content/exercises"
-import { setExerciseFeedback } from "../responses"
-import type { StoredBlock } from "../schema/block"
-import type { StoredRichText } from "../schema/rich-text"
-import { WorksheetMode } from "../worksheet"
-import { useWorksheet } from "../worksheet-context"
-import { RichText } from "./RichText"
-import { StaticRichText } from "./StaticRichText"
+import { RichText } from "../../components/RichText"
+import { StaticRichText } from "../../components/StaticRichText"
+import type { RichTextJSON } from "../../rich-text"
+import { richText as definition } from "../../rich-text"
+import { richText, string } from "../../schema"
+import type { StoredBlock } from "../../schema/block"
+import type { StoredRichText } from "../../schema/rich-text"
+import { useWorksheet } from "../../worksheet-context"
+import { WorksheetMode } from "../../worksheet-mode"
+
+const comment = richText({
+  definition: definition.block({
+    marks: { bold: true, italic: true },
+    blocks: { paragraph: true, orderedList: true, bulletList: true },
+  }),
+})
+export const feedbackFields = { comment, result: string(), automaticResult: string() }
 
 const results = [
   { value: "unassessed", label: "Noch nicht bewertet" },
@@ -16,16 +25,11 @@ const results = [
 
 export function ExerciseFeedback({
   entry,
-  exerciseId,
-  kind,
   mode,
 }: {
   entry: StoredBlock<"gap-feedback" | "choice-feedback", typeof feedbackFields> | undefined
-  exerciseId: string
-  kind: "gap-feedback" | "choice-feedback"
   mode: WorksheetMode
 }) {
-  const { feedback } = useWorksheet()
   if (!entry) return null
   const comment = entry.field("comment")
   const selectedResult = entry.field("result").get()
@@ -48,16 +52,7 @@ export function ExerciseFeedback({
         Bewertung
         <select
           value={selectedResult}
-          onChange={(event) => {
-            if (feedback)
-              setExerciseFeedback(
-                feedback.document.root,
-                exerciseId,
-                kind,
-                "result",
-                event.currentTarget.value,
-              )
-          }}
+          onChange={(event) => entry.field("result").set(event.currentTarget.value)}
         >
           <option value="automatic">
             Automatisch: {results.find((item) => item.value === automaticResult)?.label}
@@ -99,4 +94,13 @@ function FeedbackComment({ label, value }: { label: string; value: StoredRichTex
       <RichText value={value} />
     </div>
   )
+}
+
+export function feedbackText(text = ""): RichTextJSON {
+  return {
+    type: "doc",
+    content: [
+      text ? { type: "paragraph", content: [{ type: "text", text }] } : { type: "paragraph" },
+    ],
+  }
 }

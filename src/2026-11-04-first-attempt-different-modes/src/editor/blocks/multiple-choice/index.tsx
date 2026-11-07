@@ -1,54 +1,36 @@
-import type {
-  choiceAnswerFields,
-  choiceUnitFields,
-  feedbackFields,
-  gapAnswerFields,
-  gapUnitFields,
-} from "../content/exercises"
-import { setChoiceAnswer } from "../responses"
-import type { StoredBlock } from "../schema/block"
-import { WorksheetMode } from "../worksheet"
-import { useWorksheet } from "../worksheet-context"
-import { ExerciseBadge } from "./ExerciseBadge"
-import { ExerciseFeedback } from "./Feedback"
-import { RichText } from "./RichText"
-import { GapText, StaticRichText } from "./StaticRichText"
+import { ExerciseBadge } from "../../components/ExerciseBadge"
+import { RichText } from "../../components/RichText"
+import { StaticRichText } from "../../components/StaticRichText"
+import type { Answers } from "../../responses"
+import { richText as definition } from "../../rich-text"
+import { array, boolean, exercise, object, record, richText, string } from "../../schema"
+import type { StoredBlock } from "../../schema/block"
+import type { StoredValueOf } from "../../schema/types"
+import { useWorksheet } from "../../worksheet-context"
+import { WorksheetMode } from "../../worksheet-mode"
+import { ExerciseFeedback, feedbackFields } from "../shared/feedback"
 
-export function GapView({
-  unit,
-  answer,
-  feedback,
-  mode,
-}: {
-  unit: StoredBlock<"fill-in-the-blank", typeof gapUnitFields>
-  answer: StoredBlock<"gap-answer", typeof gapAnswerFields> | undefined
-  feedback: StoredBlock<"gap-feedback", typeof feedbackFields> | undefined
-  mode: WorksheetMode
-}) {
-  return (
-    <section className="exercise exercise--fill-blank">
-      <ExerciseBadge
-        label="Lückentext"
-        help={
-          mode === WorksheetMode.EditingContent
-            ? "Markiere Wörter als Lücken mit der Gap-Funktion."
-            : "Tippe die richtigen Antworten in die Lücken."
-        }
-      />
-      {mode === WorksheetMode.EditingContent ? (
-        <RichText value={unit.field("content")} />
-      ) : (
-        <>
-          <p className="exercise__instructions">Tippe die richtigen Antworten in die Lücken.</p>
-          <GapText value={unit.field("content")} exerciseId={unit.id} answer={answer} mode={mode} />
-          <ExerciseFeedback entry={feedback} exerciseId={unit.id} kind="gap-feedback" mode={mode} />
-        </>
-      )}
-    </section>
-  )
+const inlineDefinition = definition.inline({ marks: { bold: true, italic: true } })
+const choiceUnitFields = {
+  question: richText({ definition: inlineDefinition }),
+  options: array(
+    object({
+      optionId: string(),
+      isCorrect: boolean(),
+      text: richText({ definition: inlineDefinition }),
+    }),
+  ),
 }
+const choiceAnswerFields = { selected: record(boolean()) }
 
-export function ChoiceView({
+export const MultipleChoiceExercise = exercise({
+  unit: { type: "multiple-choice", fields: choiceUnitFields },
+  answer: { type: "choice-answer", fields: choiceAnswerFields },
+  feedback: { type: "choice-feedback", fields: feedbackFields },
+  render: ChoiceView,
+})
+
+function ChoiceView({
   unit,
   answer,
   feedback,
@@ -124,14 +106,40 @@ export function ChoiceView({
               )
             })}
           </div>
-          <ExerciseFeedback
-            entry={feedback}
-            exerciseId={unit.id}
-            kind="choice-feedback"
-            mode={mode}
-          />
+          <ExerciseFeedback entry={feedback} mode={mode} />
         </>
       )}
     </section>
   )
+}
+
+export function gradeChoice(
+  unit: StoredValueOf<typeof MultipleChoiceExercise.unit>,
+  answer: ReturnType<StoredValueOf<typeof Answers>["get"]>,
+): "correct" | "incorrect" | "unassessed" {
+  const options = unit.field("options").children()
+  if (!options.length) return "unassessed"
+  if (answer?.type !== "choice-answer") return "incorrect"
+  return options.every(
+    (option) =>
+      (answer.field("selected").get(option.field("optionId").get())?.get() ?? false) ===
+      option.field("isCorrect").get(),
+  )
+    ? "correct"
+    : "incorrect"
+}
+
+function setChoiceAnswer(
+  answers: StoredValueOf<typeof Answers>,
+  exerciseId: string,
+  optionId: string,
+  selected: boolean,
+) {
+  let answer = answers.get(exerciseId)
+  if (!answer) {
+    answers.set(exerciseId, MultipleChoiceExercise.answer.createSnapshot({ selected: {} }))
+    answer = answers.get(exerciseId)
+  }
+  if (answer?.type !== "choice-answer") throw new Error("Incompatible answer type.")
+  answer.field("selected").set(optionId, selected)
 }
