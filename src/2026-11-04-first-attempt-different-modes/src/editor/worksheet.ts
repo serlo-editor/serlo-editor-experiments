@@ -4,7 +4,13 @@ import { gradeExercises } from "./grading"
 import { Answers, Feedback, feedbackText } from "./responses"
 import { FlatNodeStore } from "./storage"
 
-export type Mode = "authoring" | "answering" | "feedback" | "viewing"
+export enum WorksheetMode {
+  EditingContent = "editing-content",
+  Answering = "answering",
+  GivingFeedback = "giving-feedback",
+  ViewingFeedback = "viewing-feedback",
+}
+
 export type Student = {
   id: string
   name: string
@@ -12,7 +18,7 @@ export type Student = {
   feedback: BoundDocument<typeof Feedback>
 }
 export type WorksheetDocuments = {
-  mode: Mode
+  mode: WorksheetMode
   content: BoundDocument<typeof Root>
   answers?: BoundDocument<typeof Answers>
   feedback?: BoundDocument<typeof Feedback>
@@ -34,12 +40,12 @@ export function createStudent(
 }
 
 /** Run once per mode switch, before binding any peers; current and earlier data stay intact. */
-export function clearFollowingDocuments(mode: Mode, student: Student) {
-  if (mode === "authoring") {
+export function clearFollowingDocuments(mode: WorksheetMode, student: Student) {
+  if (mode === WorksheetMode.EditingContent) {
     const answers = student.answers.document.root
     for (const key of Object.keys(answers.snapshot())) answers.remove(key)
   }
-  if (mode === "authoring" || mode === "answering") {
+  if (mode === WorksheetMode.EditingContent || mode === WorksheetMode.Answering) {
     const feedback = student.feedback.document.root
     const exercises = feedback.field("exercises")
     for (const key of Object.keys(exercises.snapshot())) exercises.remove(key)
@@ -49,12 +55,12 @@ export function clearFollowingDocuments(mode: Mode, student: Student) {
 
 /** Keep locked documents live through read-only projections of their independent stores. */
 export function createModeDocuments(
-  mode: Mode,
+  mode: WorksheetMode,
   content: BoundDocument<typeof Root>,
   student: Student,
 ): WorksheetDocuments {
-  if (mode === "authoring") return { mode, content }
-  if (mode === "feedback") {
+  if (mode === WorksheetMode.EditingContent) return { mode, content }
+  if (mode === WorksheetMode.GivingFeedback) {
     gradeExercises(
       content.document.root,
       student.answers.document.root,
@@ -65,8 +71,12 @@ export function createModeDocuments(
     mode,
     content: bindReadonlyDocument(content, Root),
     answers:
-      mode === "answering" ? student.answers : bindReadonlyDocument(student.answers, Answers),
+      mode === WorksheetMode.Answering
+        ? student.answers
+        : bindReadonlyDocument(student.answers, Answers),
     feedback:
-      mode === "feedback" ? student.feedback : bindReadonlyDocument(student.feedback, Feedback),
+      mode === WorksheetMode.GivingFeedback
+        ? student.feedback
+        : bindReadonlyDocument(student.feedback, Feedback),
   }
 }

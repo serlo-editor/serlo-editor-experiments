@@ -5,7 +5,7 @@ import type { gapAnswerFields } from "../content/exercises"
 import { setGapAnswer } from "../responses"
 import type { StoredBlock } from "../schema/block"
 import type { StoredRichText } from "../schema/rich-text"
-import type { Mode } from "../worksheet"
+import { WorksheetMode } from "../worksheet"
 import { useWorksheet } from "../worksheet-context"
 
 /** Serialize content without mounting another ProseMirror view. */
@@ -41,16 +41,16 @@ export function GapText({
   value: StoredRichText
   exerciseId: string
   answer: StoredBlock<"gap-answer", typeof gapAnswerFields> | undefined
-  mode: Mode
+  mode: WorksheetMode
 }) {
   const { answers } = useWorksheet()
   return (
     <GapInputs
       value={value}
       values={answer?.field("values").snapshot() ?? {}}
-      disabled={mode !== "answering" || !answers}
+      disabled={mode !== WorksheetMode.Answering || !answers}
       onChange={(gapId, text) => {
-        if (mode === "answering" && answers)
+        if (mode === WorksheetMode.Answering && answers)
           setGapAnswer(answers.document.root, exerciseId, gapId, text)
       }}
     />

@@ -7,7 +7,7 @@ import type {
 } from "../content/exercises"
 import { setChoiceAnswer } from "../responses"
 import type { StoredBlock } from "../schema/block"
-import type { Mode } from "../worksheet"
+import { WorksheetMode } from "../worksheet"
 import { useWorksheet } from "../worksheet-context"
 import { ExerciseBadge } from "./ExerciseBadge"
 import { ExerciseFeedback } from "./Feedback"
@@ -23,19 +23,19 @@ export function GapView({
   unit: StoredBlock<"fill-in-the-blank", typeof gapUnitFields>
   answer: StoredBlock<"gap-answer", typeof gapAnswerFields> | undefined
   feedback: StoredBlock<"gap-feedback", typeof feedbackFields> | undefined
-  mode: Mode
+  mode: WorksheetMode
 }) {
   return (
     <section className="exercise exercise--fill-blank">
       <ExerciseBadge
         label="Lückentext"
         help={
-          mode === "authoring"
+          mode === WorksheetMode.EditingContent
             ? "Markiere Wörter als Lücken mit der Gap-Funktion."
             : "Tippe die richtigen Antworten in die Lücken."
         }
       />
-      {mode === "authoring" ? (
+      {mode === WorksheetMode.EditingContent ? (
         <RichText value={unit.field("content")} />
       ) : (
         <>
@@ -57,13 +57,13 @@ export function ChoiceView({
   unit: StoredBlock<"multiple-choice", typeof choiceUnitFields>
   answer: StoredBlock<"choice-answer", typeof choiceAnswerFields> | undefined
   feedback: StoredBlock<"choice-feedback", typeof feedbackFields> | undefined
-  mode: Mode
+  mode: WorksheetMode
 }) {
   const { answers } = useWorksheet()
   return (
     <section className="exercise exercise--multiple-choice">
       <ExerciseBadge label="Multiple Choice" help="Mehrere Antworten können richtig sein." />
-      {mode === "authoring" ? (
+      {mode === WorksheetMode.EditingContent ? (
         <>
           <h3 className="exercise__field-label">Aufgabenstellung</h3>
           <div className="answer-input exercise__question">
@@ -109,9 +109,9 @@ export function ChoiceView({
                   <input
                     type="checkbox"
                     checked={answer?.field("selected").get(optionId)?.get() ?? false}
-                    disabled={mode !== "answering" || !answers}
+                    disabled={mode !== WorksheetMode.Answering || !answers}
                     onChange={(event) => {
-                      if (mode === "answering" && answers)
+                      if (mode === WorksheetMode.Answering && answers)
                         setChoiceAnswer(
                           answers.document.root,
                           unit.id,

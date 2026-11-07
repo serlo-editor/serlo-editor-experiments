@@ -3,6 +3,7 @@ import { StaticRichText } from "../components/StaticRichText"
 import { richText as definition } from "../rich-text"
 import { array, block, blockUnion, richText } from "../schema"
 import type { SnapshotOf, StoredValueOf } from "../schema/types"
+import { WorksheetMode } from "../worksheet"
 import { useWorksheet } from "../worksheet-context"
 import { FillInTheGapExercise, MultipleChoiceExercise } from "./exercises"
 
@@ -18,7 +19,7 @@ export const TextContent = block({
   fields: { content: richText({ definition: textDefinition }) },
   render: function TextView({ value }) {
     const { mode } = useWorksheet()
-    return mode === "authoring" ? (
+    return mode === WorksheetMode.EditingContent ? (
       <RichText value={value.field("content")} />
     ) : (
       <StaticRichText value={value.field("content")} />

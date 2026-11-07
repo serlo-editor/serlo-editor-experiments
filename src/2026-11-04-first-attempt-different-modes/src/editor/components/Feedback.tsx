@@ -2,7 +2,7 @@ import type { feedbackFields } from "../content/exercises"
 import { setExerciseFeedback } from "../responses"
 import type { StoredBlock } from "../schema/block"
 import type { StoredRichText } from "../schema/rich-text"
-import type { Mode } from "../worksheet"
+import { WorksheetMode } from "../worksheet"
 import { useWorksheet } from "../worksheet-context"
 import { RichText } from "./RichText"
 import { StaticRichText } from "./StaticRichText"
@@ -23,7 +23,7 @@ export function ExerciseFeedback({
   entry: StoredBlock<"gap-feedback" | "choice-feedback", typeof feedbackFields> | undefined
   exerciseId: string
   kind: "gap-feedback" | "choice-feedback"
-  mode: Mode
+  mode: WorksheetMode
 }) {
   const { feedback } = useWorksheet()
   if (!entry) return null
@@ -32,7 +32,7 @@ export function ExerciseFeedback({
   const automaticResult = entry.field("automaticResult").get()
   const result = selectedResult === "automatic" ? automaticResult : selectedResult
   const label = results.find((item) => item.value === result)?.label ?? result
-  if (mode !== "feedback") {
+  if (mode !== WorksheetMode.GivingFeedback) {
     if (!comment.getEditor().state.doc.textContent.trim() && result === "unassessed") return null
     return (
       <aside className="feedback-card" data-result={result} aria-label="Feedback zur Aufgabe">
@@ -78,7 +78,7 @@ export function OverallFeedback() {
   const { mode, feedback } = useWorksheet()
   if (!feedback) return null
   const overall = feedback.document.root.field("overall")
-  if (mode !== "feedback")
+  if (mode !== WorksheetMode.GivingFeedback)
     return overall.getEditor().state.doc.textContent.trim() ? (
       <aside className="feedback-card">
         <h3>Gesamtfeedback</h3>

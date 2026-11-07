@@ -9,7 +9,7 @@ import { Root } from "../content"
 import { bindDocument } from "../documents"
 import { feedbackText, setChoiceAnswer, setExerciseFeedback } from "../responses"
 import { FlatNodeStore } from "../storage"
-import { createModeDocuments, createStudent, type Mode } from "../worksheet"
+import { createModeDocuments, createStudent, WorksheetMode } from "../worksheet"
 import { Editor } from "./Editor"
 
 test("exercise renderers join response documents, retain input focus, and enforce mode controls", async () => {
@@ -30,11 +30,11 @@ test("exercise renderers join response documents, retain input focus, and enforc
     const content = bindDocument(new FlatNodeStore(), Root, initialContent)
     const initial = content.document.snapshot()
     const student = createStudent("alice", "Alice")
-    const render = (mode: Mode) => {
+    const render = (mode: WorksheetMode) => {
       const worksheet = createModeDocuments(mode, content, student)
       flushSync(() => reactRoot.render(<Editor key={mode} worksheet={worksheet} name="Alice" />))
     }
-    render("answering")
+    render(WorksheetMode.Answering)
     expect(host.querySelector(".ProseMirror")).toBeNull()
     expect(host.querySelectorAll(".exercise")).toHaveLength(2)
     // Rendering unanswered exercises must not allocate answer or feedback entries.
@@ -59,7 +59,7 @@ test("exercise renderers join response documents, retain input focus, and enforc
     expect(answer.field("values").get("capital-france")?.get()).toBe("Paris")
     expect(content.document.snapshot()).toEqual(initial)
 
-    render("feedback")
+    render(WorksheetMode.GivingFeedback)
     expect(host.querySelector<HTMLInputElement>(".preview-gap")?.disabled).toBe(true)
     expect(host.querySelector<HTMLInputElement>(".preview-gap")?.value).toBe("Paris")
     expect(
@@ -129,7 +129,7 @@ test("exercise renderers join response documents, retain input focus, and enforc
     )
     expect(host.querySelector(".feedback-comment strong")?.textContent).toBe("Gut gemacht!")
 
-    render("viewing")
+    render(WorksheetMode.ViewingFeedback)
     expect(
       Array.from(host.querySelectorAll(".feedback-card"), (element) =>
         element.getAttribute("data-result"),
@@ -143,7 +143,7 @@ test("exercise renderers join response documents, retain input focus, and enforc
     expect(host.querySelector(".learner-content")?.textContent).toContain("Weiter so.")
     expect(host.querySelector<HTMLInputElement>(".preview-gap")?.value).toBe("Paris")
     expect(host.querySelector<HTMLInputElement>(".preview-gap")?.disabled).toBe(true)
-    render("answering")
+    render(WorksheetMode.Answering)
     expect(
       Array.from(host.querySelectorAll(".feedback-card"), (element) =>
         element.getAttribute("data-result"),

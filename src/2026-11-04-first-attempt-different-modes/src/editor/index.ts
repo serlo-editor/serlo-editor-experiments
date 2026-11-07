@@ -4,6 +4,6 @@ export {
   clearFollowingDocuments,
   createModeDocuments,
   createStudent,
-  type Mode,
+  WorksheetMode,
   type WorksheetDocuments,
 } from "./worksheet"

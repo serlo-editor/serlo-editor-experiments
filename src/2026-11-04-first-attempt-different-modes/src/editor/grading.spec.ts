@@ -5,7 +5,7 @@ import { Root } from "./content"
 import { bindDocument } from "./documents"
 import { setChoiceAnswer, setExerciseFeedback, setGapAnswer } from "./responses"
 import { FlatNodeStore } from "./storage"
-import { createModeDocuments, createStudent } from "./worksheet"
+import { createModeDocuments, createStudent, WorksheetMode } from "./worksheet"
 
 test("automatic grading rejects missing/wrong answers and requires every choice to match", () => {
   const { gap, choice, student, grade } = fixture()
@@ -86,7 +86,7 @@ test("feedback re-entry refreshes automatic grades while preserving rich comment
   expect(rebound.field("comment").snapshot()).toEqual(snapshot)
   expect(rebound.field("result").get()).toBe("partial")
   const viewing = createModeDocuments(
-    "viewing",
+    WorksheetMode.ViewingFeedback,
     bindDocument(new FlatNodeStore(), Root, []),
     student,
   )
@@ -120,7 +120,7 @@ function fixture() {
     choice,
     student,
     grade() {
-      createModeDocuments("feedback", content, student)
+      createModeDocuments(WorksheetMode.GivingFeedback, content, student)
       const entries = student.feedback.document.root.field("exercises")
       return {
         gap: entries.get(gap.id)!.field("automaticResult").get(),

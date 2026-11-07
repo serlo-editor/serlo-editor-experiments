@@ -4,7 +4,7 @@ import type { RichTextEditor } from "../rich-text"
 import { BlockView } from "../schema"
 import type { RichTextId } from "../storage/types"
 import { useStorage } from "../use-storage"
-import type { WorksheetDocuments } from "../worksheet"
+import { WorksheetMode, type WorksheetDocuments } from "../worksheet"
 import { WorksheetContext } from "../worksheet-context"
 import { OverallFeedback } from "./Feedback"
 import { FocusContext } from "./RichText"
@@ -42,14 +42,21 @@ export function Editor({
         {name}
       </h2>
       <section className="editor-frame surface">
-        {(worksheet.mode === "authoring" || worksheet.mode === "feedback") && (
+        {(worksheet.mode === WorksheetMode.EditingContent ||
+          worksheet.mode === WorksheetMode.GivingFeedback) && (
           <div className="editor-toolbar-shell">
             <Toolbar editor={focused?.editor ?? null} />
           </div>
         )}
         <WorksheetContext value={worksheet}>
           <FocusContext value={updateFocus}>
-            <div className={worksheet.mode === "authoring" ? "editor-content" : "learner-content"}>
+            <div
+              className={
+                worksheet.mode === WorksheetMode.EditingContent
+                  ? "editor-content"
+                  : "learner-content"
+              }
+            >
               {worksheet.content.document.root.map((value) => (
                 <BlockView key={value.id} value={value} />
               ))}

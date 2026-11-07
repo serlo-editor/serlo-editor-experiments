@@ -1,6 +1,6 @@
 import { createElement, type ReactNode } from "react"
 
-import type { Mode } from "../worksheet"
+import { WorksheetMode } from "../worksheet"
 import { useWorksheet } from "../worksheet-context"
 import { block, type BlockDefinition, type StoredBlock } from "./block"
 import type { SchemaMap } from "./object"
@@ -26,7 +26,7 @@ export function exercise<
     unit: StoredBlock<UnitType, UnitFields>
     answer: StoredBlock<AnswerType, AnswerFields> | undefined
     feedback: StoredBlock<FeedbackType, FeedbackFields> | undefined
-    mode: Mode
+    mode: WorksheetMode
   }) => ReactNode
 }): {
   unit: BlockDefinition<UnitType, UnitFields>

@@ -4,18 +4,18 @@ import {
   clearFollowingDocuments,
   createModeDocuments,
   Editor,
-  type Mode,
+  WorksheetMode,
   type WorksheetDocuments,
 } from "../editor"
 import { useStorage } from "../editor/use-storage"
 import { initialContent } from "./initial-content"
 import { createDemoSessions } from "./sessions"
 
-const modes: { id: Mode; label: string }[] = [
-  { id: "authoring", label: "1. Inhalt bearbeiten" },
-  { id: "answering", label: "2. Aufgaben lösen" },
-  { id: "feedback", label: "3. Feedback geben" },
-  { id: "viewing", label: "4. Feedback ansehen" },
+const modes: { id: WorksheetMode; label: string }[] = [
+  { id: WorksheetMode.EditingContent, label: "1. Inhalt bearbeiten" },
+  { id: WorksheetMode.Answering, label: "2. Aufgaben lösen" },
+  { id: WorksheetMode.GivingFeedback, label: "3. Feedback geben" },
+  { id: WorksheetMode.ViewingFeedback, label: "4. Feedback ansehen" },
 ]
 
 export default function App() {
@@ -30,8 +30,12 @@ export default function App() {
     const sessions = createDemoSessions(initialContent)
     setWorkspace({
       sessions,
-      first: createModeDocuments("authoring", sessions.first, sessions.student),
-      second: createModeDocuments("authoring", sessions.second, sessions.secondStudent),
+      first: createModeDocuments(WorksheetMode.EditingContent, sessions.first, sessions.student),
+      second: createModeDocuments(
+        WorksheetMode.EditingContent,
+        sessions.second,
+        sessions.secondStudent,
+      ),
     })
     return () => sessions.destroy()
   }, [])
@@ -127,11 +131,15 @@ function Documents({ worksheet }: { worksheet: WorksheetDocuments }) {
       <p>Inhalt, Antworten und Feedback werden getrennt gespeichert.</p>
       <dl className="document-status">
         <dt>Inhalt</dt>
-        <dd>{worksheet.mode === "authoring" ? "Yjs · bearbeitbar" : "Yjs · schreibgeschützt"}</dd>
+        <dd>
+          {worksheet.mode === WorksheetMode.EditingContent
+            ? "Yjs · bearbeitbar"
+            : "Yjs · schreibgeschützt"}
+        </dd>
         <dt>Antworten</dt>
         <dd>
           {worksheet.answers
-            ? worksheet.mode === "answering"
+            ? worksheet.mode === WorksheetMode.Answering
               ? "Yjs · bearbeitbar"
               : "Yjs · schreibgeschützt"
             : "Nicht eingebunden"}
@@ -139,7 +147,7 @@ function Documents({ worksheet }: { worksheet: WorksheetDocuments }) {
         <dt>Feedback</dt>
         <dd>
           {worksheet.feedback
-            ? worksheet.mode === "feedback"
+            ? worksheet.mode === WorksheetMode.GivingFeedback
               ? "Yjs · bearbeitbar"
               : "Yjs · schreibgeschützt"
             : "Nicht eingebunden"}
