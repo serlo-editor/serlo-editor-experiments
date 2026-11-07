@@ -151,8 +151,6 @@ access. Debug JSON intentionally includes solutions and must not be exposed as a
 student-facing authorization boundary. Grading is deterministic and local; no
 alternative gap solutions, semantic matching, or scoring model is implemented.
 
-`worksheet.spec.ts` checks real store boundaries, bidirectional Yjs response sync,
-live read-only projections, downstream resets across Yjs and Flat storage, response
-isolation, identities, mode round trips, and student separation. Rich-text tests cover Yjs replacement content with and without
-mounted views, remote changes, cursor isolation, and teardown. Existing schema/storage
-suites cover the shared backend APIs.
+Rich-text tests cover Yjs replacement content with and without mounted views,
+remote changes, cursor isolation, and teardown. Schema/storage suites cover the
+shared backend APIs.
