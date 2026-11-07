@@ -7,7 +7,7 @@ import { createRoot } from "react-dom/client"
 import { initialContent } from "../../demo/initial-content"
 import { Root } from "../content"
 import { bindDocument } from "../documents"
-import { feedbackText, setExerciseFeedback } from "../responses"
+import { feedbackText, setChoiceAnswer, setExerciseFeedback } from "../responses"
 import { FlatNodeStore } from "../storage"
 import { createModeDocuments, createStudent, type Mode } from "../worksheet"
 import { Editor } from "./Editor"
@@ -152,6 +152,28 @@ test("exercise renderers join response documents, retain input focus, and enforc
     expect(host.querySelector<HTMLInputElement>(".preview-gap")?.disabled).toBe(false)
     expect(host.querySelector<HTMLInputElement>(".preview-gap")?.value).toBe("Paris")
     expect(content.document.snapshot()).toEqual(initial)
+
+    flushSync(() => {
+      student.answers.document.root.remove(gapExercise.id)
+      setChoiceAnswer(student.answers.document.root, gapExercise.id, "wrong", true)
+    })
+    expect(host.querySelector('[role="alert"]')?.textContent).toBe(
+      "Antwort passt nicht zur Aufgabe.",
+    )
+    flushSync(() => {
+      student.answers.document.root.remove(gapExercise.id)
+      student.feedback.document.root.field("exercises").remove(gapExercise.id)
+      setExerciseFeedback(
+        student.feedback.document.root,
+        gapExercise.id,
+        "choice-feedback",
+        "result",
+        "correct",
+      )
+    })
+    expect(host.querySelector('[role="alert"]')?.textContent).toBe(
+      "Feedback passt nicht zur Aufgabe.",
+    )
   } finally {
     flushSync(() => reactRoot.unmount())
     await window.happyDOM.close()

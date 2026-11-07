@@ -81,9 +81,10 @@ source values.
 
 - `src/editor/worksheet.ts`: worksheet composition, student documents, downstream resets, mode bindings.
 - `src/editor/documents.ts`: backend-neutral binding and live read-only projections.
-- `src/editor/responses.ts`: answer/feedback schemas and targeted field updates.
+- `src/editor/schema/exercise.tsx`: exercise facade joins unit, answer, and feedback handles by unit ID when rendering.
+- `src/editor/content/`: text block and exercise definitions with unit, answer, and feedback schemas grouped together.
+- `src/editor/responses.ts`: response document composition and targeted field updates.
 - `src/editor/grading.ts`: automatic gap and multiple-choice assessments.
-- `src/editor/content/`: text, gap, and multiple-choice block definitions/renderers.
 - `src/editor/worksheet-context.ts`: application context joining documents for renderers.
 - `src/editor/components/`: generic `BlockView` dispatch plus mode-aware interactions,
   toolbar, serialized content views, and feedback fields.
@@ -92,7 +93,7 @@ source values.
 - `src/demo/`: two replicas per document, one student, mode controls, document inspector.
 
 Content drives traversal in every mode, including exercises with no answer yet.
-Renderers read worksheet context and resolve responses through content block IDs.
+Exercise facade reads worksheet context and passes matching response handles and mode to renderers; missing responses remain absent until interaction or feedback initialization.
 Answer and feedback record keys are content IDs; response blocks have their own
 IDs and distinct variants. Multiple-choice options carry explicit `optionId`s;
 gap marks carry persistent IDs. Neither rich-text editor IDs nor array indices

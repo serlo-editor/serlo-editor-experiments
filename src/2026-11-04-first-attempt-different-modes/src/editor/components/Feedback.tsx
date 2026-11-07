@@ -1,5 +1,8 @@
+import type { feedbackFields } from "../content/exercises"
 import { setExerciseFeedback } from "../responses"
+import type { StoredBlock } from "../schema/block"
 import type { StoredRichText } from "../schema/rich-text"
+import type { Mode } from "../worksheet"
 import { useWorksheet } from "../worksheet-context"
 import { RichText } from "./RichText"
 import { StaticRichText } from "./StaticRichText"
@@ -12,16 +15,17 @@ const results = [
 ]
 
 export function ExerciseFeedback({
+  entry,
   exerciseId,
   kind,
+  mode,
 }: {
+  entry: StoredBlock<"gap-feedback" | "choice-feedback", typeof feedbackFields> | undefined
   exerciseId: string
   kind: "gap-feedback" | "choice-feedback"
+  mode: Mode
 }) {
-  const { mode, feedback } = useWorksheet()
-  if (!feedback) return null
-  const entry = feedback.document.root.field("exercises").get(exerciseId)
-  if (entry && entry.type !== kind) return <p role="alert">Feedback passt nicht zur Aufgabe.</p>
+  const { feedback } = useWorksheet()
   if (!entry) return null
   const comment = entry.field("comment")
   const selectedResult = entry.field("result").get()
@@ -44,15 +48,16 @@ export function ExerciseFeedback({
         Bewertung
         <select
           value={selectedResult}
-          onChange={(event) =>
-            setExerciseFeedback(
-              feedback.document.root,
-              exerciseId,
-              kind,
-              "result",
-              event.currentTarget.value,
-            )
-          }
+          onChange={(event) => {
+            if (feedback)
+              setExerciseFeedback(
+                feedback.document.root,
+                exerciseId,
+                kind,
+                "result",
+                event.currentTarget.value,
+              )
+          }}
         >
           <option value="automatic">
             Automatisch: {results.find((item) => item.value === automaticResult)?.label}

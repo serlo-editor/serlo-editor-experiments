@@ -1,42 +1,18 @@
-import { richText as definition, type RichTextJSON } from "./rich-text"
-import { block, blockUnion, boolean, object, record, richText, string } from "./schema"
+import { FillInTheGapExercise, MultipleChoiceExercise } from "./content/exercises"
+import type { RichTextJSON } from "./rich-text"
+import { blockUnion, object, record } from "./schema"
 import type { StoredValueOf } from "./schema/types"
 
-export const GapAnswer = block({
-  type: "gap-answer",
-  fields: { values: record(string()) },
-  render: () => null,
-})
-
-export const ChoiceAnswer = block({
-  type: "choice-answer",
-  fields: { selected: record(boolean()) },
-  render: () => null,
-})
+const GapAnswer = FillInTheGapExercise.answer
+const ChoiceAnswer = MultipleChoiceExercise.answer
+const GapFeedback = FillInTheGapExercise.feedback
+const ChoiceFeedback = MultipleChoiceExercise.feedback
 
 // Record keys reference content block IDs; response block IDs identify responses themselves.
 export const Answers = record(blockUnion([GapAnswer, ChoiceAnswer]))
 
-const comment = richText({
-  definition: definition.block({
-    marks: { bold: true, italic: true },
-    blocks: { paragraph: true, orderedList: true, bulletList: true },
-  }),
-})
-const feedbackFields = { comment, result: string(), automaticResult: string() }
-export const GapFeedback = block({
-  type: "gap-feedback",
-  fields: feedbackFields,
-  render: () => null,
-})
-export const ChoiceFeedback = block({
-  type: "choice-feedback",
-  fields: feedbackFields,
-  render: () => null,
-})
-
 export const Feedback = object({
-  overall: comment,
+  overall: GapFeedback.fields.comment,
   exercises: record(blockUnion([GapFeedback, ChoiceFeedback])),
 })
 

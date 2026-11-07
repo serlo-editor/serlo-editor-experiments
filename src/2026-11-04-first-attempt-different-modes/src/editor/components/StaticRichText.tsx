@@ -1,8 +1,11 @@
 import { DOMSerializer } from "prosekit/pm/model"
 import { useCallback, useLayoutEffect, useRef } from "react"
 
+import type { gapAnswerFields } from "../content/exercises"
 import { setGapAnswer } from "../responses"
+import type { StoredBlock } from "../schema/block"
 import type { StoredRichText } from "../schema/rich-text"
+import type { Mode } from "../worksheet"
 import { useWorksheet } from "../worksheet-context"
 
 /** Serialize content without mounting another ProseMirror view. */
@@ -29,11 +32,18 @@ export function StaticRichText({
   return <Tag ref={setHost} className="preview-rich-text" />
 }
 
-export function GapText({ value, exerciseId }: { value: StoredRichText; exerciseId: string }) {
-  const { mode, answers } = useWorksheet()
-  const answer = answers?.document.root.get(exerciseId)
-  if (answer && answer.type !== "gap-answer")
-    return <p role="alert">Antwort passt nicht zur Aufgabe.</p>
+export function GapText({
+  value,
+  exerciseId,
+  answer,
+  mode,
+}: {
+  value: StoredRichText
+  exerciseId: string
+  answer: StoredBlock<"gap-answer", typeof gapAnswerFields> | undefined
+  mode: Mode
+}) {
+  const { answers } = useWorksheet()
   return (
     <GapInputs
       value={value}
