@@ -1,7 +1,7 @@
+import { gradeExercises } from "../demo/grading"
 import { Root } from "./blocks"
 import { feedbackText } from "./blocks/shared/feedback"
 import { bindReadonlyDocument, type BoundDocument } from "./documents"
-import { gradeExercises } from "./grading"
 import { Answers, Feedback } from "./responses"
 import { WorksheetMode } from "./worksheet-mode"
 

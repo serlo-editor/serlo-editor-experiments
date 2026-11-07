@@ -1,8 +1,8 @@
-import type { RootValue } from "./blocks"
-import { gradeGap } from "./blocks/fill-in-the-gap"
-import { gradeChoice } from "./blocks/multiple-choice"
-import { type Answers, ensureExerciseFeedback, type Feedback } from "./responses"
-import type { StoredValueOf } from "./schema/types"
+import type { RootValue } from "../editor/blocks"
+import { gradeGap } from "../editor/blocks/fill-in-the-gap"
+import { gradeChoice } from "../editor/blocks/multiple-choice"
+import { type Answers, ensureExerciseFeedback, type Feedback } from "../editor/responses"
+import type { StoredValueOf } from "../editor/schema/types"
 
 /** Refresh automatic assessments without replacing comments or manual overrides. */
 export function gradeExercises(

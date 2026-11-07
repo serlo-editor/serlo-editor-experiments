@@ -84,7 +84,7 @@ immutable projections per revision; they expose no writable source values.
 - `src/editor/schema/exercise.tsx`: exercise facade joins unit, answer, and feedback handles by unit ID when rendering.
 - `src/editor/blocks/`: text, gap-fill, and multiple-choice definitions alongside renderers, styles, and block-specific answer/grading logic; `shared/` holds UI, fields, and styles used by both exercises.
 - `src/editor/responses.ts`: answer/feedback document composition and feedback initialization.
-- `src/editor/grading.ts`: document-level traversal and dispatch to block-specific grading.
+- `src/demo/grading.ts`: demo-level assessment traversal and dispatch to block-specific grading.
 - `src/editor/worksheet-context.ts`: application context joining documents for renderers.
 - `src/editor/components/`: reusable rich-text views, exercise badge, editor, and toolbar.
 - `src/editor/session.ts`: schema-independent Yjs document/awareness lifetime.
