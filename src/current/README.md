@@ -80,8 +80,8 @@ const schema = richText({
 // Bound stored value: value.id, value.getEditor(), value.snapshot().
 ```
 
-Both stores expose `createRichText({ definition, defaultContent, extensions,
-onViewUpdate })` and `getEditor(id, options)`.
+Stores expose `editor.create({ definition, defaultContent, extensions,
+onViewUpdate })` and `editor.get(id, options)`.
 The store caches editor instances locally; definitions, supplied extensions, and
 `onViewUpdate` callbacks are never replicated. Configuration is fixed when the
 local editor is first created. The flat store owns content in cached editor state.

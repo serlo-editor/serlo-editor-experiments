@@ -3,12 +3,7 @@ import { type Awareness, defineYjs } from "prosekit/extensions/yjs"
 import { prosemirrorToYXmlFragment, yXmlFragmentToProseMirrorRootNode } from "y-prosemirror"
 import * as Y from "yjs"
 
-import {
-  createRichTextEditor,
-  type RichTextEditor,
-  type RichTextEditorConfig,
-  type RichTextEditorOptions,
-} from "../rich-text/index.ts"
+import { createRichTextEditor, type RichTextEditor } from "../rich-text/index.ts"
 import type { JSONValue } from "../utils/index.ts"
 import { ChangeTracker } from "./change-tracker.ts"
 import { createEditorSpecificAwareness } from "./editor-awareness.ts"
@@ -64,40 +59,42 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     getField: (ref, field) => ref.get(field),
   }
 
-  createRichText(options: RichTextEditorOptions): RichTextId {
-    // Validate against the combined schema before writing anything to Yjs.
-    const editor = createRichTextEditor(options)
-    editor.state.doc.check()
-    const id: RichTextId = `rich-text:${crypto.randomUUID()}`
-    this.transact(() => {
-      prosemirrorToYXmlFragment(editor.state.doc, this.doc.getXmlFragment(this.fragmentName(id)))
-    })
-    return id
-  }
-
-  getEditor(id: RichTextId, config: RichTextEditorConfig): RichTextEditor {
-    const name = this.fragmentName(id)
-    if (!this.doc.share.has(name)) throw new Error(`Unknown rich-text ID: ${id}.`)
-    const fragment = this.doc.getXmlFragment(name)
-    let editor = this.editors.get(id)
-    if (!editor) {
-      editor = createRichTextEditor({
-        ...config,
-        extensions: [
-          ...(config.extensions ?? []),
-          defineYjs({
-            doc: this.doc,
-            fragment,
-            awareness: createEditorSpecificAwareness(id, this.awareness),
-          }),
-          defineSafeYjsTeardown(),
-        ],
+  readonly editor: YjsNodeStoreContract["editor"] = {
+    create: (options) => {
+      // Validate against the combined schema before writing anything to Yjs.
+      const editor = createRichTextEditor(options)
+      editor.state.doc.check()
+      const id: RichTextId = `rich-text:${crypto.randomUUID()}`
+      this.transact(() => {
+        prosemirrorToYXmlFragment(editor.state.doc, this.doc.getXmlFragment(this.fragmentName(id)))
       })
-      this.editors.set(id, editor)
-    }
+      return id
+    },
 
-    refreshUnmountedEditor(editor, fragment)
-    return editor
+    get: (id, config) => {
+      const name = this.fragmentName(id)
+      if (!this.doc.share.has(name)) throw new Error(`Unknown rich-text ID: ${id}.`)
+      const fragment = this.doc.getXmlFragment(name)
+      let editor = this.editors.get(id)
+      if (!editor) {
+        editor = createRichTextEditor({
+          ...config,
+          extensions: [
+            ...(config.extensions ?? []),
+            defineYjs({
+              doc: this.doc,
+              fragment,
+              awareness: createEditorSpecificAwareness(id, this.awareness),
+            }),
+            defineSafeYjsTeardown(),
+          ],
+        })
+        this.editors.set(id, editor)
+      }
+
+      refreshUnmountedEditor(editor, fragment)
+      return editor
+    },
   }
 
   readonly root: YjsNodeStoreContract["root"] = {

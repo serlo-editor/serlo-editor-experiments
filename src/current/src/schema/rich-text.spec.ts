@@ -19,16 +19,16 @@ function content(text: string): RichTextJSON {
 describeWithStores("rich-text schemas", (getStore) => {
   test("accepts editor options with or without defaultContent", () => {
     const store = getStore()
-    const emptyId = store.createRichText(options)
-    expect(store.getEditor(emptyId, options).getDocJSON()).toEqual({
+    const emptyId = store.editor.create(options)
+    expect(store.editor.get(emptyId, options).getDocJSON()).toEqual({
       type: "doc",
       content: [{ type: "inlineBlock" }],
     })
 
     const defaultContent = content("Initial")
-    const id = store.createRichText({ ...options, defaultContent })
+    const id = store.editor.create({ ...options, defaultContent })
     defaultContent.content?.pop()
-    expect(store.getEditor(id, options).getDocJSON()).toEqual(content("Initial"))
+    expect(store.editor.get(id, options).getDocJSON()).toEqual(content("Initial"))
   })
 
   test("stores a tagged cell and exports only ProseMirror JSON", () => {
@@ -44,7 +44,7 @@ describeWithStores("rich-text schemas", (getStore) => {
     expect(document.root.getEditor().getDocJSON()).toEqual(initial)
     expect(document.snapshot()).toEqual(initial)
     expect(document.root.getEditor()).toBe(document.root.getEditor())
-    expect(document.root.getEditor()).toBe(store.getEditor(document.root.id, options))
+    expect(document.root.getEditor()).toBe(store.editor.get(document.root.id, options))
 
     const exported = document.snapshot()
     exported.content?.pop()
@@ -62,7 +62,7 @@ describeWithStores("rich-text schemas", (getStore) => {
     expect(second.root.id).toBe(first.root.id)
     expect(second.root.getEditor()).toBe(editor)
     expect(second.snapshot()).toEqual(content("First"))
-    expect(store.getEditor(first.root.id, { definition: definition.inline() })).toBe(editor)
+    expect(store.editor.get(first.root.id, { definition: definition.inline() })).toBe(editor)
     expect(editor.schema.marks.bold).toBeDefined()
   })
 
@@ -151,6 +151,6 @@ describeWithStores("rich-text schemas", (getStore) => {
       const ref = store.transact((write) => write.root.save(store.cell.create(value)))
       expect(() => schema.bind(store, ref)).toThrow("Expected rich-text cell.")
     }
-    expect(() => store.getEditor("rich-text:missing", options)).toThrow("Unknown rich-text ID")
+    expect(() => store.editor.get("rich-text:missing", options)).toThrow("Unknown rich-text ID")
   })
 })

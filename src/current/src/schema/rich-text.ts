@@ -14,13 +14,13 @@ export function richText(
 ): Schema<RichTextJSON, StoredRichText, "cell"> {
   return {
     create(store, content) {
-      const editorId = store.createRichText({ ...config, defaultContent: content })
+      const editorId = store.editor.create({ ...config, defaultContent: content })
       return store.cell.create({ kind: "richText", editorId })
     },
 
     bind(store, ref) {
       const id = readRichTextId(store.cell.get(ref))
-      const getEditor = () => store.getEditor(id, config)
+      const getEditor = () => store.editor.get(id, config)
 
       return {
         id,

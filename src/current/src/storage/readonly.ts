@@ -4,7 +4,6 @@ import { Plugin, type EditorState } from "prosekit/pm/state"
 import {
   createRichTextEditor,
   type RichTextEditor,
-  type RichTextEditorConfig,
   type RichTextEditorOptions,
 } from "../rich-text/index.ts"
 import type { JSONValue } from "../utils/index.ts"
@@ -55,18 +54,20 @@ export class ReadonlyNodeStore implements ReadonlyNodeStoreContract {
     },
   }
 
-  createRichText(options: RichTextEditorOptions): RichTextId {
-    if (!this.initializing) return readOnlyError()
-    const id: RichTextId = `rich-text:${crypto.randomUUID()}`
-    this.editors.set(id, createReadonlyEditor(options))
-    return id
-  }
+  readonly editor: ReadonlyNodeStoreContract["editor"] = {
+    create: (options) => {
+      if (!this.initializing) return readOnlyError()
+      const id: RichTextId = `rich-text:${crypto.randomUUID()}`
+      this.editors.set(id, createReadonlyEditor(options))
+      return id
+    },
 
-  // TODO: Add a lightweight read-only rich-text view with a smaller bundle than ProseMirror.
-  getEditor(id: RichTextId, _config: RichTextEditorConfig): RichTextEditor {
-    const editor = this.editors.get(id)
-    if (!editor) throw new Error(`Unknown rich-text ID: ${id}.`)
-    return editor
+    // TODO: Add a lightweight read-only rich-text view with a smaller bundle than ProseMirror.
+    get: (id, _config) => {
+      const editor = this.editors.get(id)
+      if (!editor) throw new Error(`Unknown rich-text ID: ${id}.`)
+      return editor
+    },
   }
 
   getRevision(): number {

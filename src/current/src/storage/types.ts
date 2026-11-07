@@ -42,9 +42,11 @@ export interface NodeStore<Refs extends NodeRefs = NodeRefs> {
     getOrCreate(create: () => Refs[NodeKind]): Refs[NodeKind]
   }
 
-  createRichText(options: RichTextEditorOptions): RichTextId
-  /** Configuration is fixed when an editor is first created in this store. */
-  getEditor(id: RichTextId, config: RichTextEditorConfig): RichTextEditor
+  readonly editor: {
+    create(options: RichTextEditorOptions): RichTextId
+    /** Configuration is fixed when an editor is first created in this store. */
+    get(id: RichTextId, config: RichTextEditorConfig): RichTextEditor
+  }
 
   /**
    * Store-local invalidation version, advanced by content changes even without subscribers.

@@ -108,7 +108,7 @@ test("rejects transactions without executing callbacks and creation outside init
     () => store.cell.create("Added"),
     () => store.array.create([]),
     () => store.map.create({}),
-    () => store.createRichText(options),
+    () => store.editor.create(options),
     () =>
       store.transact(() => {
         throw new Error("Callback must not run.")
@@ -175,7 +175,7 @@ test("read-only rich text supports snapshots and selection, not headless content
   const editor = document.root.getEditor()
   expect(editor).toBe(document.root.getEditor())
   expect(document.snapshot()).toEqual(content)
-  expect(() => store.getEditor("rich-text:missing", options)).toThrow("Unknown rich-text ID")
+  expect(() => store.editor.get("rich-text:missing", options)).toThrow("Unknown rich-text ID")
   expect(() => editor.setContent(content)).toThrow("Storage is read-only.")
   expect(() =>
     editor.exec((state, dispatch) => {
