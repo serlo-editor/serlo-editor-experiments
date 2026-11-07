@@ -22,15 +22,13 @@ export function createDemoSessions(snapshot: RootSnapshot) {
     cleanups.push(feedback.destroy)
     return {
       first: {
-        name: content.first.name,
-        color: content.first.color,
+        ...content.first,
         content: content.first,
         answers: answers.first,
         feedback: feedback.first,
       },
       second: {
-        name: content.second.name,
-        color: content.second.color,
+        ...content.second,
         content: content.second,
         answers: answers.second,
         feedback: feedback.second,

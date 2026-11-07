@@ -9,7 +9,7 @@ import { WorksheetMode } from "./worksheet-mode"
 export { WorksheetMode } from "./worksheet-mode"
 
 /** Three independent source documents belonging to one peer. */
-export type WorksheetSources = {
+type WorksheetSources = {
   content: BoundDocument<typeof Root>
   answers: BoundDocument<typeof Answers>
   feedback: BoundDocument<typeof Feedback>
