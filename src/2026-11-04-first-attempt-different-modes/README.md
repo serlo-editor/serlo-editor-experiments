@@ -12,6 +12,26 @@ bun run fix
 bun run build
 ```
 
+## Browser E2E tests
+
+```sh
+bun run test:e2e
+```
+
+Requires Bun 1.4.2+ with experimental [`Bun.WebView`](https://bun.com/docs/runtime/webview).
+macOS uses system WebKit; Linux and Windows need Chrome, Chromium, Edge, or Brave.
+Set `BUN_CHROME_PATH` if Bun cannot find your browser.
+
+`e2e/worksheet.e2e.ts` builds self-contained HTML in a temporary directory, opens
+fresh browser views, and cleans up afterward. No dev server, fixed port, or new
+test dependency is needed. Tests use native clicks, typing, and key presses to cover:
+
+- Collaborative content editing and answering, input focus, and document inspection.
+- Automatic grading, manual overrides, formatted comments, overall feedback, and read-only viewing.
+- Mode round trips, active-mode no-ops, and downstream resets on both Yjs peers.
+
+Run separately from `bun test` / `bun run fix`, which remain browser-independent.
+
 ## Try the workflow
 
 Every mode provides two synchronized Yjs peers. The right pane switches between
