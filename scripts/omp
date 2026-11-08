@@ -1,3 +1,3 @@
 #!/bin/bash
 
-nono run --allow . --profile omp -- omp
+nono run --allow . --profile omp -- ~/.bun/bin/omp
