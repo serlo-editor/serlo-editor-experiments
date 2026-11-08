@@ -34,7 +34,6 @@ type ExerciseRenderProps<
     }
 )
 
-/** Independent unit, answer, and feedback schemas linked by unit ID. */
 export function exercise<
   const UnitType extends string,
   UnitFields extends BlockFields,
@@ -54,7 +53,7 @@ export function exercise<
   grade: (
     unit: StoredBlock<UnitType, UnitFields>,
     answer: StoredTaggedObject<UnitType, AnswerFields>,
-  ) => TaggedSnapshot<UnitType, FeedbackFields> | undefined
+  ) => TaggedSnapshot<UnitType, FeedbackFields> | null
   render: (
     props: ExerciseRenderProps<UnitType, UnitFields, AnswerFields, FeedbackFields>,
   ) => ReactNode

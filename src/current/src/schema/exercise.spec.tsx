@@ -22,7 +22,7 @@ describeWithStores("exercise renderer", (getStore) => {
     answer: { fields: { response: string() } },
     feedback: { fields: { comment: string() } },
     grade: (_unit, answer) =>
-      answer.response.get() === "42" ? { type: "question", comment: "Correct" } : undefined,
+      answer.response.get() === "42" ? { type: "question", comment: "Correct" } : null,
     render: ({ unit, answer, feedback, mode }) => (
       <p>{`${unit.question.get()} / ${answer?.response.get() ?? ""} / ${feedback?.comment.get() ?? ""} / ${mode} / ${unit.id}`}</p>
     ),
