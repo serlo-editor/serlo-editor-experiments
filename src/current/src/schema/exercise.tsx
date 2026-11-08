@@ -26,10 +26,10 @@ export function exercise<
   answer: { fields: AnswerFields }
   feedback: { fields: FeedbackFields }
   render: (props: {
+    mode: WorksheetMode
     unit: StoredBlock<UnitType, UnitFields>
     answer: StoredTaggedObject<UnitType, AnswerFields> | undefined
     feedback: StoredTaggedObject<UnitType, FeedbackFields> | undefined
-    mode: WorksheetMode
   }) => ReactNode
 }) {
   const answerSchema = taggedObject({ ...answer, type: unit.type })
