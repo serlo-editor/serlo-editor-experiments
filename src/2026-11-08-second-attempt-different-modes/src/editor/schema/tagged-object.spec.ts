@@ -1,0 +1,34 @@
+import { expect, test } from "bun:test"
+
+import { describeWithStores } from "../test-utils/test-with-stores.ts"
+import { string } from "./primitives.ts"
+import { openRoot } from "./root.ts"
+import { taggedObject } from "./tagged-object.ts"
+import type { SnapshotOf } from "./types.ts"
+
+describeWithStores("tagged objects", (getStore) => {
+  test("stores fixed type alongside editable fields without block ID or renderer", () => {
+    const schema = taggedObject({ type: "choice", fields: { response: string() } })
+    expect(schema.defaultValue() satisfies SnapshotOf<typeof schema>).toEqual({
+      type: "choice",
+      response: "",
+    })
+    const snapshot = { type: "choice", response: "First" } satisfies SnapshotOf<typeof schema>
+    const value = openRoot(getStore(), schema, snapshot)
+    expect(value.type satisfies "choice").toBe("choice")
+    expect(value.snapshot()).toEqual(snapshot)
+    value.response.set("Updated")
+    expect(value.snapshot()).toEqual({ type: "choice", response: "Updated" })
+    expect(value).not.toHaveProperty("id")
+
+    // @ts-expect-error A tagged object rejects other literal types.
+    const wrongType: SnapshotOf<typeof schema> = { type: "other", response: "First" }
+    void wrongType
+  })
+})
+
+test("rejects reserved discriminator and empty types", () => {
+  expect(() => taggedObject({ type: "", fields: {} })).toThrow("Expected object type.")
+  // @ts-expect-error Type is reserved for discriminator.
+  taggedObject({ type: "choice", fields: { type: string() } })
+})
