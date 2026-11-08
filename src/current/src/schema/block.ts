@@ -1,19 +1,21 @@
 import type { ReactNode } from "react"
 
 import { isObject } from "../utils/guard.ts"
-import { object, type ObjectSnapshot, type SchemaMap, type StoredObject } from "./object.ts"
+import { object, type ObjectSnapshot, type StoredObject } from "./object.ts"
 import { string } from "./primitives.ts"
-import { taggedObject } from "./tagged-object.ts"
+import { taggedObject, type TaggedFields } from "./tagged-object.ts"
 import type { Schema } from "./types.ts"
 
-export type BlockSnapshot<Type extends string, Fields extends SchemaMap> = {
+export type BlockFields = TaggedFields & { id?: never }
+
+export type BlockSnapshot<Type extends string, Fields extends BlockFields> = {
   readonly id: string
   readonly type: Type
 } & ObjectSnapshot<Fields>
 
 export interface StoredBlock<
   Type extends string,
-  Fields extends SchemaMap,
+  Fields extends BlockFields,
 > extends StoredObject<Fields> {
   readonly id: string
   readonly type: Type
@@ -21,7 +23,7 @@ export interface StoredBlock<
   snapshot(): BlockSnapshot<Type, Fields>
 }
 
-export interface BlockDefinition<Type extends string, Fields extends SchemaMap> extends Schema<
+export interface BlockDefinition<Type extends string, Fields extends BlockFields> extends Schema<
   BlockSnapshot<Type, Fields>,
   StoredBlock<Type, Fields>,
   "map"
@@ -34,13 +36,13 @@ export interface BlockDefinition<Type extends string, Fields extends SchemaMap> 
 }
 
 /** Object schema with immutable identity, discriminator, and local renderer metadata. */
-export function block<const Type extends string, Fields extends SchemaMap>({
+export function block<const Type extends string, Fields extends BlockFields>({
   type,
   fields,
   render,
 }: {
   type: Type
-  fields: Fields & { id?: never; type?: never }
+  fields: Fields
   render: BlockDefinition<Type, Fields>["render"]
 }): BlockDefinition<Type, Fields> {
   if (typeof type !== "string" || type.length === 0) throw new TypeError("Expected block type.")

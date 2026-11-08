@@ -3,13 +3,15 @@ import { object, type ObjectSnapshot, type SchemaMap, type StoredObject } from "
 import { string } from "./primitives.ts"
 import type { Schema, SnapshotOf } from "./types.ts"
 
-export type TaggedSnapshot<Type extends string, Fields extends SchemaMap> = {
+export type TaggedFields = SchemaMap & { type?: never }
+
+export type TaggedSnapshot<Type extends string, Fields extends TaggedFields> = {
   readonly type: Type
 } & ObjectSnapshot<Fields>
 
 export interface StoredTaggedObject<
   Type extends string,
-  Fields extends SchemaMap,
+  Fields extends TaggedFields,
 > extends StoredObject<Fields> {
   readonly type: Type
   readonly definition: TaggedObjectDefinition<Type, Fields>
@@ -18,19 +20,19 @@ export interface StoredTaggedObject<
 
 export interface TaggedObjectDefinition<
   Type extends string,
-  Fields extends SchemaMap,
+  Fields extends TaggedFields,
 > extends Schema<TaggedSnapshot<Type, Fields>, StoredTaggedObject<Type, Fields>, "map"> {
   readonly type: Type
   readonly fields: Fields
 }
 
 /** Object with a fixed, persisted discriminator and no rendering metadata. */
-export function taggedObject<const Type extends string, Fields extends SchemaMap>({
+export function taggedObject<const Type extends string, Fields extends TaggedFields>({
   type,
   fields,
 }: {
   type: Type
-  fields: Fields & { type?: never }
+  fields: Fields
 }): TaggedObjectDefinition<Type, Fields> {
   if (typeof type !== "string" || !type) throw new TypeError("Expected object type.")
   if (Object.hasOwn(fields, "type")) throw new TypeError("Reserved object field: type.")

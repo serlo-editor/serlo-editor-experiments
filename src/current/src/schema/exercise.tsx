@@ -2,29 +2,29 @@ import { createElement, type ReactNode } from "react"
 
 import { useWorksheet } from "../worksheet-context.ts"
 import type { WorksheetMode } from "../worksheet.ts"
-import { block, type BlockDefinition, type StoredBlock } from "./block.ts"
-import type { SchemaMap } from "./object.ts"
+import { block, type BlockDefinition, type BlockFields, type StoredBlock } from "./block.ts"
 import {
   taggedObject,
   type StoredTaggedObject,
+  type TaggedFields,
   type TaggedObjectDefinition,
 } from "./tagged-object.ts"
 
 /** Independent unit, answer, and feedback schemas linked by unit ID. */
 export function exercise<
   const UnitType extends string,
-  UnitFields extends SchemaMap,
-  AnswerFields extends SchemaMap,
-  FeedbackFields extends SchemaMap,
+  UnitFields extends BlockFields,
+  AnswerFields extends TaggedFields,
+  FeedbackFields extends TaggedFields,
 >({
   unit,
   answer,
   feedback,
   render,
 }: {
-  unit: { type: UnitType; fields: UnitFields & { id?: never; type?: never } }
-  answer: { fields: AnswerFields & { id?: never; type?: never } }
-  feedback: { fields: FeedbackFields & { id?: never; type?: never } }
+  unit: { type: UnitType; fields: UnitFields }
+  answer: { fields: AnswerFields }
+  feedback: { fields: FeedbackFields }
   render: (props: {
     unit: StoredBlock<UnitType, UnitFields>
     answer: StoredTaggedObject<UnitType, AnswerFields> | undefined
@@ -59,7 +59,7 @@ export function exercise<
   return { unit: unitBlock, answer: answerSchema, feedback: feedbackSchema }
 }
 
-function isTaggedObject<Type extends string, Fields extends SchemaMap>(
+function isTaggedObject<Type extends string, Fields extends TaggedFields>(
   value: unknown,
   schema: TaggedObjectDefinition<Type, Fields>,
 ): value is StoredTaggedObject<Type, Fields> {
