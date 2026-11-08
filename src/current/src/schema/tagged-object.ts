@@ -47,8 +47,6 @@ export function taggedObject<const Type extends string, Fields extends TaggedFie
   return {
     type,
     create(store, snapshot) {
-      if (!isObject(snapshot) || !Object.hasOwn(snapshot, "type") || snapshot.type !== type)
-        throw new TypeError(`Expected object type: ${type}.`)
       for (const key of Object.keys(snapshot)) {
         if (key !== "type" && !Object.hasOwn(fields, key))
           throw new TypeError(`Unknown field: ${key}.`)
