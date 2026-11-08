@@ -1,25 +1,18 @@
-import type { NodeKind } from "../storage/index.ts"
-import type { JSONValue } from "../utils/index.ts"
-import type { Schema, StoredValue } from "./types.ts"
+import type { AnySchema, Schema, SnapshotOf, StoredValue, StoredValueOf } from "./types.ts"
 
-export interface StoredArray<
-  Item extends JSONValue,
-  Child extends StoredValue<Item>,
-> extends StoredValue<readonly Item[]> {
+export interface StoredArray<ChildSchema extends AnySchema> extends StoredValue<
+  readonly SnapshotOf<ChildSchema>[]
+> {
   readonly length: number
-  children(): Child[]
-  map<Result>(callback: (child: Child, index: number) => Result): Result[]
+  children(): StoredValueOf<ChildSchema>[]
+  map<Result>(callback: (child: StoredValueOf<ChildSchema>, index: number) => Result): Result[]
   remove(index: number): void
-  insert(index: number, value: Item): void
+  insert(index: number, value: SnapshotOf<ChildSchema>): void
 }
 
-export function array<
-  Item extends JSONValue,
-  Child extends StoredValue<Item>,
-  ChildKind extends NodeKind,
->(
-  childSchema: Schema<Item, Child, ChildKind>,
-): Schema<readonly Item[], StoredArray<Item, Child>, "array"> {
+export function array<ChildSchema extends AnySchema>(
+  childSchema: ChildSchema,
+): Schema<readonly SnapshotOf<ChildSchema>[], StoredArray<ChildSchema>, "array"> {
   return {
     create(store, snapshots) {
       const refs = snapshots.map((snapshot) => childSchema.create(store, snapshot))

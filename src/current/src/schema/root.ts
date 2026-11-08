@@ -1,13 +1,11 @@
-import type { NodeKind, NodeRefs, NodeStore } from "../storage/index.ts"
-import type { JSONValue } from "../utils/index.ts"
-import type { Schema, StoredValue } from "./types.ts"
+import type { NodeRefs, NodeStore } from "../storage/index.ts"
+import type { AnySchema, SnapshotOf, StoredValueOf } from "./types.ts"
 
-export function openRoot<
-  Snapshot extends JSONValue,
-  Root extends StoredValue<Snapshot>,
-  Kind extends NodeKind,
-  Refs extends NodeRefs,
->(store: NodeStore<Refs>, schema: Schema<Snapshot, Root, Kind>, initialSnapshot: Snapshot): Root {
+export function openRoot<RootSchema extends AnySchema, Refs extends NodeRefs>(
+  store: NodeStore<Refs>,
+  schema: RootSchema,
+  initialSnapshot: SnapshotOf<RootSchema>,
+): StoredValueOf<RootSchema> {
   const ref = store.root.getOrCreate(() => schema.create(store, structuredClone(initialSnapshot)))
 
   return schema.bind(store, ref)
