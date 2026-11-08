@@ -18,7 +18,7 @@
     "fix": "bun run fix:lint && bun run fix:format && bun run check",
     "fix:format": "oxfmt",
     "fix:lint": "oxlint --fix",
-    "test": "bun test"
+    "test": "bun test --only-failures"
   },
   "devDependencies": {
     "@tsconfig/bun": "^1.0.11",

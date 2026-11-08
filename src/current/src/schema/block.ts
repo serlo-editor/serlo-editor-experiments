@@ -4,7 +4,7 @@ import { isObject } from "../utils/guard.ts"
 import { object, type ObjectSnapshot, type StoredObject } from "./object.ts"
 import { string } from "./primitives.ts"
 import { taggedObject, type TaggedFields } from "./tagged-object.ts"
-import type { Schema, SnapshotOf } from "./types.ts"
+import type { Schema } from "./types.ts"
 
 export type BlockFields = TaggedFields & { id?: never }
 

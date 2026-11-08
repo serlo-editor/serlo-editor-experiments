@@ -15,7 +15,7 @@
     "dev": "bun --watch src/index.html",
     "format": "oxfmt",
     "preview": "bun run build && bun dist/index.html",
-    "test": "bun test",
+    "test": "bun test --only-failures",
     "test:e2e": "bun test ./e2e/worksheet.e2e.ts"
   },
   "dependencies": {

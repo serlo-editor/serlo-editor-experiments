@@ -4,14 +4,14 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "bun run check:tsc && bun run check:format && bun run check:lint",
+    "check": "bun run check:tsc && bun run test && bun run check:format && bun run check:lint",
     "check:format": "oxfmt --check",
     "check:lint": "oxlint",
     "check:tsc": "tsc --noEmit",
-    "fix": "bun run fix:format && bun run fix:lint && bun run check:tsc && bun run test",
+    "fix": "bun run fix:lint && bun run fix:format && bun run check",
     "fix:format": "oxfmt",
     "fix:lint": "oxlint --fix",
-    "test": "bun test"
+    "test": "bun test --only-failures"
   },
   "dependencies": {
     "prosekit": "0.20.2",
@@ -24,8 +24,8 @@
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
     "happy-dom": "^20.0.0",
-    "oxfmt": "^0.63.0",
-    "oxlint": "^1.78.0",
+    "oxfmt": "^0.71.0",
+    "oxlint": "^1.86.0",
     "react-dom": "19.2.6",
     "typescript": "^7.0.2"
   }
