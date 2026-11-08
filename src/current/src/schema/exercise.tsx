@@ -46,10 +46,10 @@ export function exercise<
       const answerValue = answers.get(value.id)
       const feedbackValue = feedbackRecord.get(value.id)
       if (answerValue !== undefined && !isTaggedObject(answerSchema, answerValue)) {
-        return <p role="alert">Antwort passt nicht zur Aufgabe.</p>
+        throw new Error("Antwort passt nicht zur Aufgabe.")
       }
       if (feedbackValue !== undefined && !isTaggedObject(feedbackSchema, feedbackValue)) {
-        return <p role="alert">Feedback passt nicht zur Aufgabe.</p>
+        throw new Error("Feedback passt nicht zur Aufgabe.")
       }
       return createElement(render, {
         unit: value,

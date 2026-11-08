@@ -76,17 +76,17 @@ describeWithStores("exercise renderer", (getStore) => {
     expect(render.mock.calls[0]![4]).toBe(unit.id)
   })
 
-  test("alerts for answer with wrong type", () => {
-    const { markup } = renderExercise({ answers: { task: { type: "other", response: "42" } } })
-    expect(markup).toBe('<p role="alert">Antwort passt nicht zur Aufgabe.</p>')
+  test("throws for answer with wrong type", () => {
+    expect(() => renderExercise({ answers: { task: { type: "other", response: "42" } } })).toThrow(
+      "Antwort passt nicht zur Aufgabe.",
+    )
     expect(render).not.toHaveBeenCalled()
   })
 
-  test("alerts for feedback with wrong type", () => {
-    const { markup } = renderExercise({
-      feedback: { task: { type: "other", comment: "Incorrect" } },
-    })
-    expect(markup).toBe('<p role="alert">Feedback passt nicht zur Aufgabe.</p>')
+  test("throws for feedback with wrong type", () => {
+    expect(() =>
+      renderExercise({ feedback: { task: { type: "other", comment: "Incorrect" } } }),
+    ).toThrow("Feedback passt nicht zur Aufgabe.")
     expect(render).not.toHaveBeenCalled()
   })
 })
