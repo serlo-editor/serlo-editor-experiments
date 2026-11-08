@@ -42,9 +42,9 @@ export function taggedObject<const Type extends string, Fields extends TaggedFie
 }): TaggedObjectDefinition<Type, Fields> {
   if (type.length === 0) throw new TypeError("Expected object type.")
 
-  const contentSchema = object<Fields>(fields)
+  const contentSchema = object(fields)
   const storageSchema = object({ ...fields, type: string() })
-  const definition: TaggedObjectDefinition<Type, Fields> = {
+  return {
     type,
     fields,
     create(store, snapshot) {
@@ -62,12 +62,7 @@ export function taggedObject<const Type extends string, Fields extends TaggedFie
         throw new TypeError(`Expected object type: ${type}.`)
       const content = contentSchema.bind(store, ref)
       const snapshot = content.snapshot
-      return Object.assign(content, {
-        type,
-        definition,
-        snapshot: () => ({ type, ...snapshot() }),
-      })
+      return Object.assign(content, { type, snapshot: () => ({ type, ...snapshot() }) })
     },
   }
-  return definition
 }
