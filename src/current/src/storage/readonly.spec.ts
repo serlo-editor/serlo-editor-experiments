@@ -147,10 +147,12 @@ test("schema stored values read snapshots but cannot mutate content", () => {
     () => document.root.removeOptional("note"),
   ])
     expect(operation).toThrow("Storage is read-only.")
-  const snapshot = document.snapshot()
+  const snapshot = document.root.snapshot()
   Reflect.set(snapshot.items, "0", "Outside mutation")
-  expect(document.snapshot()).toEqual(initial)
-  expect(createDocument(store, schema, { title: "Ignored", items: [] }).snapshot()).toEqual(initial)
+  expect(document.root.snapshot()).toEqual(initial)
+  expect(createDocument(store, schema, { title: "Ignored", items: [] }).root.snapshot()).toEqual(
+    initial,
+  )
 })
 
 test("immutable stores keep a constant revision and never notify", () => {
@@ -174,7 +176,7 @@ test("read-only rich text supports snapshots and selection, not headless content
   const document = createDocument(store, richText(options), content)
   const editor = document.root.getEditor()
   expect(editor).toBe(document.root.getEditor())
-  expect(document.snapshot()).toEqual(content)
+  expect(document.root.snapshot()).toEqual(content)
   expect(() => store.editor.get("rich-text:missing", options)).toThrow("Unknown rich-text ID")
   expect(() => editor.setContent(content)).toThrow("Storage is read-only.")
   expect(() =>
@@ -195,7 +197,7 @@ test("read-only rich text supports snapshots and selection, not headless content
     editor.state.apply(editor.state.tr.setSelection(TextSelection.create(editor.state.doc, 2))),
   )
   expect(editor.state.selection.from).toBe(2)
-  expect(document.snapshot()).toEqual(content)
+  expect(document.root.snapshot()).toEqual(content)
 })
 
 test("rich-text JSON does not expose stored mark attributes", () => {
@@ -220,9 +222,9 @@ test("rich-text JSON does not expose stored mark attributes", () => {
     marked,
   )
   const editor = document.root.getEditor()
-  const before = document.snapshot()
+  const before = document.root.snapshot()
   const attrs = editor.getDocJSON().content?.[0]?.content?.[0]?.marks?.[0]?.attrs
   if (!attrs) throw new Error("Missing mark attributes.")
   Reflect.set(attrs, "id", "Changed")
-  expect(document.snapshot()).toEqual(before)
+  expect(document.root.snapshot()).toEqual(before)
 })

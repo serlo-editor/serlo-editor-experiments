@@ -195,7 +195,7 @@ test("read-only records initialize but reject writes before child creation", () 
   const schema = record(counted)
   const initial = { tags: ["tag"], ["__proto__"]: ["safe"] }
   const document = createDocument(store, schema, initial)
-  expect(document.snapshot()).toEqual(initial)
+  expect(document.root.snapshot()).toEqual(initial)
   for (const [key, value] of Object.entries(initial)) {
     expect(document.root.get(key)?.snapshot()).toEqual(value)
   }
@@ -204,12 +204,12 @@ test("read-only records initialize but reject writes before child creation", () 
   expect(() => document.root.set("tags", ["Changed"])).toThrow("Storage is read-only.")
   expect(() => document.root.remove("tags")).toThrow("Storage is read-only.")
   expect(calls).toBe(beforeWrite)
-  const snapshot = document.snapshot()
+  const snapshot = document.root.snapshot()
   const tags = snapshot.tags
   if (!Array.isArray(tags)) throw new Error("Expected tags array.")
   tags.push("Outside mutation")
-  expect(document.snapshot()).toEqual(initial)
-  expect(createDocument(store, schema, {}).snapshot()).toEqual(initial)
+  expect(document.root.snapshot()).toEqual(initial)
+  expect(createDocument(store, schema, {}).root.snapshot()).toEqual(initial)
   expect(store.getRevision()).toBe(0)
 })
 
@@ -236,7 +236,7 @@ test("Yjs records reopen, observe remote edits, and converge after concurrent ad
     const second = createDocument(secondStore, schema, { ignored: "Ignored" })
     const cached = second.root.get("answer")!
     const observed: unknown[] = []
-    secondStore.subscribe(() => observed.push(second.snapshot()))
+    secondStore.subscribe(() => observed.push(second.root.snapshot()))
 
     first.root.get("answer")!.set("Edited")
     Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
@@ -247,13 +247,13 @@ test("Yjs records reopen, observe remote edits, and converge after concurrent ad
     second.root.set("second", "B")
     Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
     Y.applyUpdate(firstDoc, Y.encodeStateAsUpdate(secondDoc))
-    expect(first.snapshot()).toEqual({ answer: "Edited", first: "A", second: "B" })
-    expect(second.snapshot()).toEqual(first.snapshot())
+    expect(first.root.snapshot()).toEqual({ answer: "Edited", first: "A", second: "B" })
+    expect(second.root.snapshot()).toEqual(first.root.snapshot())
 
     first.root.remove("answer")
     Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
     expect(second.root.get("answer")).toBeUndefined()
-    expect(second.snapshot()).toEqual(first.snapshot())
+    expect(second.root.snapshot()).toEqual(first.root.snapshot())
   } finally {
     firstAwareness.destroy()
     secondAwareness.destroy()

@@ -42,13 +42,13 @@ describeWithStores("rich-text schemas", (getStore) => {
 
     expect(store.cell.get(ref)).toEqual({ kind: "richText", editorId: document.root.id })
     expect(document.root.getEditor().getDocJSON()).toEqual(initial)
-    expect(document.snapshot()).toEqual(initial)
+    expect(document.root.snapshot()).toEqual(initial)
     expect(document.root.getEditor()).toBe(document.root.getEditor())
     expect(document.root.getEditor()).toBe(store.editor.get(document.root.id, options))
 
-    const exported = document.snapshot()
+    const exported = document.root.snapshot()
     exported.content?.pop()
-    expect(document.snapshot()).toEqual(initial)
+    expect(document.root.snapshot()).toEqual(initial)
     expect(initial).toEqual(content("Hello"))
   })
 
@@ -61,7 +61,7 @@ describeWithStores("rich-text schemas", (getStore) => {
 
     expect(second.root.id).toBe(first.root.id)
     expect(second.root.getEditor()).toBe(editor)
-    expect(second.snapshot()).toEqual(content("First"))
+    expect(second.root.snapshot()).toEqual(content("First"))
     expect(store.editor.get(first.root.id, { definition: definition.inline() })).toBe(editor)
     expect(editor.schema.marks.bold).toBeDefined()
   })
@@ -84,9 +84,9 @@ describeWithStores("rich-text schemas", (getStore) => {
 
     document.root.setOptional("note", content("Note"))
     expect(document.root.field("note")?.snapshot()).toEqual(content("Note"))
-    expect(document.snapshot()).toEqual({ items: [content("Kept")], note: content("Note") })
+    expect(document.root.snapshot()).toEqual({ items: [content("Kept")], note: content("Note") })
     document.root.removeOptional("note")
-    expect(document.snapshot()).toEqual({ items: [content("Kept")] })
+    expect(document.root.snapshot()).toEqual({ items: [content("Kept")] })
   })
 
   test("assigns new IDs when importing copied content", () => {
@@ -111,7 +111,7 @@ describeWithStores("rich-text schemas", (getStore) => {
       content: [{ type: "customBlock", content: [{ type: "text", text: "Custom" }] }],
     }
     const document = createDocument(getStore(), schema, initial)
-    expect(document.snapshot()).toEqual(initial)
+    expect(document.root.snapshot()).toEqual(initial)
   })
 
   test("rejects invalid imports without replacing existing content", () => {
@@ -133,7 +133,7 @@ describeWithStores("rich-text schemas", (getStore) => {
     ]) {
       expect(() => document.root.insert(1, invalid)).toThrow()
     }
-    expect(document.snapshot()).toEqual([content("Kept")])
+    expect(document.root.snapshot()).toEqual([content("Kept")])
     expect(document.root.children()[0]!.id).toBe(original)
   })
 

@@ -29,12 +29,12 @@ describeWithStores("Document", (getStore) => {
     const root = document.root
 
     expect(root.snapshot()).toBe("Initial")
-    expect(document.snapshot()).toBe("Initial")
+    expect(document.root.snapshot()).toBe("Initial")
 
     root.set("Changed")
 
     expect(root.snapshot()).toBe("Changed")
-    expect(document.snapshot()).toBe("Changed")
+    expect(document.root.snapshot()).toBe("Changed")
   })
 
   test("opens existing content and ignores the initial snapshot", () => {
@@ -47,8 +47,8 @@ describeWithStores("Document", (getStore) => {
     const first = createDocument(store, schema, "First")
     const second = createDocument(store, schema, "Ignored")
 
-    expect(second.snapshot()).toBe("First")
     expect(second.root.snapshot()).toBe("First")
-    expect(first.snapshot()).toBe("First")
+    expect(second.root.snapshot()).toBe("First")
+    expect(first.root.snapshot()).toBe("First")
   })
 })

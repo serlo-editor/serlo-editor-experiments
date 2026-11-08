@@ -50,9 +50,13 @@ describeWithStores("block schemas", (getStore) => {
     expect(value.field("explanation")).toBeUndefined()
     value.field("question").set("Updated")
     value.setOptional("explanation", "Because")
-    expect(document.snapshot()).toEqual({ ...initial, question: "Updated", explanation: "Because" })
+    expect(document.root.snapshot()).toEqual({
+      ...initial,
+      question: "Updated",
+      explanation: "Because",
+    })
     expect(value.id).toBe(initial.id)
-    expect(Object.keys(document.snapshot()).sort()).toEqual([
+    expect(Object.keys(document.root.snapshot()).sort()).toEqual([
       "answers",
       "explanation",
       "id",
@@ -113,7 +117,7 @@ describeWithStores("block schemas", (getStore) => {
     )
     expect(first.root.id).toBe(loaded.id)
     expect(second.root.id).toBe(loaded.id)
-    expect(second.snapshot()).toEqual(loaded)
+    expect(second.root.snapshot()).toEqual(loaded)
   })
 
   test("composes rich-text fields without exporting internal editor IDs", () => {

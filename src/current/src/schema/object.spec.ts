@@ -64,15 +64,15 @@ describeWithStores("object schemas", (getStore) => {
     expect(root.field("bio") satisfies StoredValueOf<ReturnType<typeof string>> | undefined).toBe(
       undefined,
     )
-    expect(document.snapshot()).toEqual({ name: "Ada" })
-    expect(Object.hasOwn(document.snapshot(), "bio")).toBe(false)
+    expect(document.root.snapshot()).toEqual({ name: "Ada" })
+    expect(Object.hasOwn(document.root.snapshot(), "bio")).toBe(false)
 
     root.removeOptional("bio")
     root.setOptional("bio", "Hello")
     const bio = root.field("bio")!
     expect(bio.get()).toBe("Hello")
     bio.set("Updated")
-    expect(document.snapshot()).toEqual({ name: "Ada", bio: "Updated" })
+    expect(document.root.snapshot()).toEqual({ name: "Ada", bio: "Updated" })
 
     root.setOptional("bio", "Replacement")
     expect(root.field("bio")!.get()).toBe("Replacement")
