@@ -41,9 +41,6 @@ export function taggedObject<const Type extends string, Fields extends TaggedFie
   fields: Fields
 }): TaggedObjectDefinition<Type, Fields> {
   if (type.length === 0) throw new TypeError("Expected object type.")
-  for (const key of ["type", "definition"]) {
-    if (Object.hasOwn(fields, key)) throw new TypeError(`Reserved object field: ${key}.`)
-  }
 
   const contentSchema = object<Fields>(fields)
   const storageSchema = object({ ...fields, type: string() })

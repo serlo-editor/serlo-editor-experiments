@@ -43,12 +43,7 @@ describeWithStores("tagged objects", (getStore) => {
 })
 
 test("rejects reserved discriminator and empty types", () => {
-  expect(() => {
-    // @ts-expect-error Type is reserved for discriminator.
-    taggedObject({ type: "choice", fields: { type: string() } })
-  }).toThrow("Reserved object field: type.")
   expect(() => taggedObject({ type: "", fields: {} })).toThrow("Expected object type.")
-  expect(() => taggedObject({ type: "choice", fields: { definition: string() } })).toThrow(
-    "Reserved object field: definition.",
-  )
+  // @ts-expect-error Type is reserved for discriminator.
+  taggedObject({ type: "choice", fields: { type: string() } })
 })
