@@ -43,11 +43,11 @@ describeWithStores("exercise renderer", (getStore) => {
     feedback?: Record<string, SnapshotOf<typeof schema.feedback> | SnapshotOf<typeof otherFeedback>>
   } = {}) {
     render.mockClear()
-    const unit = { ...schema.unit.createSnapshot({ question: "What?" }), id: "task" }
+    const unit = { ...schema.createSnapshot({ question: "What?" }), id: "task" }
     const worksheet = openWorksheet({
       mode: WorksheetMode.ViewingFeedback,
       store: getStore(),
-      contentSchema: schema.unit,
+      contentSchema: schema,
       answersSchema,
       feedbackSchema,
       initialSnapshot: { content: unit, answers, feedback },
@@ -57,17 +57,18 @@ describeWithStores("exercise renderer", (getStore) => {
         <BlockView value={worksheet.content} />
       </WorksheetContext.Provider>,
     )
-    return { markup, unit }
+    return { markup, unit, definition: worksheet.content.definition }
   }
 
   test("renders unit with matching answer, feedback, and worksheet mode", () => {
-    const { markup, unit } = renderExercise({
+    const { markup, unit, definition } = renderExercise({
       answers: { task: { type: "question", response: "42" } },
       feedback: { task: { type: "question", comment: "Correct" } },
     })
     expect(markup).toBe("<p>What? / 42 / Correct / viewing-feedback / task</p>")
     expect(render).toHaveBeenCalledTimes(1)
     expect(render.mock.calls[0]![4]).toBe(unit.id)
+    expect(definition).toBe(schema)
   })
 
   test("throws for answer with wrong type", () => {

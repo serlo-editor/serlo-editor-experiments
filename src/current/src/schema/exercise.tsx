@@ -2,13 +2,12 @@ import { createElement, type ReactNode } from "react"
 
 import { useWorksheet } from "../worksheet-context.ts"
 import type { WorksheetMode } from "../worksheet.ts"
-import { block, type BlockDefinition, type BlockFields, type StoredBlock } from "./block.ts"
+import { block, type BlockFields, type StoredBlock } from "./block.ts"
 import {
   isTaggedObject,
   taggedObject,
   type StoredTaggedObject,
   type TaggedFields,
-  type TaggedObjectDefinition,
 } from "./tagged-object.ts"
 
 /** Independent unit, answer, and feedback schemas linked by unit ID. */
@@ -32,11 +31,7 @@ export function exercise<
     feedback: StoredTaggedObject<UnitType, FeedbackFields> | undefined
     mode: WorksheetMode
   }) => ReactNode
-}): {
-  unit: BlockDefinition<UnitType, UnitFields>
-  answer: TaggedObjectDefinition<UnitType, AnswerFields>
-  feedback: TaggedObjectDefinition<UnitType, FeedbackFields>
-} {
+}) {
   const answerSchema = taggedObject({ ...answer, type: unit.type })
   const feedbackSchema = taggedObject({ ...feedback, type: unit.type })
   const unitBlock = block({
@@ -59,5 +54,5 @@ export function exercise<
       })
     },
   })
-  return { unit: unitBlock, answer: answerSchema, feedback: feedbackSchema }
+  return Object.assign(unitBlock, { answer: answerSchema, feedback: feedbackSchema })
 }

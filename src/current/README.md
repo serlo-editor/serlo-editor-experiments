@@ -139,6 +139,13 @@ const document = createDocument(store, lesson, initial)
 const view = <BlockView value={document.root} />
 ```
 
+`exercise({ unit, answer, feedback, render })` returns the unit's block definition
+directly, with `answer` and `feedback` schemas attached. Pass the exercise itself
+to `openWorksheet()` as `contentSchema` or include it in a `discriminatedUnion`;
+use `exercise.createSnapshot(...)` for content and `exercise.answer` /
+`exercise.feedback` for records. Stored blocks retain the exercise as their
+`definition`.
+
 `definition.createSnapshot(fields)` creates a detached snapshot with a fresh UUID,
 fixed type, and cloned fields. Supply already-created child snapshots for nested
 blocks. `definition.create(store, snapshot)` stores complete snapshots without
