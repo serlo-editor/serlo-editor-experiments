@@ -9,6 +9,7 @@ export type TaggedSnapshot<Type extends string, Fields extends TaggedFields> = {
   readonly type: Type
 } & ObjectSnapshot<Fields>
 
+// TODO: Can this type be simplified?
 export type StoredTaggedObject<
   Type extends string = string,
   Fields extends TaggedFields = {},
