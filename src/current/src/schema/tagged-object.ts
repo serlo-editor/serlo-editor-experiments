@@ -19,8 +19,8 @@ export interface StoredTaggedObject<
 }
 
 export interface TaggedObjectDefinition<
-  Type extends string,
-  Fields extends TaggedFields,
+  Type extends string = string,
+  Fields extends TaggedFields = TaggedFields,
 > extends Schema<TaggedSnapshot<Type, Fields>, StoredTaggedObject<Type, Fields>, "map"> {
   readonly type: Type
   readonly fields: Fields

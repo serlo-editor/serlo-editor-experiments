@@ -1,6 +1,6 @@
-import { type Schema, type StoredValue, openRoot } from "./schema"
-import { ReadonlyNodeStore, type NodeKind, type NodeRefs, type NodeStore } from "./storage"
-import type { JSONValue } from "./utils"
+import { type StoredValue, openRoot } from "./schema"
+import type { AnySchema, SnapshotOf, StoredValueOf } from "./schema/types.ts"
+import { ReadonlyNodeStore, type NodeRefs, type NodeStore } from "./storage"
 
 export enum WorksheetMode {
   EditingContent = "editing-content",
@@ -21,15 +21,9 @@ export interface Worksheet<
 }
 
 export function openWorksheet<
-  ContentSnapshot extends JSONValue,
-  Content extends StoredValue<ContentSnapshot>,
-  ContentKind extends NodeKind,
-  AnswersSnapshot extends JSONValue,
-  Answers extends StoredValue<AnswersSnapshot>,
-  AnswersKind extends NodeKind,
-  FeedbackSnapshot extends JSONValue,
-  Feedback extends StoredValue<FeedbackSnapshot>,
-  FeedbackKind extends NodeKind,
+  ContentSchema extends AnySchema,
+  AnswersSchema extends AnySchema,
+  FeedbackSchema extends AnySchema,
   Refs extends NodeRefs,
 >({
   mode,
@@ -41,15 +35,19 @@ export function openWorksheet<
 }: {
   mode: WorksheetMode
   store: NodeStore<Refs>
-  contentSchema: Schema<ContentSnapshot, Content, ContentKind>
-  answersSchema: Schema<AnswersSnapshot, Answers, AnswersKind>
-  feedbackSchema: Schema<FeedbackSnapshot, Feedback, FeedbackKind>
+  contentSchema: ContentSchema
+  answersSchema: AnswersSchema
+  feedbackSchema: FeedbackSchema
   initialSnapshot: {
-    content: ContentSnapshot
-    answers: AnswersSnapshot
-    feedback: FeedbackSnapshot
+    content: SnapshotOf<ContentSchema>
+    answers: SnapshotOf<AnswersSchema>
+    feedback: SnapshotOf<FeedbackSchema>
   }
-}): Worksheet<Content, Answers, Feedback> {
+}): Worksheet<
+  StoredValueOf<ContentSchema>,
+  StoredValueOf<AnswersSchema>,
+  StoredValueOf<FeedbackSchema>
+> {
   const content =
     mode === WorksheetMode.EditingContent
       ? openRoot(store, contentSchema, initialSnapshot.content)
