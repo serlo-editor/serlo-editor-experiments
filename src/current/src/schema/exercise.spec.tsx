@@ -15,8 +15,8 @@ import { record } from "./record.ts"
 function definitions() {
   const choice = exercise({
     unit: { type: "choice", fields: { question: string() } },
-    answer: { type: "choice-answer", fields: { response: string() } },
-    feedback: { type: "choice-feedback", fields: { comment: string() } },
+    answer: { fields: { response: string() } },
+    feedback: { fields: { comment: string() } },
     render: ({ unit, answer, feedback, mode }) => (
       <p>
         {unit.field("question").get()}:{answer?.field("response").get() ?? "missing"}:
@@ -55,8 +55,8 @@ describeWithStores("exercise", (getStore) => {
       )
 
     expect(view()).toBe("<p>Question:Response:Comment:viewing-feedback</p>")
-    expect(worksheet.answers.get(unit.id)?.type).toBe("choice-answer")
-    expect(worksheet.feedback.get(unit.id)?.type).toBe("choice-feedback")
+    expect(worksheet.answers.get(unit.id)?.type).toBe(unit.type)
+    expect(worksheet.feedback.get(unit.id)?.type).toBe(unit.type)
   })
 
   test("handles absent responses and rejects mismatched definitions", () => {

@@ -9,9 +9,7 @@ import type { SchemaMap } from "./object.ts"
 export function exercise<
   const UnitType extends string,
   UnitFields extends SchemaMap,
-  const AnswerType extends string,
   AnswerFields extends SchemaMap,
-  const FeedbackType extends string,
   FeedbackFields extends SchemaMap,
 >({
   unit,
@@ -20,21 +18,21 @@ export function exercise<
   render,
 }: {
   unit: { type: UnitType; fields: UnitFields & { id?: never; type?: never } }
-  answer: { type: AnswerType; fields: AnswerFields & { id?: never; type?: never } }
-  feedback: { type: FeedbackType; fields: FeedbackFields & { id?: never; type?: never } }
+  answer: { fields: AnswerFields & { id?: never; type?: never } }
+  feedback: { fields: FeedbackFields & { id?: never; type?: never } }
   render: (props: {
     unit: StoredBlock<UnitType, UnitFields>
-    answer: StoredBlock<AnswerType, AnswerFields> | undefined
-    feedback: StoredBlock<FeedbackType, FeedbackFields> | undefined
+    answer: StoredBlock<UnitType, AnswerFields> | undefined
+    feedback: StoredBlock<UnitType, FeedbackFields> | undefined
     mode: WorksheetMode
   }) => ReactNode
 }): {
   unit: BlockDefinition<UnitType, UnitFields>
-  answer: BlockDefinition<AnswerType, AnswerFields>
-  feedback: BlockDefinition<FeedbackType, FeedbackFields>
+  answer: BlockDefinition<UnitType, AnswerFields>
+  feedback: BlockDefinition<UnitType, FeedbackFields>
 } {
-  const answerBlock = block({ ...answer, render: () => null })
-  const feedbackBlock = block({ ...feedback, render: () => null })
+  const answerBlock = block({ ...answer, type: unit.type, render: () => null })
+  const feedbackBlock = block({ ...feedback, type: unit.type, render: () => null })
   const unitBlock = block({
     ...unit,
     render: function ExerciseView({ value }) {
