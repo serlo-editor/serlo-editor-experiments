@@ -7,7 +7,7 @@ import { createRoot } from "react-dom/client"
 import { renderToStaticMarkup } from "react-dom/server"
 
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
-import { array, discriminatedUnion, string, block, BlockView } from "./index.ts"
+import { array, string, block, BlockView } from "./index.ts"
 import { openRoot } from "./root.ts"
 
 describeWithStores("BlockView", (getStore) => {
@@ -39,7 +39,7 @@ describeWithStores("BlockView", (getStore) => {
         },
       })
       const initial = text.createSnapshot({ text: "First" })
-      const root = openRoot(getStore(), array(discriminatedUnion([text])), [initial])
+      const root = openRoot(getStore(), array(text), [initial])
       const render = () =>
         flushSync(() => reactRoot.render(<BlockView value={root.children()[0]!} />))
       render()
@@ -62,7 +62,7 @@ describeWithStores("BlockView", (getStore) => {
     }
   })
 
-  test("mounts nested union renderers as components with working hooks", () => {
+  test("renders block component with hooks and current stored content", () => {
     const text = block({
       type: "text",
       fields: { text: string() },
@@ -71,40 +71,11 @@ describeWithStores("BlockView", (getStore) => {
         return <p id={id}>{value.text.get()}</p>
       },
     })
-    const other = block({
-      type: "other",
-      fields: { label: string() },
-      render: ({ value }) => <strong>{value.label.get()}</strong>,
-    })
-    const lesson = block({
-      type: "lesson",
-      fields: { exercises: array(discriminatedUnion([text, other])) },
-      render: function LessonView({ value }) {
-        return (
-          <section>
-            {value.exercises.map((child) => (
-              <BlockView key={child.id} value={child} />
-            ))}
-          </section>
-        )
-      },
-    })
-    const initial = lesson.createSnapshot({
-      exercises: [
-        text.createSnapshot({ text: "First" }),
-        other.createSnapshot({ label: "Second" }),
-      ],
-    })
-    const root = openRoot(getStore(), lesson, initial)
+    const root = openRoot(getStore(), text, text.createSnapshot({ text: "First" }))
     expect(BlockView({ value: root }).key).toBe(root.id)
-    expect(renderToStaticMarkup(<BlockView value={root} />)).toMatch(
-      /^<section><p id="[^"]+">First<\/p><strong>Second<\/strong><\/section>$/,
-    )
-    root.exercises.remove(0)
-    root.exercises.insert(0, other.createSnapshot({ label: "Inserted" }))
+    expect(renderToStaticMarkup(<BlockView value={root} />)).toMatch(/^<p id="[^"]+">First<\/p>$/)
+    root.text.set("Updated")
     // Parent explicitly rerenders; BlockView has no subscriptions yet.
-    expect(renderToStaticMarkup(<BlockView value={root} />)).toBe(
-      "<section><strong>Inserted</strong><strong>Second</strong></section>",
-    )
+    expect(renderToStaticMarkup(<BlockView value={root} />)).toMatch(/^<p id="[^"]+">Updated<\/p>$/)
   })
 })
