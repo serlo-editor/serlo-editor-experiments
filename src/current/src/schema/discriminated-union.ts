@@ -12,30 +12,26 @@ export function discriminatedUnion<const Definitions extends readonly TaggedObje
     byType.set(definition.type, definition)
   }
 
-  const select = (snapshot: unknown): Definitions[number] => {
-    if (
-      !isObject(snapshot) ||
-      !Object.hasOwn(snapshot, "type") ||
-      typeof snapshot.type !== "string"
-    ) {
-      throw new TypeError("Expected child type.")
-    }
-    const definition = byType.get(snapshot.type)
-    if (!definition) throw new TypeError(`Unknown child type: ${snapshot.type}.`)
+  const select = (type: string): Definitions[number] => {
+    const definition = byType.get(type)
+    if (!definition) throw new TypeError(`Unknown child type: ${type}.`)
     return definition
   }
 
   return {
     create(store, snapshot) {
-      return select(snapshot).create(store, snapshot)
+      const value: unknown = snapshot
+      if (!isObject(value) || !Object.hasOwn(value, "type") || typeof value.type !== "string") {
+        throw new TypeError("Expected child type.")
+      }
+      return select(value.type).create(store, snapshot)
     },
     bind(store, ref) {
       const typeRef = store.map.getField(ref, "type")
-      const definition = select({
-        type: typeRef === undefined ? undefined : store.cell.get(typeRef),
-      })
+      const type = typeRef === undefined ? undefined : store.cell.get(typeRef)
+      if (typeof type !== "string") throw new TypeError("Expected child type.")
       // TODO: try to avoid type cast here
-      return definition.bind(store, ref) as StoredValueOf<Definitions[number]>
+      return select(type).bind(store, ref) as StoredValueOf<Definitions[number]>
     },
   }
 }
