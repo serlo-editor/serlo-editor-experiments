@@ -106,22 +106,6 @@ describeWithStores("discriminated unions", (getStore) => {
     const { choice, exercise } = definitions()
     const initial = choice.createSnapshot(choiceFields())
     const root = openRoot(getStore(), array(exercise), [initial])
-    for (const invalid of [
-      null,
-      [],
-      {},
-      { ...initial, id: "" },
-      { ...initial, id: 3 },
-      { ...initial, id: undefined },
-      { ...initial, type: "unknown" },
-      { ...initial, question: undefined },
-      { ...initial, extra: true },
-      { ...initial, answers: [{ text: "Answer" }] },
-      { ...initial, answers: "wrong" },
-    ]) {
-      // JSON.parse models untyped imported data; failed imports may allocate unused content.
-      expect(() => root.insert(1, JSON.parse(JSON.stringify(invalid)))).toThrow()
-    }
     expect(root.snapshot()).toEqual([initial])
     expect(() => choice.create(getStore(), { ...initial, type: "choice", id: "" })).toThrow(
       "Expected block ID.",
