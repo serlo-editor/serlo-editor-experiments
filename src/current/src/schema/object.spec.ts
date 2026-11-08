@@ -3,7 +3,7 @@ import { expect, test } from "bun:test"
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import { array } from "./array.ts"
 import { boolean, object, string } from "./index.ts"
-import { createRoot } from "./root.ts"
+import { openRoot } from "./root.ts"
 import type { SnapshotOf } from "./types.ts"
 
 describeWithStores("object schemas", (getStore) => {
@@ -14,7 +14,7 @@ describeWithStores("object schemas", (getStore) => {
       tags: ["math"],
       profile: { bio: "Hello" },
     }
-    const root = createRoot(
+    const root = openRoot(
       getStore(),
       object({
         name: string(),
@@ -82,7 +82,7 @@ describeWithStores("object schemas", (getStore) => {
       toString: string(),
     })
     const initial = { ["__proto__"]: "proto", constructor: "ctor", toString: "text" }
-    const root = createRoot(getStore(), schema, initial)
+    const root = openRoot(getStore(), schema, initial)
     expect(root.snapshot()).toEqual(initial)
     expect(root.field("__proto__").get()).toBe("proto")
     expect(() => {
@@ -96,7 +96,7 @@ describeWithStores("object schemas", (getStore) => {
   })
 
   test("supports empty objects", () => {
-    const root = createRoot(getStore(), object({}), {})
+    const root = openRoot(getStore(), object({}), {})
 
     expect(root.snapshot()).toEqual({})
   })

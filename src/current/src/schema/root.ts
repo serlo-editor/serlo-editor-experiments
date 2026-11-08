@@ -2,7 +2,7 @@ import type { NodeKind, NodeRefs, NodeStore } from "../storage/index.ts"
 import type { JSONValue } from "../utils/index.ts"
 import type { Schema, StoredValue } from "./types.ts"
 
-export function createRoot<
+export function openRoot<
   Snapshot extends JSONValue,
   Root extends StoredValue<Snapshot>,
   Kind extends NodeKind,

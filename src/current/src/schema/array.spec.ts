@@ -3,11 +3,11 @@ import { expect, test } from "bun:test"
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import { array } from "./array.ts"
 import { string } from "./primitives.ts"
-import { createRoot } from "./root.ts"
+import { openRoot } from "./root.ts"
 
 describeWithStores("array schemas", (getStore) => {
   test("creates, reads, maps, inserts, and removes children", () => {
-    const root = createRoot(getStore(), array(string()), ["Ada", "Grace"])
+    const root = openRoot(getStore(), array(string()), ["Ada", "Grace"])
 
     expect(root.length).toBe(2)
     expect(root.snapshot()).toEqual(["Ada", "Grace"])

@@ -2,11 +2,11 @@ import { expect, test } from "bun:test"
 
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import { boolean, string } from "./primitives.ts"
-import { createRoot } from "./root.ts"
+import { openRoot } from "./root.ts"
 
 describeWithStores("primitive schemas", (getStore) => {
   test("creates and edits string documents", () => {
-    const root = createRoot(getStore(), string(), "Ada")
+    const root = openRoot(getStore(), string(), "Ada")
 
     expect(root.get()).toBe("Ada")
     expect(root.snapshot()).toBe("Ada")
@@ -18,7 +18,7 @@ describeWithStores("primitive schemas", (getStore) => {
   })
 
   test("creates and edits boolean documents", () => {
-    const root = createRoot(getStore(), boolean(), false)
+    const root = openRoot(getStore(), boolean(), false)
 
     expect(root.get()).toBe(false)
     expect(root.snapshot()).toBe(false)

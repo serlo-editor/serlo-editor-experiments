@@ -8,7 +8,7 @@ import { renderToStaticMarkup } from "react-dom/server"
 
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import { array, blockUnion, string, block, BlockView } from "./index.ts"
-import { createRoot as createStoredRoot } from "./root.ts"
+import { openRoot } from "./root.ts"
 
 describeWithStores("BlockView", (getStore) => {
   test("remounts renderer state when a same-type child is replaced", async () => {
@@ -39,7 +39,7 @@ describeWithStores("BlockView", (getStore) => {
         },
       })
       const initial = text.createSnapshot({ text: "First" })
-      const root = createStoredRoot(getStore(), array(blockUnion([text])), [initial])
+      const root = openRoot(getStore(), array(blockUnion([text])), [initial])
       const render = () =>
         flushSync(() => reactRoot.render(<BlockView value={root.children()[0]!} />))
       render()
@@ -95,7 +95,7 @@ describeWithStores("BlockView", (getStore) => {
         other.createSnapshot({ label: "Second" }),
       ],
     })
-    const root = createStoredRoot(getStore(), lesson, initial)
+    const root = openRoot(getStore(), lesson, initial)
     expect(BlockView({ value: root }).key).toBe(root.id)
     expect(renderToStaticMarkup(<BlockView value={root} />)).toMatch(
       /^<section><p id="[^"]+">First<\/p><strong>Second<\/strong><\/section>$/,
