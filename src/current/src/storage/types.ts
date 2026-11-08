@@ -39,9 +39,12 @@ export interface NodeStore<Refs extends NodeRefs = NodeRefs> {
   }
   readonly root: {
     /** Runs the initializer only when no root exists; writable stores use a transaction. */
+    // TODO: This is only used in createDocument() to initialize the root. Consider
+    // inlining it into createDocument() and removing it from the public API.
     getOrCreate(create: () => Refs[NodeKind]): Refs[NodeKind]
   }
 
+  // TODO: Consider moving it into a separate RichTextStore interface.
   readonly editor: {
     create(options: RichTextEditorOptions): RichTextId
     /** Configuration is fixed when an editor is first created in this store. */
