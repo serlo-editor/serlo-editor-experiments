@@ -4,7 +4,7 @@ export type StoredObject<Schemas extends SchemaMap> = StoredValue<ObjectSnapshot
   readonly [Key in keyof Schemas]: StoredValueOf<Schemas[Key]>
 }
 
-export type SchemaMap = Readonly<Record<string, AnySchema>>
+export type SchemaMap = Readonly<Record<string, AnySchema>> & { snapshot?: never }
 
 export type ObjectSnapshot<Schemas extends SchemaMap> = {
   readonly [Key in keyof Schemas]: SnapshotOf<Schemas[Key]>
@@ -13,10 +13,6 @@ export type ObjectSnapshot<Schemas extends SchemaMap> = {
 export function object<Schemas extends SchemaMap>(
   schemas: Schemas,
 ): Schema<ObjectSnapshot<Schemas>, StoredObject<Schemas>, "map"> {
-  if (Object.hasOwn(schemas, "snapshot")) {
-    throw new TypeError("Reserved object field: snapshot.")
-  }
-
   return {
     create(store, snapshot) {
       const fields = Object.fromEntries(

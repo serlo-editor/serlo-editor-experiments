@@ -98,7 +98,9 @@ describeWithStores("object schemas", (getStore) => {
     const root = openRoot(getStore(), object({ field: string() }), { field: "Value" })
     expect(root.field.get()).toBe("Value")
     expect(root.snapshot()).toEqual({ field: "Value" })
-    expect(() => object({ snapshot: string() })).toThrow("Reserved object field: snapshot.")
+
+    // @ts-expect-error `snapshot` is reserved for the stored object's snapshot method.
+    object({ snapshot: string() })
   })
 
   test("supports empty objects", () => {
