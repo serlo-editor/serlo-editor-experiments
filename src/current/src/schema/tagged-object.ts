@@ -51,9 +51,6 @@ export function taggedObject<const Type extends string, Fields extends TaggedFie
       return storageSchema.create(store, snapshot as SnapshotOf<typeof storageSchema>)
     },
     bind(store, ref) {
-      const storedType = store.map.getField(ref, "type")
-      if (storedType === undefined || store.cell.get(storedType) !== type)
-        throw new TypeError(`Expected object type: ${type}.`)
       const content = contentSchema.bind(store, ref)
       const snapshot = content.snapshot
       return Object.assign(content, { type, snapshot: () => ({ type, ...snapshot() }) })

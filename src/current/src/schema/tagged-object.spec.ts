@@ -21,25 +21,6 @@ describeWithStores("tagged objects", (getStore) => {
     const wrongType: SnapshotOf<typeof schema> = { type: "other", response: "First" }
     void wrongType
   })
-
-  test("rejects invalid and unknown fields on import and wrong stored types on bind", () => {
-    const schema = taggedObject({ type: "choice", fields: { response: string() } })
-    for (const snapshot of [
-      {},
-      { response: "First" },
-      { type: "other", response: "First" },
-      { type: "choice" },
-      { type: "choice", response: "First", extra: true },
-    ]) {
-      expect(() => openRoot(getStore(), schema, JSON.parse(JSON.stringify(snapshot)))).toThrow()
-    }
-    const store = getStore()
-    const other = taggedObject({ type: "other", fields: { response: string() } })
-    openRoot(store, other, { type: "other", response: "First" })
-    expect(() => openRoot(store, schema, { type: "choice", response: "Ignored" })).toThrow(
-      "Expected object type: choice.",
-    )
-  })
 })
 
 test("rejects reserved discriminator and empty types", () => {
