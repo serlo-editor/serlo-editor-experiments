@@ -1,9 +1,6 @@
-import { object } from "./schema/object.ts"
-import type { ObjectSnapshot, SchemaMap, StoredObject } from "./schema/object.ts"
-import { openRoot } from "./schema/root.ts"
-import type { Schema, StoredValue } from "./schema/types.ts"
-import type { NodeKind, NodeRefs, NodeStore } from "./storage/index.ts"
-import type { JSONValue } from "./utils/index.ts"
+import { boolean, type Schema, type StoredValue, openRoot, record } from "./schema"
+import { ReadonlyNodeStore, type NodeKind, type NodeRefs, type NodeStore } from "./storage"
+import type { JSONValue } from "./utils"
 
 export enum WorksheetMode {
   EditingContent = "editing-content",
@@ -16,46 +13,39 @@ export function openWorksheet<
   ContentSnapshot extends JSONValue,
   Content extends StoredValue<ContentSnapshot>,
   ContentKind extends NodeKind,
-  AnswerSchemas extends SchemaMap,
-  FeedbackSchemas extends SchemaMap,
-  RefsWritable extends NodeRefs,
-  RefsReadonly extends NodeRefs,
+  Refs extends NodeRefs,
 >({
   mode,
-  writableStore,
-  readonlyStore,
-  schema,
+  store,
+  contentSchema,
   initialSnapshot,
 }: {
   mode: WorksheetMode
-  writableStore: NodeStore<RefsWritable>
-  readonlyStore: NodeStore<RefsReadonly>
-  schema: {
-    content: Schema<ContentSnapshot, Content, ContentKind>
-    answers: AnswerSchemas
-    feedback: FeedbackSchemas
-  }
+  store: NodeStore<Refs>
+  contentSchema: Schema<ContentSnapshot, Content, ContentKind>
   initialSnapshot: {
     content: ContentSnapshot
-    answers: ObjectSnapshot<AnswerSchemas>
-    feedback: ObjectSnapshot<FeedbackSchemas>
+    answers: Record<string, boolean>
+    feedback: Record<string, boolean>
   }
-}): {
-  content: Content
-  answers: StoredObject<AnswerSchemas>
-  feedback: StoredObject<FeedbackSchemas>
-} {
-  const worksheetSchema = object({
-    content: schema.content,
-    answers: object(schema.answers),
-    feedback: object(schema.feedback),
-  })
-  const writable = openRoot(writableStore, worksheetSchema, initialSnapshot)
-  const readonly = openRoot(readonlyStore, worksheetSchema, initialSnapshot)
+}) {
+  const answersSchema = record(boolean())
+  const feedbackSchema = record(boolean())
 
-  return {
-    content: (mode === WorksheetMode.EditingContent ? writable : readonly).field("content"),
-    answers: (mode === WorksheetMode.Answering ? writable : readonly).field("answers"),
-    feedback: (mode === WorksheetMode.GivingFeedback ? writable : readonly).field("feedback"),
-  }
+  const content =
+    mode === WorksheetMode.EditingContent
+      ? openRoot(store, contentSchema, initialSnapshot.content)
+      : openRoot(new ReadonlyNodeStore(), contentSchema, initialSnapshot.content)
+
+  const answers =
+    mode === WorksheetMode.Answering
+      ? openRoot(store, answersSchema, initialSnapshot.answers)
+      : openRoot(new ReadonlyNodeStore(), answersSchema, initialSnapshot.answers)
+
+  const feedback =
+    mode === WorksheetMode.GivingFeedback
+      ? openRoot(store, feedbackSchema, initialSnapshot.feedback)
+      : openRoot(new ReadonlyNodeStore(), feedbackSchema, initialSnapshot.feedback)
+
+  return { content, answers, feedback }
 }

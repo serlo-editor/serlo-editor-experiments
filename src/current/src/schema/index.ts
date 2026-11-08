@@ -7,3 +7,4 @@ export { block, type BlockDefinition, type StoredBlock, type BlockSnapshot } fro
 export { blockUnion } from "./block-union.ts"
 export { BlockView } from "./block-view.ts"
 export type { StoredValue, Schema } from "./types.ts"
+export { openRoot } from "./root.ts"
