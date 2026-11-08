@@ -10,9 +10,9 @@ export enum WorksheetMode {
 }
 
 export interface Worksheet<
-  Content extends StoredValue,
-  Answers extends StoredValue,
-  Feedback extends StoredValue,
+  Content extends StoredValue = StoredValue,
+  Answers extends StoredValue = StoredValue,
+  Feedback extends StoredValue = StoredValue,
 > {
   content: Content
   answers: Answers
