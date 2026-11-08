@@ -1,4 +1,6 @@
 import { type StoredValue, openRoot } from "./schema"
+import type { StoredRecord } from "./schema/record.ts"
+import type { TaggedObjectDefinition } from "./schema/tagged-object.ts"
 import type { AnySchema, SnapshotOf, StoredValueOf } from "./schema/types.ts"
 import { ReadonlyNodeStore, type NodeRefs, type NodeStore } from "./storage"
 
@@ -11,8 +13,8 @@ export enum WorksheetMode {
 
 export interface Worksheet<
   Content extends StoredValue = StoredValue,
-  Answers extends StoredValue = StoredValue,
-  Feedback extends StoredValue = StoredValue,
+  Answers extends StoredRecord<TaggedObjectDefinition> = StoredRecord<TaggedObjectDefinition>,
+  Feedback extends StoredRecord<TaggedObjectDefinition> = StoredRecord<TaggedObjectDefinition>,
 > {
   mode: WorksheetMode
   content: Content

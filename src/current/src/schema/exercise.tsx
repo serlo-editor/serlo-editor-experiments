@@ -44,29 +44,13 @@ export function exercise<
       const { mode, answers, feedback: feedbackRecord } = useWorksheet()
       const answerValue = answers.get(value.id)
       const feedbackValue = feedbackRecord.get(value.id)
-      if (answerValue !== undefined && !isTaggedObject(answerValue, answerSchema))
-        return <p role="alert">Antwort passt nicht zur Aufgabe.</p>
-      if (feedbackValue !== undefined && !isTaggedObject(feedbackValue, feedbackSchema))
-        return <p role="alert">Feedback passt nicht zur Aufgabe.</p>
       return createElement(render, {
         unit: value,
-        answer: answerValue,
-        feedback: feedbackValue,
+        answer: answerValue as StoredTaggedObject<UnitType, AnswerFields> | undefined,
+        feedback: feedbackValue as StoredTaggedObject<UnitType, FeedbackFields> | undefined,
         mode,
       })
     },
   })
   return { unit: unitBlock, answer: answerSchema, feedback: feedbackSchema }
-}
-
-function isTaggedObject<Type extends string, Fields extends TaggedFields>(
-  value: unknown,
-  schema: TaggedObjectDefinition<Type, Fields>,
-): value is StoredTaggedObject<Type, Fields> {
-  return (
-    typeof value === "object" &&
-    value !== null &&
-    "definition" in value &&
-    value.definition === schema
-  )
 }
