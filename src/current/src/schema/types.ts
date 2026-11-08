@@ -2,7 +2,7 @@ import type { NodeKind, NodeRefs, NodeStore } from "../storage/index.ts"
 import type { JSONValue } from "../utils/index.ts"
 
 /** Schema-bound access to stored data. Snapshot returns its current JSON representation. */
-export interface StoredValue<Snapshot extends JSONValue> {
+export interface StoredValue<Snapshot extends JSONValue = JSONValue> {
   snapshot(): Snapshot
 }
 

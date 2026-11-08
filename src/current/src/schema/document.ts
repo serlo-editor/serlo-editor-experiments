@@ -2,7 +2,7 @@ import type { NodeKind, NodeRefs, NodeStore } from "../storage/index.ts"
 import type { JSONValue } from "../utils/index.ts"
 import type { Schema, StoredValue } from "./types.ts"
 
-export interface Document<Snapshot extends JSONValue, Root extends StoredValue<Snapshot>> {
+export interface Document<Root extends StoredValue> {
   readonly root: Root
 }
 
@@ -15,7 +15,7 @@ export function createDocument<
   store: NodeStore<Refs>,
   schema: Schema<Snapshot, Root, Kind>,
   initialSnapshot: Snapshot,
-): Document<Snapshot, Root> {
+): Document<Root> {
   const ref = store.root.getOrCreate(() => schema.create(store, structuredClone(initialSnapshot)))
 
   return {
