@@ -39,7 +39,7 @@ export function block<const Type extends string, Fields extends SchemaMap>({
   render,
 }: {
   type: Type
-  fields: Fields & { readonly id?: never; readonly type?: never }
+  fields: Fields
   render: BlockDefinition<Type, Fields>["render"]
 }): BlockDefinition<Type, Fields> {
   if (typeof type !== "string" || type.length === 0) throw new TypeError("Expected block type.")

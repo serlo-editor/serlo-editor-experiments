@@ -17,9 +17,9 @@ export function exercise<
   feedback,
   render,
 }: {
-  unit: { type: UnitType; fields: UnitFields & { id?: never; type?: never } }
-  answer: { fields: AnswerFields & { id?: never; type?: never } }
-  feedback: { fields: FeedbackFields & { id?: never; type?: never } }
+  unit: { type: UnitType; fields: UnitFields }
+  answer: { fields: AnswerFields }
+  feedback: { fields: FeedbackFields }
   render: (props: {
     unit: StoredBlock<UnitType, UnitFields>
     answer: StoredBlock<UnitType, AnswerFields> | undefined

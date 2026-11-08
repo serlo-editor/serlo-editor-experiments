@@ -6,7 +6,7 @@ export interface StoredObject<Schemas extends SchemaMap> extends StoredValue<
   field<Key extends keyof Schemas & string>(key: Key): StoredValueOf<Schemas[Key]>
 }
 
-export type SchemaMap = Readonly<Record<string, AnySchema>>
+export type SchemaMap = Readonly<Record<string, AnySchema>> & { id?: never; type?: never }
 
 export type ObjectSnapshot<Schemas extends SchemaMap> = {
   readonly [Key in keyof Schemas]: SnapshotOf<Schemas[Key]>
