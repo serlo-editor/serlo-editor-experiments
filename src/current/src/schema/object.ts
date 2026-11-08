@@ -31,9 +31,12 @@ export function object<Schemas extends SchemaMap>(
 
     bind(store, ref) {
       const child = (key: string) => {
+        const childSchema = schemas[key]
+        // TODO: Test this case
+        if (childSchema === undefined) throw new TypeError(`Unknown field: ${key}.`)
         const childRef = store.map.getField(ref, key)
         if (childRef === undefined) throw new TypeError(`Missing required field: ${key}.`)
-        return schemas[key]!.bind(store, childRef)
+        return childSchema.bind(store, childRef)
       }
 
       return Object.defineProperties(
