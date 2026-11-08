@@ -52,6 +52,7 @@ export function taggedObject<const Type extends string, Fields extends TaggedFie
     },
     bind(store, ref) {
       const content = contentSchema.bind(store, ref)
+      // Capture before replacing snapshot, or the tagged method would recurse.
       const snapshot = content.snapshot
       return Object.assign(content, { type, snapshot: () => ({ type, ...snapshot() }) })
     },
