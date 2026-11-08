@@ -1,9 +1,8 @@
 import { isObject } from "../utils/guard.ts"
+import type { TaggedObjectDefinition } from "./tagged-object.ts"
 import type { Schema, SnapshotOf, StoredValueOf } from "./types.ts"
 
-type TypedDefinition = Schema<any, any, "map"> & { readonly type: string }
-
-export function discriminatedUnion<const Definitions extends readonly TypedDefinition[]>(
+export function discriminatedUnion<const Definitions extends readonly TaggedObjectDefinition[]>(
   definitions: Definitions,
 ): Schema<SnapshotOf<Definitions[number]>, StoredValueOf<Definitions[number]>, "map"> {
   const byType = new Map<string, Definitions[number]>()
