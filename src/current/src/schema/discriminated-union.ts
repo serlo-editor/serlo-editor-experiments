@@ -3,7 +3,6 @@ import type { Schema, SnapshotOf, StoredValueOf } from "./types.ts"
 
 type TypedDefinition = Schema<any, any, "map"> & { readonly type: string }
 
-/** Selects a schema by its persisted type discriminator. */
 export function discriminatedUnion<const Definitions extends readonly TypedDefinition[]>(
   definitions: Definitions,
 ): Schema<SnapshotOf<Definitions[number]>, StoredValueOf<Definitions[number]>, "map"> {
