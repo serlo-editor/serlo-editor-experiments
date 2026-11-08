@@ -45,10 +45,10 @@ export function exercise<
       const { mode, answers, feedback: feedbackRecord } = useWorksheet()
       const answerValue = answers.get(value.id)
       const feedbackValue = feedbackRecord.get(value.id)
-      if (answerValue !== undefined && !isTaggedObject(answerValue, answerSchema)) {
+      if (answerValue !== undefined && !isTaggedObject(answerSchema, answerValue)) {
         return <p role="alert">Antwort passt nicht zur Aufgabe.</p>
       }
-      if (feedbackValue !== undefined && !isTaggedObject(feedbackValue, feedbackSchema)) {
+      if (feedbackValue !== undefined && !isTaggedObject(feedbackSchema, feedbackValue)) {
         return <p role="alert">Feedback passt nicht zur Aufgabe.</p>
       }
       return createElement(render, {

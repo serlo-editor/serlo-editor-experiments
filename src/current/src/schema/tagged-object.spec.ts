@@ -15,7 +15,6 @@ describeWithStores("tagged objects", (getStore) => {
     expect(value.snapshot()).toEqual(snapshot)
     value.field("response").set("Updated")
     expect(value.snapshot()).toEqual({ type: "choice", response: "Updated" })
-    expect(value.definition).toBe(schema)
     expect(value).not.toHaveProperty("id")
 
     // @ts-expect-error A tagged object rejects other literal types.

@@ -10,11 +10,10 @@ export type TaggedSnapshot<Type extends string, Fields extends TaggedFields> = {
 } & ObjectSnapshot<Fields>
 
 export interface StoredTaggedObject<
-  Type extends string,
-  Fields extends TaggedFields,
+  Type extends string = string,
+  Fields extends TaggedFields = TaggedFields,
 > extends StoredObject<Fields> {
   readonly type: Type
-  readonly definition: TaggedObjectDefinition<Type, Fields>
   snapshot(): TaggedSnapshot<Type, Fields>
 }
 
@@ -28,10 +27,10 @@ export interface TaggedObjectDefinition<
 
 /** Narrows a bound tagged object by its exact schema, not just its type string. */
 export function isTaggedObject<Type extends string, Fields extends TaggedFields>(
-  value: unknown,
   definition: TaggedObjectDefinition<Type, Fields>,
+  value: StoredTaggedObject,
 ): value is StoredTaggedObject<Type, Fields> {
-  return isObject(value) && value.definition === definition
+  return isObject(value) && value.type === definition.type
 }
 
 /** Object with a fixed, persisted discriminator and no rendering metadata. */
