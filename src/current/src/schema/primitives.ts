@@ -1,4 +1,4 @@
-import { isBoolean, isNumber, isString } from "../utils/index.ts"
+import { isBoolean, isString } from "../utils/index.ts"
 import type { Guard, Primitive } from "../utils/index.ts"
 import type { Schema, StoredValue } from "./types.ts"
 
@@ -8,10 +8,6 @@ export function string() {
 
 export function boolean() {
   return primitive("boolean", isBoolean)
-}
-
-export function number() {
-  return primitive("number", isNumber)
 }
 
 interface StoredPrimitive<Value extends Primitive> extends StoredValue<Value> {

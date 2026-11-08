@@ -6,7 +6,7 @@ import * as Y from "yjs"
 import { type NodeKind, type NodeStore, YjsNodeStore } from "../storage/index.ts"
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import { array } from "./array.ts"
-import { boolean, number, object, optional, string } from "./index.ts"
+import { boolean, object, optional, string } from "./index.ts"
 import { createRoot } from "./root.ts"
 import type { SnapshotOf, StoredValueOf } from "./types.ts"
 
@@ -119,11 +119,10 @@ describeWithStores("object schemas", (getStore) => {
     const schema = object({
       bio: optional(string()),
       active: optional(boolean()),
-      count: optional(number()),
       tags: optional(array(string())),
       profile: optional(object({ title: string(), note: optional(string()) })),
     })
-    const initial = { bio: "", active: false, count: 0, tags: [], profile: { title: "" } }
+    const initial = { bio: "", active: false, tags: [], profile: { title: "" } }
     const root = createRoot(getStore(), schema, initial)
     expect(root.snapshot()).toEqual(initial)
 

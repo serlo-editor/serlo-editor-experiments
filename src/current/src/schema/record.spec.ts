@@ -5,7 +5,7 @@ import * as Y from "yjs"
 
 import { ReadonlyNodeStore, YjsNodeStore } from "../storage/index.ts"
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
-import { array, boolean, number, object, record, string } from "./index.ts"
+import { array, boolean, object, record, string } from "./index.ts"
 import { createRoot } from "./root.ts"
 import type { SnapshotOf, StoredValueOf } from "./types.ts"
 
@@ -40,12 +40,11 @@ describeWithStores("record schemas", (getStore) => {
     const child = object({
       text: string(),
       selected: array(string()),
-      count: number(),
       active: boolean(),
     })
     const schema = record(child)
     const initial: SnapshotOf<typeof schema> = {
-      answer: { text: "", selected: [], count: 0, active: false },
+      answer: { text: "", selected: [], active: false },
     }
     const root = createRoot(getStore(), schema, initial)
     expect(root.snapshot()).toEqual(initial)
@@ -53,11 +52,10 @@ describeWithStores("record schemas", (getStore) => {
     const answer = root.get("answer")
     answer satisfies StoredValueOf<typeof child> | undefined
     answer!.field("selected").insert(0, "option-a")
-    answer!.field("count").set(1)
     expect(root.snapshot()).toEqual({
-      answer: { text: "", selected: ["option-a"], count: 1, active: false },
+      answer: { text: "", selected: ["option-a"], active: false },
     })
-    root.set("another", { text: "Other", selected: [], count: 2, active: true })
+    root.set("another", { text: "Other", selected: [], active: true })
     expect(root.get("another")!.field("active").get()).toBe(true)
 
     // @ts-expect-error Missing entries require an undefined check.
@@ -215,10 +213,8 @@ test("read-only records initialize but reject writes before child creation", () 
 
 test("read-only records preserve falsy primitive refs", () => {
   const active = createRoot(new ReadonlyNodeStore(), record(boolean()), { answer: false })
-  const count = createRoot(new ReadonlyNodeStore(), record(number()), { answer: 0 })
   const text = createRoot(new ReadonlyNodeStore(), record(string()), { answer: "" })
   expect(active.get("answer")!.get()).toBe(false)
-  expect(count.get("answer")!.get()).toBe(0)
   expect(text.get("answer")!.get()).toBe("")
 })
 
