@@ -53,6 +53,7 @@ export function taggedObject<const Type extends string, Fields extends TaggedFie
         if (key !== "type" && !Object.hasOwn(fields, key))
           throw new TypeError(`Unknown field: ${key}.`)
       }
+      // TODO: Find a way to avoid this cast.
       return storageSchema.create(store, snapshot as SnapshotOf<typeof storageSchema>)
     },
     bind(store, ref) {
