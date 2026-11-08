@@ -38,14 +38,17 @@ export function exercise<
     ...unit,
     render: function ExerciseView({ value }) {
       const { mode, answers, feedback: feedbackRecord } = useWorksheet()
+
       const answerValue = answers.get(value.id)
-      const feedbackValue = feedbackRecord.get(value.id)
       if (answerValue !== undefined && !isTaggedObject(answerSchema, answerValue)) {
         throw new Error("Antwort passt nicht zur Aufgabe.")
       }
+
+      const feedbackValue = feedbackRecord.get(value.id)
       if (feedbackValue !== undefined && !isTaggedObject(feedbackSchema, feedbackValue)) {
         throw new Error("Feedback passt nicht zur Aufgabe.")
       }
+
       return createElement(render, {
         unit: value,
         answer: answerValue,
