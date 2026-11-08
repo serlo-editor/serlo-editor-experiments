@@ -40,7 +40,7 @@ export function taggedObject<const Type extends string, Fields extends TaggedFie
   type: Type
   fields: Fields
 }): TaggedObjectDefinition<Type, Fields> {
-  if (typeof type !== "string" || !type) throw new TypeError("Expected object type.")
+  if (type.length === 0) throw new TypeError("Expected object type.")
   for (const key of ["type", "definition"]) {
     if (Object.hasOwn(fields, key)) throw new TypeError(`Reserved object field: ${key}.`)
   }
