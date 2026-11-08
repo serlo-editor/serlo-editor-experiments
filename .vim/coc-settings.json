@@ -2,6 +2,7 @@
   "biome.enable": false,
   "eslint.validate": [],
   "prettier.enable": false,
+  "tsserver.enable": false,
   "languageserver": {
     "tsgo": {
       "command": "bun",
