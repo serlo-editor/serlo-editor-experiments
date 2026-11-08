@@ -27,16 +27,14 @@ export function discriminatedUnion<const Definitions extends readonly TaggedObje
 
   return {
     create(store, snapshot) {
-      // Selection erases concrete member while preserving public snapshot union.
-      const schema: Schema<any, any, "map"> = select(snapshot)
-      return schema.create(store, snapshot)
+      return select(snapshot).create(store, snapshot)
     },
     bind(store, ref) {
       const typeRef = store.map.getField(ref, "type")
       const definition = select({
         type: typeRef === undefined ? undefined : store.cell.get(typeRef),
       })
-      // Stored discriminator selects one member of inferred stored-value union.
+      // TODO: try to avoid type cast here
       return definition.bind(store, ref) as StoredValueOf<Definitions[number]>
     },
   }
