@@ -46,9 +46,9 @@ describeWithStores("block schemas", (getStore) => {
     expect(value.type satisfies "choice").toBe("choice")
     expect(value.definition).toBe(blockDefinition)
     expect(value.snapshot()).toEqual(initial)
-    expect(value.field("question").get() satisfies string).toBe("Which answer?")
-    expect(value.field("explanation").get()).toBe("Because")
-    value.field("question").set("Updated")
+    expect(value.question.get() satisfies string).toBe("Which answer?")
+    expect(value.explanation.get()).toBe("Because")
+    value.question.set("Updated")
     expect(document.snapshot()).toEqual({
       ...initial,
       question: "Updated",
@@ -139,4 +139,7 @@ test("rejects reserved fields and empty block types", () => {
     block({ type: "bad", fields: { type: string() }, render: () => null })
   }).toThrow("Reserved block field: type.")
   expect(() => block({ type: "", fields: {}, render: () => null })).toThrow("Expected block type.")
+  expect(() =>
+    block({ type: "bad", fields: { definition: string() }, render: () => null }),
+  ).toThrow("Reserved block field: definition.")
 })

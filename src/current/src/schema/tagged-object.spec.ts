@@ -13,7 +13,7 @@ describeWithStores("tagged objects", (getStore) => {
     const value = openRoot(getStore(), schema, snapshot)
     expect(value.type satisfies "choice").toBe("choice")
     expect(value.snapshot()).toEqual(snapshot)
-    value.field("response").set("Updated")
+    value.response.set("Updated")
     expect(value.snapshot()).toEqual({ type: "choice", response: "Updated" })
     expect(value).not.toHaveProperty("id")
 
@@ -48,4 +48,7 @@ test("rejects reserved discriminator and empty types", () => {
     taggedObject({ type: "choice", fields: { type: string() } })
   }).toThrow("Reserved object field: type.")
   expect(() => taggedObject({ type: "", fields: {} })).toThrow("Expected object type.")
+  expect(() => taggedObject({ type: "choice", fields: { definition: string() } })).toThrow(
+    "Reserved object field: definition.",
+  )
 })

@@ -28,11 +28,13 @@ describeWithStores("object schemas", (getStore) => {
     expect(root.snapshot()).toEqual(initial)
     expect(root.field("name").get() satisfies string).toBe("Ada")
     expect(root.field("active").get() satisfies boolean).toBe(false)
+    expect(root.name.get() satisfies string).toBe("Ada")
+    expect(root.active.get() satisfies boolean).toBe(false)
 
-    root.field("name").set("Grace")
+    root.name.set("Grace")
     root.field("active").set(true)
-    root.field("tags").insert(1, "code")
-    root.field("profile").field("bio").set("Updated")
+    root.tags.insert(1, "code")
+    root.profile.bio.set("Updated")
 
     expect(root.snapshot()).toEqual({
       name: "Grace",
@@ -72,6 +74,7 @@ describeWithStores("object schemas", (getStore) => {
     const root = schema.bind(store, ref)
     store.transact((write) => write.map.remove(ref, "name"))
     expect(() => root.field("name")).toThrow("Missing required field: name.")
+    expect(() => root.name).toThrow("Missing required field: name.")
     expect(() => root.snapshot()).toThrow("Missing required field: name.")
   })
 
@@ -85,6 +88,9 @@ describeWithStores("object schemas", (getStore) => {
     const root = openRoot(getStore(), schema, initial)
     expect(root.snapshot()).toEqual(initial)
     expect(root.field("__proto__").get()).toBe("proto")
+    expect(root.__proto__.get()).toBe("proto")
+    expect(root.constructor.get()).toBe("ctor")
+    expect(root.toString.get()).toBe("text")
     expect(() => {
       // @ts-expect-error Object.prototype.constructor is not a field value.
       schema.create(getStore(), { ["__proto__"]: "proto", toString: "text" })
@@ -93,6 +99,11 @@ describeWithStores("object schemas", (getStore) => {
       // @ts-expect-error Inherited schema properties are not declared fields.
       root.field("hasOwnProperty")
     }).toThrow("Unknown field: hasOwnProperty.")
+  })
+
+  test("reserves object API names", () => {
+    expect(() => object({ field: string() })).toThrow("Reserved object field: field.")
+    expect(() => object({ snapshot: string() })).toThrow("Reserved object field: snapshot.")
   })
 
   test("supports empty objects", () => {

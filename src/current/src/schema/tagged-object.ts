@@ -9,10 +9,10 @@ export type TaggedSnapshot<Type extends string, Fields extends TaggedFields> = {
   readonly type: Type
 } & ObjectSnapshot<Fields>
 
-export interface StoredTaggedObject<
+export type StoredTaggedObject<
   Type extends string = string,
-  Fields extends TaggedFields = TaggedFields,
-> extends StoredObject<Fields> {
+  Fields extends TaggedFields = {},
+> = Omit<StoredObject<Fields>, "snapshot"> & {
   readonly type: Type
   snapshot(): TaggedSnapshot<Type, Fields>
 }
@@ -42,7 +42,9 @@ export function taggedObject<const Type extends string, Fields extends TaggedFie
   fields: Fields
 }): TaggedObjectDefinition<Type, Fields> {
   if (typeof type !== "string" || !type) throw new TypeError("Expected object type.")
-  if (Object.hasOwn(fields, "type")) throw new TypeError("Reserved object field: type.")
+  for (const key of ["type", "definition"]) {
+    if (Object.hasOwn(fields, key)) throw new TypeError(`Reserved object field: ${key}.`)
+  }
 
   const contentSchema = object<Fields>(fields)
   const storageSchema = object({ ...fields, type: string() })
@@ -63,12 +65,12 @@ export function taggedObject<const Type extends string, Fields extends TaggedFie
       if (storedType === undefined || store.cell.get(storedType) !== type)
         throw new TypeError(`Expected object type: ${type}.`)
       const content = contentSchema.bind(store, ref)
-      return {
-        ...content,
+      const snapshot = content.snapshot
+      return Object.assign(content, {
         type,
         definition,
-        snapshot: () => ({ type, ...content.snapshot() }),
-      }
+        snapshot: () => ({ type, ...snapshot() }),
+      })
     },
   }
   return definition

@@ -1,9 +1,9 @@
 import type { AnySchema, Schema, SnapshotOf, StoredValue, StoredValueOf } from "./types.ts"
 
-export interface StoredObject<Schemas extends SchemaMap> extends StoredValue<
-  ObjectSnapshot<Schemas>
-> {
+export type StoredObject<Schemas extends SchemaMap> = StoredValue<ObjectSnapshot<Schemas>> & {
   field<Key extends keyof Schemas & string>(key: Key): StoredValueOf<Schemas[Key]>
+} & {
+  readonly [Key in keyof Schemas]: StoredValueOf<Schemas[Key]>
 }
 
 export type SchemaMap = Readonly<Record<string, AnySchema>>
@@ -15,6 +15,10 @@ export type ObjectSnapshot<Schemas extends SchemaMap> = {
 export function object<Schemas extends SchemaMap>(
   schemas: Schemas,
 ): Schema<ObjectSnapshot<Schemas>, StoredObject<Schemas>, "map"> {
+  for (const key of ["field", "snapshot"]) {
+    if (Object.hasOwn(schemas, key)) throw new TypeError(`Reserved object field: ${key}.`)
+  }
+
   return {
     create(store, snapshot) {
       const fields = Object.fromEntries(
@@ -44,15 +48,18 @@ export function object<Schemas extends SchemaMap>(
         return schemas[key]!.bind(store, childRef) as StoredValueOf<Schemas[Key]>
       }
 
-      return {
-        field,
-
-        snapshot() {
-          return Object.fromEntries(
-            Object.keys(schemas).map((key) => [key, field(key).snapshot()]),
-          ) as ObjectSnapshot<Schemas>
+      return Object.defineProperties(
+        {
+          field,
+          snapshot() {
+            return Object.fromEntries(
+              Object.keys(schemas).map((key) => [key, field(key).snapshot()]),
+            ) as ObjectSnapshot<Schemas>
+          },
         },
-      }
+        // Non-enumerable getters avoid reading removed fields during React prop inspection.
+        Object.fromEntries(Object.keys(schemas).map((key) => [key, { get: () => field(key) }])),
+      ) as StoredObject<Schemas>
     },
   }
 }

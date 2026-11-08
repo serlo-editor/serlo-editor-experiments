@@ -13,10 +13,10 @@ export type BlockSnapshot<Type extends string, Fields extends BlockFields> = {
   readonly type: Type
 } & ObjectSnapshot<Fields>
 
-export interface StoredBlock<
-  Type extends string,
-  Fields extends BlockFields,
-> extends StoredObject<Fields> {
+export type StoredBlock<Type extends string, Fields extends BlockFields> = Omit<
+  StoredObject<Fields>,
+  "snapshot"
+> & {
   readonly id: string
   readonly type: Type
   readonly definition: BlockDefinition<Type, Fields>
@@ -46,7 +46,7 @@ export function block<const Type extends string, Fields extends BlockFields>({
   render: BlockDefinition<Type, Fields>["render"]
 }): BlockDefinition<Type, Fields> {
   if (typeof type !== "string" || type.length === 0) throw new TypeError("Expected block type.")
-  for (const key of ["id", "type"]) {
+  for (const key of ["id", "type", "definition"]) {
     if (Object.hasOwn(fields, key)) throw new TypeError(`Reserved block field: ${key}.`)
   }
 
@@ -78,13 +78,13 @@ export function block<const Type extends string, Fields extends BlockFields>({
       if (typeof id !== "string" || !id) throw new TypeError("Expected block ID.")
       const tagged = storageSchema.bind(store, ref)
       const content = contentSchema.bind(store, ref)
-      return {
-        ...content,
+      const snapshot = content.snapshot
+      return Object.assign(content, {
         id,
         type: tagged.type,
         definition,
-        snapshot: () => ({ id, type: tagged.type, ...content.snapshot() }),
-      }
+        snapshot: () => ({ id, type: tagged.type, ...snapshot() }),
+      })
     },
   }
   return definition
