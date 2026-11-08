@@ -1,4 +1,6 @@
 import { boolean, type Schema, type StoredValue, openRoot, record } from "./schema"
+import type { StoredRecord } from "./schema/record.ts"
+import type { StoredValueOf } from "./schema/types.ts"
 import { ReadonlyNodeStore, type NodeKind, type NodeRefs, type NodeStore } from "./storage"
 import type { JSONValue } from "./utils"
 
@@ -7,6 +9,12 @@ export enum WorksheetMode {
   Answering = "answering",
   GivingFeedback = "giving-feedback",
   ViewingFeedback = "viewing-feedback",
+}
+
+export interface Worksheet<Content extends StoredValue> {
+  content: Content
+  answers: StoredRecord<boolean, StoredValueOf<ReturnType<typeof boolean>>>
+  feedback: StoredRecord<boolean, StoredValueOf<ReturnType<typeof boolean>>>
 }
 
 export function openWorksheet<
@@ -28,7 +36,7 @@ export function openWorksheet<
     answers: Record<string, boolean>
     feedback: Record<string, boolean>
   }
-}) {
+}): Worksheet<Content> {
   const answersSchema = record(boolean())
   const feedbackSchema = record(boolean())
 
