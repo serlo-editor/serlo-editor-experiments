@@ -15,6 +15,8 @@ export function record<ChildSchema extends AnySchema>(
   childSchema: ChildSchema,
 ): Schema<Readonly<Record<string, SnapshotOf<ChildSchema>>>, StoredRecord<ChildSchema>, "map"> {
   return {
+    defaultValue: () => ({}),
+
     create(store, snapshots) {
       if (!isObject(snapshots)) throw new TypeError("Expected record snapshot.")
       const refs = Object.fromEntries(

@@ -13,6 +13,11 @@ export function richText(
   config: RichTextEditorConfig,
 ): Schema<RichTextJSON, StoredRichText, "cell"> {
   return {
+    defaultValue: () => ({
+      type: "doc",
+      content: [{ type: config.definition.mode === "inline" ? "inlineBlock" : "paragraph" }],
+    }),
+
     create(store, content) {
       const editorId = store.editor.create({ ...config, defaultContent: content })
       return store.cell.create({ kind: "richText", editorId })

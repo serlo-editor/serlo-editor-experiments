@@ -13,6 +13,7 @@ describeWithStores("Document", (getStore) => {
       StoredValue<JSONValue> & { set(value: JSONValue): void },
       "cell"
     > = {
+      defaultValue: () => "",
       create(store, snapshot) {
         return store.cell.create(snapshot)
       },
@@ -40,6 +41,7 @@ describeWithStores("Document", (getStore) => {
   test("opens existing content and ignores the initial snapshot", () => {
     const store = getStore()
     const schema: Schema<JSONValue, StoredValue<JSONValue>, "cell"> = {
+      defaultValue: () => "",
       create: (store, snapshot) => store.cell.create(snapshot),
       bind: (store, ref) => ({ snapshot: () => store.cell.get(ref) }),
     }

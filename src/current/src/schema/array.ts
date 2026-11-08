@@ -12,8 +12,15 @@ export interface StoredArray<ChildSchema extends AnySchema> extends StoredValue<
 
 export function array<ChildSchema extends AnySchema>(
   childSchema: ChildSchema,
+  { defaultLength = 1 }: { defaultLength?: number } = {},
 ): Schema<readonly SnapshotOf<ChildSchema>[], StoredArray<ChildSchema>, "array"> {
+  if (!Number.isSafeInteger(defaultLength) || defaultLength < 0) {
+    throw new RangeError("Expected a non-negative integer array default length.")
+  }
+
   return {
+    defaultValue: () => Array.from({ length: defaultLength }, () => childSchema.defaultValue()),
+
     create(store, snapshots) {
       const refs = snapshots.map((snapshot) => childSchema.create(store, snapshot))
       return store.array.create(refs)

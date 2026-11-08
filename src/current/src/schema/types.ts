@@ -11,6 +11,9 @@ export interface Schema<
   BoundValue extends StoredValue<Snapshot>,
   Kind extends NodeKind,
 > {
+  /** Builds a detached snapshot without creating stored nodes. */
+  defaultValue(): Snapshot
+
   create<Refs extends NodeRefs>(store: NodeStore<Refs>, snapshot: Snapshot): Refs[Kind]
 
   bind<Refs extends NodeRefs>(store: NodeStore<Refs>, ref: Refs[Kind]): BoundValue

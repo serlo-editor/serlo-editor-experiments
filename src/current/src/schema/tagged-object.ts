@@ -46,6 +46,8 @@ export function taggedObject<const Type extends string, Fields extends TaggedFie
 
   return {
     type,
+    defaultValue: () => ({ type, ...contentSchema.defaultValue() }),
+
     create(store, snapshot) {
       // TODO: Find a way to avoid this cast.
       return storageSchema.create(store, snapshot as SnapshotOf<typeof storageSchema>)

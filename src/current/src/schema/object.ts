@@ -14,6 +14,12 @@ export function object<Schemas extends ObjectFields>(
   schemas: Schemas,
 ): Schema<ObjectSnapshot<Schemas>, StoredObject<Schemas>, "map"> {
   return {
+    defaultValue() {
+      return Object.fromEntries(
+        Object.entries(schemas).map(([key, schema]) => [key, schema.defaultValue()]),
+      ) as ObjectSnapshot<Schemas>
+    },
+
     create(store, snapshot) {
       const fields = Object.fromEntries(
         Object.entries(schemas).map(([key, schema]) => {

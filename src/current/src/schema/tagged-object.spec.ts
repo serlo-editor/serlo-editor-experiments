@@ -9,6 +9,10 @@ import type { SnapshotOf } from "./types.ts"
 describeWithStores("tagged objects", (getStore) => {
   test("stores fixed type alongside editable fields without block ID or renderer", () => {
     const schema = taggedObject({ type: "choice", fields: { response: string() } })
+    expect(schema.defaultValue() satisfies SnapshotOf<typeof schema>).toEqual({
+      type: "choice",
+      response: "",
+    })
     const snapshot = { type: "choice", response: "First" } satisfies SnapshotOf<typeof schema>
     const value = openRoot(getStore(), schema, snapshot)
     expect(value.type satisfies "choice").toBe("choice")

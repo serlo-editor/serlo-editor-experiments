@@ -7,6 +7,7 @@ import { openRoot } from "./root.ts"
 describeWithStores("primitive schemas", (getStore) => {
   test("creates and edits string documents", () => {
     const root = openRoot(getStore(), string(), "Ada")
+    expect(string().defaultValue()).toBe("")
 
     expect(root.get()).toBe("Ada")
     expect(root.snapshot()).toBe("Ada")
@@ -19,6 +20,7 @@ describeWithStores("primitive schemas", (getStore) => {
 
   test("creates and edits boolean documents", () => {
     const root = openRoot(getStore(), boolean(), false)
+    expect(boolean().defaultValue()).toBe(false)
 
     expect(root.get()).toBe(false)
     expect(root.snapshot()).toBe(false)

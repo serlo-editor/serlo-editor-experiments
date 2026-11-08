@@ -12,7 +12,9 @@ import type { SnapshotOf, StoredValueOf } from "./types.ts"
 describeWithStores("record schemas", (getStore) => {
   test("creates, reads, replaces, removes, and re-adds entries", () => {
     const schema = record(string())
-    const root = openRoot(getStore(), schema, {})
+    const initial = schema.defaultValue() satisfies SnapshotOf<typeof schema>
+    expect(initial).toEqual({})
+    const root = openRoot(getStore(), schema, initial)
     expect(root.snapshot()).toEqual({})
     expect(root.get("missing")).toBeUndefined()
     root.remove("missing")
@@ -99,6 +101,7 @@ describeWithStores("record schemas", (getStore) => {
     const error = new Error("Unavailable child schema.")
     let available = true
     const guarded: typeof child = {
+      defaultValue: () => child.defaultValue(),
       create(store, snapshot) {
         if (!available) throw error
         return child.create(store, snapshot)

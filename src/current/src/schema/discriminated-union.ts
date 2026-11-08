@@ -5,8 +5,10 @@ import type { Schema, SnapshotOf, StoredValueOf } from "./types.ts"
 export function discriminatedUnion<const Definitions extends readonly TaggedObjectDefinition[]>(
   definitions: Definitions,
 ): Schema<SnapshotOf<Definitions[number]>, StoredValueOf<Definitions[number]>, "map"> {
+  const firstDefinition = definitions[0]
+  if (firstDefinition === undefined) throw new TypeError("Expected at least one typed definition.")
+
   const byType = new Map<string, Definitions[number]>()
-  if (definitions.length === 0) throw new TypeError("Expected at least one typed definition.")
   for (const definition of definitions) {
     if (byType.has(definition.type)) throw new TypeError(`Duplicate type: ${definition.type}.`)
     byType.set(definition.type, definition)
@@ -19,6 +21,8 @@ export function discriminatedUnion<const Definitions extends readonly TaggedObje
   }
 
   return {
+    defaultValue: () => firstDefinition.defaultValue(),
+
     create(store, snapshot) {
       const value: unknown = snapshot
       if (!isObject(value) || !Object.hasOwn(value, "type") || typeof value.type !== "string") {

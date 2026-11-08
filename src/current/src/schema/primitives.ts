@@ -3,11 +3,11 @@ import type { Guard, Primitive } from "../utils/index.ts"
 import type { Schema, StoredValue } from "./types.ts"
 
 export function string() {
-  return primitive("string", isString)
+  return primitive("string", isString, "")
 }
 
 export function boolean() {
-  return primitive("boolean", isBoolean)
+  return primitive("boolean", isBoolean, false)
 }
 
 interface StoredPrimitive<Value extends Primitive> extends StoredValue<Value> {
@@ -18,8 +18,11 @@ interface StoredPrimitive<Value extends Primitive> extends StoredValue<Value> {
 function primitive<Value extends Primitive>(
   expected: string,
   isValue: Guard<Value>,
+  defaultValue: Value,
 ): Schema<Value, StoredPrimitive<Value>, "cell"> {
   return {
+    defaultValue: () => defaultValue,
+
     create(store, snapshot) {
       return store.cell.create(snapshot)
     },

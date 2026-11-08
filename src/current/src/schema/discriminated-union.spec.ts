@@ -43,6 +43,17 @@ describeWithStores("discriminated unions", (getStore) => {
     void [wrongType, wrongFields]
   })
 
+  test("defaults to the first definition in declared order", () => {
+    const schema = discriminatedUnion([choice, toggle])
+    const initial = schema.defaultValue() satisfies SnapshotOf<typeof schema>
+    expect(initial).toEqual({ type: "choice", response: "" })
+    expect(discriminatedUnion([toggle, choice]).defaultValue()).toEqual({
+      type: "toggle",
+      enabled: false,
+    })
+    expect(openRoot(getStore(), schema, initial).snapshot()).toEqual(initial)
+  })
+
   test("rejects missing, inherited, non-string, and unknown snapshot types", () => {
     const store = getStore()
     const schema = discriminatedUnion([choice, toggle])

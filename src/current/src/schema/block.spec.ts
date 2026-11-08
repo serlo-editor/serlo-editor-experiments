@@ -96,6 +96,21 @@ describeWithStores("block schemas", (getStore) => {
     ]
   })
 
+  test("generates distinct default identities within an array and across calls", () => {
+    const schema = array(block({ type: "note", fields: { text: string() }, render: () => null }), {
+      defaultLength: 2,
+    })
+    const first = schema.defaultValue()
+    const second = schema.defaultValue()
+    expect(first).toEqual([
+      { id: expect.any(String), type: "note", text: "" },
+      { id: expect.any(String), type: "note", text: "" },
+    ])
+    expect(first[0]!.id).not.toBe(first[1]!.id)
+    expect(first[0]!.id).not.toBe(second[0]!.id)
+    expect(openRoot(getStore(), schema, first).snapshot()).toEqual(first)
+  })
+
   test("loading and reopening preserve IDs instead of creating new blocks", () => {
     const store = getStore()
     const blockDefinition = choice()

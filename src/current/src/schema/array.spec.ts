@@ -2,6 +2,7 @@ import { expect, test } from "bun:test"
 
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import { array } from "./array.ts"
+import { object } from "./object.ts"
 import { string } from "./primitives.ts"
 import { openRoot } from "./root.ts"
 
@@ -27,4 +28,22 @@ describeWithStores("array schemas", (getStore) => {
     const wrongInsert: (index: number, value: number) => void = root.insert
     void wrongInsert
   })
+  test("defaults to one child, supports zero, and creates independent children", () => {
+    expect(array(string()).defaultValue()).toEqual([""])
+    expect(array(string(), { defaultLength: 0 }).defaultValue()).toEqual([])
+
+    const schema = array(object({ label: string() }), { defaultLength: 2 })
+    const first = schema.defaultValue()
+    const second = schema.defaultValue()
+    expect(first).toEqual([{ label: "" }, { label: "" }])
+    expect(first[0]).not.toBe(first[1])
+    expect(first[0]).not.toBe(second[0])
+  })
+
+  test.each([-1, 0.5, NaN, Infinity, -Infinity, Number.MAX_SAFE_INTEGER + 1])(
+    "rejects an invalid default length: %s",
+    (defaultLength) => {
+      expect(() => array(string(), { defaultLength })).toThrow(RangeError)
+    },
+  )
 })

@@ -57,6 +57,10 @@ export function block<const Type extends string, Fields extends BlockFields>({
     fields,
     render,
 
+    defaultValue() {
+      return definition.createSnapshot(contentSchema.defaultValue())
+    },
+
     createSnapshot(content) {
       return { ...structuredClone(content), id: crypto.randomUUID(), type }
     },

@@ -31,6 +31,19 @@ describeWithStores("rich-text schemas", (getStore) => {
     expect(store.editor.get(id, options).getDocJSON()).toEqual(content("Initial"))
   })
 
+  test("builds valid empty documents for inline and block rich text", () => {
+    const schema = object({
+      inline: richText({ definition: definition.inline() }),
+      block: richText({ definition: definition.block({ blocks: { paragraph: true } }) }),
+    })
+    const initial = schema.defaultValue()
+    expect(initial).toEqual({
+      inline: { type: "doc", content: [{ type: "inlineBlock" }] },
+      block: { type: "doc", content: [{ type: "paragraph" }] },
+    })
+    expect(openRoot(getStore(), schema, initial).snapshot()).toEqual(initial)
+  })
+
   test("stores a tagged cell and exports only ProseMirror JSON", () => {
     const store = getStore()
     const schema = richText(options)

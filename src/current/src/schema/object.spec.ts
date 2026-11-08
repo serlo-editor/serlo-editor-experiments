@@ -51,6 +51,18 @@ describeWithStores("object schemas", (getStore) => {
     expect(root.missing).toBeUndefined()
   })
 
+  test("builds typed nested defaults and opens them as a document", () => {
+    const schema = object({
+      title: string(),
+      enabled: boolean(),
+      profile: object({ label: string() }),
+    })
+    const initial = schema.defaultValue() satisfies SnapshotOf<typeof schema>
+    expect(initial).toEqual({ title: "", enabled: false, profile: { label: "" } })
+    expect(initial.profile).not.toBe(schema.defaultValue().profile)
+    expect(openRoot(getStore(), schema, initial).snapshot()).toEqual(initial)
+  })
+
   test("rejects missing and explicitly undefined fields", () => {
     const schema = object({ name: string(), bio: string() })
     expect(() => {
