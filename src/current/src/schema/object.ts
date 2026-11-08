@@ -1,16 +1,16 @@
 import type { AnySchema, Schema, SnapshotOf, StoredValue, StoredValueOf } from "./types.ts"
 
-export type StoredObject<Schemas extends SchemaMap> = StoredValue<ObjectSnapshot<Schemas>> & {
+export type StoredObject<Schemas extends ObjectFields> = StoredValue<ObjectSnapshot<Schemas>> & {
   readonly [Key in keyof Schemas]: StoredValueOf<Schemas[Key]>
 }
 
-export type SchemaMap = Readonly<Record<string, AnySchema>> & { snapshot?: never }
+export type ObjectFields = Readonly<Record<string, AnySchema>> & { snapshot?: never }
 
-export type ObjectSnapshot<Schemas extends SchemaMap> = {
+export type ObjectSnapshot<Schemas extends ObjectFields> = {
   readonly [Key in keyof Schemas]: SnapshotOf<Schemas[Key]>
 }
 
-export function object<Schemas extends SchemaMap>(
+export function object<Schemas extends ObjectFields>(
   schemas: Schemas,
 ): Schema<ObjectSnapshot<Schemas>, StoredObject<Schemas>, "map"> {
   return {

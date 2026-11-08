@@ -1,9 +1,9 @@
 import { isObject } from "../utils/guard.ts"
-import { object, type ObjectSnapshot, type SchemaMap, type StoredObject } from "./object.ts"
+import { object, type ObjectSnapshot, type ObjectFields, type StoredObject } from "./object.ts"
 import { string } from "./primitives.ts"
 import type { Schema, SnapshotOf } from "./types.ts"
 
-export type TaggedFields = SchemaMap & { type?: never }
+export type TaggedFields = ObjectFields & { type?: never }
 
 export type TaggedSnapshot<Type extends string, Fields extends TaggedFields> = {
   readonly type: Type
