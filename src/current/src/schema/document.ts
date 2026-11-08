@@ -11,16 +11,8 @@ export function createDocument<
   Root extends StoredValue<Snapshot>,
   Kind extends NodeKind,
   Refs extends NodeRefs,
->(
-  store: NodeStore<Refs>,
-  schema: Schema<Snapshot, Root, Kind>,
-  initialSnapshot: Snapshot,
-): Document<Root> {
+>(store: NodeStore<Refs>, schema: Schema<Snapshot, Root, Kind>, initialSnapshot: Snapshot): Root {
   const ref = store.root.getOrCreate(() => schema.create(store, structuredClone(initialSnapshot)))
 
-  return {
-    get root() {
-      return schema.bind(store, ref)
-    },
-  }
+  return schema.bind(store, ref)
 }

@@ -6,7 +6,7 @@ import { boolean, number, string } from "./primitives.ts"
 
 describeWithStores("primitive schemas", (getStore) => {
   test("creates and edits string documents", () => {
-    const { root } = createDocument(getStore(), string(), "Ada")
+    const root = createDocument(getStore(), string(), "Ada")
 
     expect(root.get()).toBe("Ada")
     expect(root.snapshot()).toBe("Ada")
@@ -18,7 +18,7 @@ describeWithStores("primitive schemas", (getStore) => {
   })
 
   test("creates and edits boolean documents", () => {
-    const { root } = createDocument(getStore(), boolean(), false)
+    const root = createDocument(getStore(), boolean(), false)
 
     expect(root.get()).toBe(false)
     expect(root.snapshot()).toBe(false)
@@ -30,7 +30,7 @@ describeWithStores("primitive schemas", (getStore) => {
   })
 
   test("creates and edits number documents", () => {
-    const { root } = createDocument(getStore(), number(), 1)
+    const root = createDocument(getStore(), number(), 1)
 
     expect(root.get()).toBe(1)
     expect(root.snapshot()).toBe(1)

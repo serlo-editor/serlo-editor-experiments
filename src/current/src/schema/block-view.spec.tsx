@@ -39,7 +39,7 @@ describeWithStores("BlockView", (getStore) => {
         },
       })
       const initial = text.createSnapshot({ text: "First" })
-      const { root } = createDocument(getStore(), object({ child: optional(blockUnion([text])) }), {
+      const root = createDocument(getStore(), object({ child: optional(blockUnion([text])) }), {
         child: initial,
       })
       const render = () =>
@@ -96,7 +96,7 @@ describeWithStores("BlockView", (getStore) => {
         other.createSnapshot({ label: "Second" }),
       ],
     })
-    const { root } = createDocument(getStore(), lesson, initial)
+    const root = createDocument(getStore(), lesson, initial)
     expect(BlockView({ value: root }).key).toBe(root.id)
     expect(renderToStaticMarkup(<BlockView value={root} />)).toMatch(
       /^<section><p id="[^"]+">First<\/p><strong>Second<\/strong><\/section>$/,

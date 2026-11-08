@@ -41,7 +41,7 @@ describeWithStores("block schemas", (getStore) => {
     expect(fresh.type).toBe("choice")
 
     const document = createDocument(getStore(), blockDefinition, initial)
-    const value = document.root
+    const value = document
     expect(value.id satisfies string).toBe(initial.id)
     expect(value.type satisfies "choice").toBe("choice")
     expect(value.definition).toBe(blockDefinition)
@@ -50,13 +50,13 @@ describeWithStores("block schemas", (getStore) => {
     expect(value.field("explanation")).toBeUndefined()
     value.field("question").set("Updated")
     value.setOptional("explanation", "Because")
-    expect(document.root.snapshot()).toEqual({
+    expect(document.snapshot()).toEqual({
       ...initial,
       question: "Updated",
       explanation: "Because",
     })
     expect(value.id).toBe(initial.id)
-    expect(Object.keys(document.root.snapshot()).sort()).toEqual([
+    expect(Object.keys(document.snapshot()).sort()).toEqual([
       "answers",
       "explanation",
       "id",
@@ -115,9 +115,9 @@ describeWithStores("block schemas", (getStore) => {
       blockDefinition,
       blockDefinition.createSnapshot(choiceFields("Ignored")),
     )
-    expect(first.root.id).toBe(loaded.id)
-    expect(second.root.id).toBe(loaded.id)
-    expect(second.root.snapshot()).toEqual(loaded)
+    expect(first.id).toBe(loaded.id)
+    expect(second.id).toBe(loaded.id)
+    expect(second.snapshot()).toEqual(loaded)
   })
 
   test("composes rich-text fields without exporting internal editor IDs", () => {
@@ -128,7 +128,7 @@ describeWithStores("block schemas", (getStore) => {
     })
     const body = { type: "doc", content: [{ type: "inlineBlock" }] }
     const initial = schema.createSnapshot({ body })
-    const { root } = createDocument(getStore(), schema, initial)
+    const root = createDocument(getStore(), schema, initial)
     expect(root.snapshot()).toEqual(initial)
     expect(root.field("body").id).not.toBe(root.id)
   })

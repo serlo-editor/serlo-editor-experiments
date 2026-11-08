@@ -72,9 +72,9 @@ describe("stored rich-text editors", () => {
   test("flat editors notify for headless content changes, not selection changes", async () => {
     const store = new FlatNodeStore()
     const document = createDocument(store, richText(options), content("Initial"))
-    const editor = document.root.getEditor()
+    const editor = document.getEditor()
     const observed: RichTextJSON[] = []
-    const unsubscribe = store.subscribe(() => observed.push(document.root.snapshot()))
+    const unsubscribe = store.subscribe(() => observed.push(document.snapshot()))
     const revision = store.getRevision()
 
     await Promise.resolve()
@@ -85,7 +85,7 @@ describe("stored rich-text editors", () => {
     editor.setContent(content("Changed"))
     expect(observed).toEqual([])
     await Promise.resolve()
-    expect(document.root.snapshot()).toEqual(content("Changed"))
+    expect(document.snapshot()).toEqual(content("Changed"))
     expect(observed).toEqual([content("Changed")])
     expect(store.getRevision()).toBe(revision + 1)
 
@@ -126,15 +126,15 @@ describe("stored rich-text editors", () => {
         },
       })
       const document = createDocument(store, schema, content("Initial"))
-      const editor = mount(document.root.getEditor())
+      const editor = mount(document.getEditor())
       const observed: RichTextJSON[] = []
-      const unsubscribe = store.subscribe(() => observed.push(document.root.snapshot()))
+      const unsubscribe = store.subscribe(() => observed.push(document.snapshot()))
       const revision = store.getRevision()
       updates = 0
 
       editor.view.dispatch(editor.state.tr.insertText("!", 1))
       await Promise.resolve()
-      expect(document.root.snapshot()).toEqual(content("!Initial"))
+      expect(document.snapshot()).toEqual(content("!Initial"))
       expect(observed).toEqual([content("!Initial")])
       expect(store.getRevision()).toBeGreaterThan(revision)
       expect(updates).toBeGreaterThan(0)
@@ -150,7 +150,7 @@ describe("stored rich-text editors", () => {
       const mark = editor.schema.marks.bold!.create()
       editor.view.dispatch(editor.state.tr.addMark(1, 2, mark))
       await Promise.resolve()
-      expect(document.root.snapshot().content?.[0]?.content?.[0]?.marks).toEqual([{ type: "bold" }])
+      expect(document.snapshot().content?.[0]?.content?.[0]?.marks).toEqual([{ type: "bold" }])
       expect(observed).toHaveLength(2)
       unsubscribe()
     })
@@ -159,7 +159,7 @@ describe("stored rich-text editors", () => {
   test("read-only editors mount and select but reject content changes and replacement states", () => {
     const store = new ReadonlyNodeStore()
     const document = createDocument(store, richText(options), content("Initial"))
-    const editor = mount(document.root.getEditor())
+    const editor = mount(document.getEditor())
     expect(editor.view.editable).toBe(false)
     expect(() => editor.view.dispatch(editor.state.tr.insertText("!", 1))).toThrow(
       "Storage is read-only.",
@@ -181,12 +181,12 @@ describe("stored rich-text editors", () => {
     )
     editor.view.dispatch(editor.state.tr.setSelection(TextSelection.create(editor.state.doc, 2)))
     expect(editor.state.selection.from).toBe(2)
-    expect(document.root.snapshot()).toEqual(content("Initial"))
+    expect(document.snapshot()).toEqual(content("Initial"))
 
     editor.unmount()
     mount(editor)
     expect(editor.view.editable).toBe(false)
-    expect(document.root.snapshot()).toEqual(content("Initial"))
+    expect(document.snapshot()).toEqual(content("Initial"))
   })
 
   test("flat storage keeps caller-supplied local history", async () => {
@@ -196,11 +196,11 @@ describe("stored rich-text editors", () => {
       richText({ ...options, extensions: [defineHistory()] }),
       content("Initial"),
     )
-    const editor = mount(document.root.getEditor())
+    const editor = mount(document.getEditor())
     editor.view.dispatch(editor.state.tr.insertText("!", 1))
     expect(editor.exec(undo)).toBe(true)
     await Promise.resolve()
-    expect(document.root.snapshot()).toEqual(content("Initial"))
+    expect(document.snapshot()).toEqual(content("Initial"))
   })
 
   test("Yjs peers share IDs and fragments, not editor instances", () => {
@@ -213,17 +213,17 @@ describe("stored rich-text editors", () => {
     Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
     const second = createDocument(secondStore, schema, content("Ignored"))
 
-    expect(second.root.id).toBe(first.root.id)
+    expect(second.id).toBe(first.id)
     expect(secondDoc.getMap("root").get("root")).not.toBe(firstDoc.getMap("root").get("root"))
-    expect(second.root.getEditor()).not.toBe(first.root.getEditor())
+    expect(second.getEditor()).not.toBe(first.getEditor())
     const beforeLookup = Y.encodeStateVector(secondDoc)
-    expect(second.root.snapshot()).toEqual(first.root.snapshot())
-    expect(second.root.getEditor()).toBe(second.root.getEditor())
+    expect(second.snapshot()).toEqual(first.snapshot())
+    expect(second.getEditor()).toBe(second.getEditor())
     expect(Y.encodeStateVector(secondDoc)).toEqual(beforeLookup)
 
     const reopened = createDocument(createYjsStore(secondDoc), schema, content("Ignored again"))
-    expect(reopened.root.id).toBe(first.root.id)
-    expect(reopened.root.snapshot()).toEqual(content("Shared"))
+    expect(reopened.id).toBe(first.id)
+    expect(reopened.snapshot()).toEqual(content("Shared"))
   })
 
   test("Yjs snapshots refresh unmounted cached editors after remote changes", () => {
@@ -235,22 +235,22 @@ describe("stored rich-text editors", () => {
     const first = createDocument(firstStore, schema, content("Initial"))
     Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
     const second = createDocument(secondStore, schema, content("Ignored"))
-    const cached = second.root.getEditor()
+    const cached = second.getEditor()
     mount(cached).unmount()
-    const source = mount(first.root.getEditor())
+    const source = mount(first.getEditor())
     source.view.dispatch(source.state.tr.insertText("!", 1))
     Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
 
     const beforeSnapshot = Y.encodeStateVector(secondDoc)
-    expect(second.root.snapshot()).toEqual(content("!Initial"))
-    expect(second.root.getEditor()).toBe(cached)
+    expect(second.snapshot()).toEqual(content("!Initial"))
+    expect(second.getEditor()).toBe(cached)
     expect(Y.encodeStateVector(secondDoc)).toEqual(beforeSnapshot)
 
     mount(cached)
     expect(cached.getDocJSON()).toEqual(content("!Initial"))
     cached.view.dispatch(cached.state.tr.insertText("?", 1))
     Y.applyUpdate(firstDoc, Y.encodeStateAsUpdate(secondDoc))
-    expect(first.root.snapshot()).toEqual(content("?!Initial"))
+    expect(first.snapshot()).toEqual(content("?!Initial"))
   })
 
   test("Yjs remote fragment edits notify without writing replicated revisions", async () => {
@@ -262,12 +262,12 @@ describe("stored rich-text editors", () => {
     const first = createDocument(firstStore, schema, content("Initial"))
     Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
     const second = createDocument(secondStore, schema, content("Ignored"))
-    const source = mount(first.root.getEditor())
+    const source = mount(first.getEditor())
     const revision = secondStore.getRevision()
     expect(firstDoc.share.has("storage:revisions")).toBe(false)
     expect(secondDoc.share.has("storage:revisions")).toBe(false)
     const observed: RichTextJSON[] = []
-    const unsubscribe = secondStore.subscribe(() => observed.push(second.root.snapshot()))
+    const unsubscribe = secondStore.subscribe(() => observed.push(second.snapshot()))
 
     source.view.dispatch(source.state.tr.insertText("!", 1))
     Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
@@ -276,7 +276,7 @@ describe("stored rich-text editors", () => {
     expect(secondDoc.share.has("storage:revisions")).toBe(false)
 
     const afterRemoteEdit = secondStore.getRevision()
-    expect(second.root.snapshot()).toEqual(content("!Initial"))
+    expect(second.snapshot()).toEqual(content("!Initial"))
     await Promise.resolve()
     expect(observed).toEqual([content("!Initial")])
     expect(secondStore.getRevision()).toBe(afterRemoteEdit)
@@ -296,15 +296,15 @@ describe("stored rich-text editors", () => {
     const first = createDocument(createYjsStore(firstDoc), schema, content("Seed"))
     Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
     const second = createDocument(createYjsStore(secondDoc), schema, content("Ignored"))
-    const firstEditor = mount(first.root.getEditor())
-    const secondEditor = mount(second.root.getEditor())
+    const firstEditor = mount(first.getEditor())
+    const secondEditor = mount(second.getEditor())
 
     firstEditor.view.dispatch(firstEditor.state.tr.insertText("A", 1))
     secondEditor.view.dispatch(secondEditor.state.tr.insertText("B", 1))
     Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
     Y.applyUpdate(firstDoc, Y.encodeStateAsUpdate(secondDoc))
 
-    expect(first.root.snapshot()).toEqual(second.root.snapshot())
+    expect(first.snapshot()).toEqual(second.snapshot())
     expect(firstEditor.state.doc.textContent).toContain("A")
     expect(firstEditor.state.doc.textContent).toContain("B")
     expect(firstEditor.state.doc.textContent).toContain("Seed")
@@ -322,19 +322,19 @@ describe("stored rich-text editors", () => {
     const schema = richText(options)
     const first = createDocument(createYjsStore(firstDoc), schema, content("Initial"))
     const second = createDocument(createYjsStore(secondDoc), schema, content("Ignored"))
-    const editor = mount(first.root.getEditor())
+    const editor = mount(first.getEditor())
     editor.view.dispatch(editor.state.tr.insertText("!", 1))
-    expect(second.root.snapshot()).toEqual(content("!Initial"))
+    expect(second.snapshot()).toEqual(content("!Initial"))
   })
 
   test("Yjs opening an empty fragment does not seed shared content", () => {
     const doc = createDoc()
     const store = createYjsStore(doc)
     const document = createDocument(store, richText(options), content("Initial"))
-    const fragment = doc.getXmlFragment(`storage:richText:${document.root.id}`)
+    const fragment = doc.getXmlFragment(`storage:richText:${document.id}`)
     fragment.delete(0, fragment.length)
     const beforeLookup = Y.encodeStateVector(doc)
-    expect(document.root.snapshot()).toEqual({ type: "doc", content: [{ type: "inlineBlock" }] })
+    expect(document.snapshot()).toEqual({ type: "doc", content: [{ type: "inlineBlock" }] })
     expect(fragment.length).toBe(0)
     expect(Y.encodeStateVector(doc)).toEqual(beforeLookup)
   })
@@ -349,7 +349,7 @@ describe("stored rich-text editors", () => {
       content("First"),
       content("Second"),
     ])
-    const [first, second] = document.root.children()
+    const [first, second] = document.children()
     if (!first || !second) throw new Error("Missing children.")
     const firstEditor = mount(first.getEditor())
     const secondEditor = mount(second.getEditor())
@@ -397,9 +397,9 @@ describe("stored rich-text editors", () => {
     const source = createDocument(sourceStore, schema, [content("First"), content("Second")])
     Y.applyUpdate(targetDoc, Y.encodeStateAsUpdate(sourceDoc))
     const target = createDocument(targetStore, schema, [])
-    const sourceEditor = mount(source.root.children()[0]!.getEditor())
-    const matchingEditor = mount(target.root.children()[0]!.getEditor())
-    const siblingEditor = mount(target.root.children()[1]!.getEditor())
+    const sourceEditor = mount(source.children()[0]!.getEditor())
+    const matchingEditor = mount(target.children()[0]!.getEditor())
+    const siblingEditor = mount(target.children()[1]!.getEditor())
 
     sourceEditor.focus()
     sourceEditor.view.dispatch(

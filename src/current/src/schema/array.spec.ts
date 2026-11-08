@@ -7,7 +7,7 @@ import { string } from "./primitives.ts"
 
 describeWithStores("array schemas", (getStore) => {
   test("creates, reads, maps, inserts, and removes children", () => {
-    const { root } = createDocument(getStore(), array(string()), ["Ada", "Grace"])
+    const root = createDocument(getStore(), array(string()), ["Ada", "Grace"])
 
     expect(root.length).toBe(2)
     expect(root.snapshot()).toEqual(["Ada", "Grace"])

@@ -18,7 +18,7 @@ describeWithStores("object schemas", (getStore) => {
       tags: ["math"],
       profile: { bio: "Hello" },
     }
-    const { root } = createDocument(
+    const root = createDocument(
       getStore(),
       object({
         name: string(),
@@ -58,21 +58,21 @@ describeWithStores("object schemas", (getStore) => {
   test("adds, edits, replaces, removes, and re-adds optional fields", () => {
     const schema = object({ name: string(), bio: optional(string()) })
     const document = createDocument(getStore(), schema, { name: "Ada" })
-    const root = document.root
+    const root = document
 
     expect(root.field("name").get() satisfies string).toBe("Ada")
     expect(root.field("bio") satisfies StoredValueOf<ReturnType<typeof string>> | undefined).toBe(
       undefined,
     )
-    expect(document.root.snapshot()).toEqual({ name: "Ada" })
-    expect(Object.hasOwn(document.root.snapshot(), "bio")).toBe(false)
+    expect(document.snapshot()).toEqual({ name: "Ada" })
+    expect(Object.hasOwn(document.snapshot(), "bio")).toBe(false)
 
     root.removeOptional("bio")
     root.setOptional("bio", "Hello")
     const bio = root.field("bio")!
     expect(bio.get()).toBe("Hello")
     bio.set("Updated")
-    expect(document.root.snapshot()).toEqual({ name: "Ada", bio: "Updated" })
+    expect(document.snapshot()).toEqual({ name: "Ada", bio: "Updated" })
 
     root.setOptional("bio", "Replacement")
     expect(root.field("bio")!.get()).toBe("Replacement")
@@ -124,7 +124,7 @@ describeWithStores("object schemas", (getStore) => {
       profile: optional(object({ title: string(), note: optional(string()) })),
     })
     const initial = { bio: "", active: false, count: 0, tags: [], profile: { title: "" } }
-    const { root } = createDocument(getStore(), schema, initial)
+    const root = createDocument(getStore(), schema, initial)
     expect(root.snapshot()).toEqual(initial)
 
     root.field("tags")!.insert(0, "math")
@@ -170,7 +170,7 @@ describeWithStores("object schemas", (getStore) => {
       constructor: optional(string()),
       toString: optional(string()),
     })
-    const { root } = createDocument(getStore(), schema, { constructor: "ctor", toString: "text" })
+    const root = createDocument(getStore(), schema, { constructor: "ctor", toString: "text" })
     root.removeOptional("constructor")
     root.removeOptional("toString")
     expect(root.field("__proto__")).toBe(undefined)
@@ -194,7 +194,7 @@ describeWithStores("object schemas", (getStore) => {
   })
 
   test("supports empty objects", () => {
-    const { root } = createDocument(getStore(), object({}), {})
+    const root = createDocument(getStore(), object({}), {})
 
     expect(root.snapshot()).toEqual({})
   })
@@ -213,7 +213,7 @@ test("optional fields observe remote Yjs changes and converge after concurrent a
     awareness: new Awareness(secondDoc),
   })
   const schema = object({ name: string(), bio: optional(string()) })
-  const first = createDocument(firstStore, schema, { name: "Ada" }).root
+  const first = createDocument(firstStore, schema, { name: "Ada" })
   Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
   const secondRef = secondDoc.getMap<ReturnType<typeof secondStore.map.create>>("root").get("root")!
   const second = schema.bind(secondStore, secondRef)
