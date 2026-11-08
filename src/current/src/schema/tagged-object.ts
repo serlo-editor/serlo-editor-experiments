@@ -26,7 +26,6 @@ export interface TaggedObjectDefinition<
   readonly fields: Fields
 }
 
-/** Narrows a bound tagged object by its exact schema, not just its type string. */
 export function isTaggedObject<Type extends string, Fields extends TaggedFields>(
   definition: TaggedObjectDefinition<Type, Fields>,
   value: StoredTaggedObject,
@@ -34,7 +33,6 @@ export function isTaggedObject<Type extends string, Fields extends TaggedFields>
   return isObject(value) && value.type === definition.type
 }
 
-/** Object with a fixed, persisted discriminator and no rendering metadata. */
 export function taggedObject<const Type extends string, Fields extends TaggedFields>({
   type,
   fields,
