@@ -14,6 +14,7 @@ export interface Worksheet<
   Answers extends StoredValue = StoredValue,
   Feedback extends StoredValue = StoredValue,
 > {
+  mode: WorksheetMode
   content: Content
   answers: Answers
   feedback: Feedback
@@ -64,5 +65,5 @@ export function openWorksheet<
       ? openRoot(store, feedbackSchema, initialSnapshot.feedback)
       : openRoot(new ReadonlyNodeStore(), feedbackSchema, initialSnapshot.feedback)
 
-  return { content, answers, feedback }
+  return { mode, content, answers, feedback }
 }
