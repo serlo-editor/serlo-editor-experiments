@@ -5,8 +5,8 @@ import * as Y from "yjs"
 
 import { YjsNodeStore } from "../storage/index.ts"
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
-import { createDocument } from "./document.ts"
 import { array, boolean, blockUnion, object, optional, string, block } from "./index.ts"
+import { createRoot } from "./root.ts"
 import type { StoredValueOf } from "./types.ts"
 
 function definitions() {
@@ -40,7 +40,7 @@ describeWithStores("block unions", (getStore) => {
     const initial = choice.createSnapshot(choiceFields())
     const note = choice.createSnapshot(choiceFields("Note"))
     const schema = object({ exercise, note: optional(exercise) })
-    const root = createDocument(store, schema, { exercise: initial, note })
+    const root = createRoot(store, schema, { exercise: initial, note })
     const required = root.field("exercise")
     expect(required.definition).toBe(choice)
     if (required.type === "choice") {
@@ -80,7 +80,7 @@ describeWithStores("block unions", (getStore) => {
     const { choice, forensic, exercise } = definitions()
     const kept = choice.createSnapshot(choiceFields("Kept"))
     const inserted = forensic.createSnapshot({ caseId: "inserted" })
-    const root = createDocument(getStore(), array(exercise), [kept])
+    const root = createRoot(getStore(), array(exercise), [kept])
     root.insert(0, inserted)
     expect(root.length).toBe(2)
     expect(root.children()[1]!.id).toBe(kept.id)
@@ -101,7 +101,7 @@ describeWithStores("block unions", (getStore) => {
   test("rejects invalid block metadata and missing fields during insertion", () => {
     const { choice, exercise } = definitions()
     const initial = choice.createSnapshot(choiceFields())
-    const root = createDocument(getStore(), array(exercise), [initial])
+    const root = createRoot(getStore(), array(exercise), [initial])
     for (const invalid of [
       null,
       [],
@@ -138,9 +138,9 @@ test("Yjs replicas bind matching IDs to local definitions and retain sibling ide
   const remote = definitions()
   try {
     const kept = local.choice.createSnapshot(choiceFields())
-    const first = createDocument(firstStore, array(local.exercise), [kept])
+    const first = createRoot(firstStore, array(local.exercise), [kept])
     Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
-    const second = createDocument(secondStore, array(remote.exercise), [])
+    const second = createRoot(secondStore, array(remote.exercise), [])
     expect(second.children()[0]!.id).toBe(kept.id)
     expect(second.children()[0]!.definition).toBe(remote.choice)
     expect(second.children()[0]!.definition).not.toBe(local.choice)

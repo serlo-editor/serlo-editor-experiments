@@ -6,8 +6,8 @@ import * as Y from "yjs"
 import { type NodeKind, type NodeStore, YjsNodeStore } from "../storage/index.ts"
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import { array } from "./array.ts"
-import { createDocument } from "./document.ts"
 import { boolean, number, object, optional, string } from "./index.ts"
+import { createRoot } from "./root.ts"
 import type { SnapshotOf, StoredValueOf } from "./types.ts"
 
 describeWithStores("object schemas", (getStore) => {
@@ -18,7 +18,7 @@ describeWithStores("object schemas", (getStore) => {
       tags: ["math"],
       profile: { bio: "Hello" },
     }
-    const root = createDocument(
+    const root = createRoot(
       getStore(),
       object({
         name: string(),
@@ -57,7 +57,7 @@ describeWithStores("object schemas", (getStore) => {
 
   test("adds, edits, replaces, removes, and re-adds optional fields", () => {
     const schema = object({ name: string(), bio: optional(string()) })
-    const document = createDocument(getStore(), schema, { name: "Ada" })
+    const document = createRoot(getStore(), schema, { name: "Ada" })
     const root = document
 
     expect(root.field("name").get() satisfies string).toBe("Ada")
@@ -124,7 +124,7 @@ describeWithStores("object schemas", (getStore) => {
       profile: optional(object({ title: string(), note: optional(string()) })),
     })
     const initial = { bio: "", active: false, count: 0, tags: [], profile: { title: "" } }
-    const root = createDocument(getStore(), schema, initial)
+    const root = createRoot(getStore(), schema, initial)
     expect(root.snapshot()).toEqual(initial)
 
     root.field("tags")!.insert(0, "math")
@@ -170,7 +170,7 @@ describeWithStores("object schemas", (getStore) => {
       constructor: optional(string()),
       toString: optional(string()),
     })
-    const root = createDocument(getStore(), schema, { constructor: "ctor", toString: "text" })
+    const root = createRoot(getStore(), schema, { constructor: "ctor", toString: "text" })
     root.removeOptional("constructor")
     root.removeOptional("toString")
     expect(root.field("__proto__")).toBe(undefined)
@@ -194,7 +194,7 @@ describeWithStores("object schemas", (getStore) => {
   })
 
   test("supports empty objects", () => {
-    const root = createDocument(getStore(), object({}), {})
+    const root = createRoot(getStore(), object({}), {})
 
     expect(root.snapshot()).toEqual({})
   })
@@ -213,7 +213,7 @@ test("optional fields observe remote Yjs changes and converge after concurrent a
     awareness: new Awareness(secondDoc),
   })
   const schema = object({ name: string(), bio: optional(string()) })
-  const first = createDocument(firstStore, schema, { name: "Ada" })
+  const first = createRoot(firstStore, schema, { name: "Ada" })
   Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
   const secondRef = secondDoc.getMap<ReturnType<typeof secondStore.map.create>>("root").get("root")!
   const second = schema.bind(secondStore, secondRef)

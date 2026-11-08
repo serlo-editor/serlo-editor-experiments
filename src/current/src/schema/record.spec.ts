@@ -5,14 +5,14 @@ import * as Y from "yjs"
 
 import { ReadonlyNodeStore, YjsNodeStore } from "../storage/index.ts"
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
-import { createDocument } from "./document.ts"
 import { array, boolean, number, object, record, string } from "./index.ts"
+import { createRoot } from "./root.ts"
 import type { SnapshotOf, StoredValueOf } from "./types.ts"
 
 describeWithStores("record schemas", (getStore) => {
   test("creates, reads, replaces, removes, and re-adds entries", () => {
     const schema = record(string())
-    const root = createDocument(getStore(), schema, {})
+    const root = createRoot(getStore(), schema, {})
     expect(root.snapshot()).toEqual({})
     expect(root.get("missing")).toBeUndefined()
     root.remove("missing")
@@ -47,7 +47,7 @@ describeWithStores("record schemas", (getStore) => {
     const initial: SnapshotOf<typeof schema> = {
       answer: { text: "", selected: [], count: 0, active: false },
     }
-    const root = createDocument(getStore(), schema, initial)
+    const root = createRoot(getStore(), schema, initial)
     expect(root.snapshot()).toEqual(initial)
 
     const answer = root.get("answer")
@@ -71,7 +71,7 @@ describeWithStores("record schemas", (getStore) => {
 
   test("creates, edits, and replaces array children", () => {
     const schema = record(array(string()))
-    const root = createDocument(getStore(), schema, { selected: ["option-a"] })
+    const root = createRoot(getStore(), schema, { selected: ["option-a"] })
     root.get("selected")!.insert(1, "option-b")
     expect(root.snapshot()).toEqual({ selected: ["option-a", "option-b"] })
     root.set("selected", ["option-c"])
@@ -82,14 +82,14 @@ describeWithStores("record schemas", (getStore) => {
   test("supports empty, Unicode, and prototype-name keys without inherited entries", () => {
     const keys = ["", "世界 👋", "__proto__", "constructor", "toString", "hasOwnProperty"]
     const schema = record(string())
-    const root = createDocument(getStore(), schema, {})
+    const root = createRoot(getStore(), schema, {})
     for (const key of keys) {
       expect(root.get(key)).toBeUndefined()
       root.set(key, key)
       expect(root.get(key)!.get()).toBe(key)
     }
     expect(root.snapshot()).toEqual(Object.fromEntries(keys.map((key) => [key, key])))
-    const reopened = createDocument(getStore(), schema, { ignored: "Ignored" })
+    const reopened = createRoot(getStore(), schema, { ignored: "Ignored" })
     expect(reopened.snapshot()).toEqual(root.snapshot())
     for (const key of keys) root.remove(key)
     expect(root.snapshot()).toEqual({})
@@ -111,7 +111,7 @@ describeWithStores("record schemas", (getStore) => {
       },
     }
     const schema = record(guarded)
-    const root = createDocument(store, schema, { answer: "Initial" })
+    const root = createRoot(store, schema, { answer: "Initial" })
     const revision = store.getRevision()
     available = false
 
@@ -151,7 +151,7 @@ describeWithStores("record schemas", (getStore) => {
       // @ts-expect-error Explicit undefined is not an absent entry.
       schema.create(store, { answer: undefined })
     }).toThrow("Undefined field: answer.")
-    const root = createDocument(store, schema, {})
+    const root = createRoot(store, schema, {})
     expect(() => {
       // @ts-expect-error Undefined cannot be stored.
       root.set("answer", undefined)
@@ -162,7 +162,7 @@ describeWithStores("record schemas", (getStore) => {
 
   test("reads leave revisions unchanged and each entry write notifies once", () => {
     const store = getStore()
-    const root = createDocument(store, record(object({ text: string() })), {})
+    const root = createRoot(store, record(object({ text: string() })), {})
     const revision = store.getRevision()
     const observed: unknown[] = []
     store.subscribe(() => observed.push(root.snapshot()))
@@ -194,7 +194,7 @@ test("read-only records initialize but reject writes before child creation", () 
   }
   const schema = record(counted)
   const initial = { tags: ["tag"], ["__proto__"]: ["safe"] }
-  const document = createDocument(store, schema, initial)
+  const document = createRoot(store, schema, initial)
   expect(document.snapshot()).toEqual(initial)
   for (const [key, value] of Object.entries(initial)) {
     expect(document.get(key)?.snapshot()).toEqual(value)
@@ -209,14 +209,14 @@ test("read-only records initialize but reject writes before child creation", () 
   if (!Array.isArray(tags)) throw new Error("Expected tags array.")
   tags.push("Outside mutation")
   expect(document.snapshot()).toEqual(initial)
-  expect(createDocument(store, schema, {}).snapshot()).toEqual(initial)
+  expect(createRoot(store, schema, {}).snapshot()).toEqual(initial)
   expect(store.getRevision()).toBe(0)
 })
 
 test("read-only records preserve falsy primitive refs", () => {
-  const active = createDocument(new ReadonlyNodeStore(), record(boolean()), { answer: false })
-  const count = createDocument(new ReadonlyNodeStore(), record(number()), { answer: 0 })
-  const text = createDocument(new ReadonlyNodeStore(), record(string()), { answer: "" })
+  const active = createRoot(new ReadonlyNodeStore(), record(boolean()), { answer: false })
+  const count = createRoot(new ReadonlyNodeStore(), record(number()), { answer: 0 })
+  const text = createRoot(new ReadonlyNodeStore(), record(string()), { answer: "" })
   expect(active.get("answer")!.get()).toBe(false)
   expect(count.get("answer")!.get()).toBe(0)
   expect(text.get("answer")!.get()).toBe("")
@@ -231,9 +231,9 @@ test("Yjs records reopen, observe remote edits, and converge after concurrent ad
     const firstStore = new YjsNodeStore({ doc: firstDoc, awareness: firstAwareness })
     const secondStore = new YjsNodeStore({ doc: secondDoc, awareness: secondAwareness })
     const schema = record(string())
-    const first = createDocument(firstStore, schema, { answer: "Initial" })
+    const first = createRoot(firstStore, schema, { answer: "Initial" })
     Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
-    const second = createDocument(secondStore, schema, { ignored: "Ignored" })
+    const second = createRoot(secondStore, schema, { ignored: "Ignored" })
     const cached = second.get("answer")!
     const observed: unknown[] = []
     secondStore.subscribe(() => observed.push(second.snapshot()))

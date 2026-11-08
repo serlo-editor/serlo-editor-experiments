@@ -2,11 +2,7 @@ import type { NodeKind, NodeRefs, NodeStore } from "../storage/index.ts"
 import type { JSONValue } from "../utils/index.ts"
 import type { Schema, StoredValue } from "./types.ts"
 
-export interface Document<Root extends StoredValue> {
-  readonly root: Root
-}
-
-export function createDocument<
+export function createRoot<
   Snapshot extends JSONValue,
   Root extends StoredValue<Snapshot>,
   Kind extends NodeKind,

@@ -39,8 +39,8 @@ export interface NodeStore<Refs extends NodeRefs = NodeRefs> {
   }
   readonly root: {
     /** Runs the initializer only when no root exists; writable stores use a transaction. */
-    // TODO: This is only used in createDocument() to initialize the root. Consider
-    // inlining it into createDocument() and removing it from the public API.
+    // TODO: This is only used in createRoot() to initialize the root. Consider
+    // inlining it into createRoot() and removing it from the public API.
     getOrCreate(create: () => Refs[NodeKind]): Refs[NodeKind]
   }
 

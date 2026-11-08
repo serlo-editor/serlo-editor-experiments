@@ -4,8 +4,8 @@ import { defineNodeSpec } from "prosekit/core"
 
 import { richText as definition, type RichTextJSON } from "../rich-text/index.ts"
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
-import { createDocument } from "./document.ts"
 import { array, object, optional, richText } from "./index.ts"
+import { createRoot } from "./root.ts"
 
 const options = { definition: definition.inline({ marks: { bold: true } }) }
 
@@ -35,7 +35,7 @@ describeWithStores("rich-text schemas", (getStore) => {
     const store = getStore()
     const schema = richText(options)
     const initial = content("Hello")
-    const document = createDocument(store, schema, initial)
+    const document = createRoot(store, schema, initial)
     const ref = store.root.getOrCreate(() => {
       throw new Error("Missing root.")
     })
@@ -55,9 +55,9 @@ describeWithStores("rich-text schemas", (getStore) => {
   test("opens existing content without replacing its identity or configuration", () => {
     const store = getStore()
     const schema = richText(options)
-    const first = createDocument(store, schema, content("First"))
+    const first = createRoot(store, schema, content("First"))
     const editor = first.getEditor()
-    const second = createDocument(store, schema, content("Ignored"))
+    const second = createRoot(store, schema, content("Ignored"))
 
     expect(second.id).toBe(first.id)
     expect(second.getEditor()).toBe(editor)
@@ -72,7 +72,7 @@ describeWithStores("rich-text schemas", (getStore) => {
       items: array(richText(options)),
       note: optional(richText(options)),
     })
-    const document = createDocument(store, schema, { items: [content("Kept")] })
+    const document = createRoot(store, schema, { items: [content("Kept")] })
     const items = document.field("items")
     const original = items.children()[0]!
 
@@ -91,7 +91,7 @@ describeWithStores("rich-text schemas", (getStore) => {
 
   test("assigns new IDs when importing copied content", () => {
     const store = getStore()
-    const document = createDocument(store, array(richText(options)), [content("Same")])
+    const document = createRoot(store, array(richText(options)), [content("Same")])
     const first = document.children()[0]!
     document.insert(1, first.snapshot())
     const second = document.children()[1]!
@@ -110,12 +110,12 @@ describeWithStores("rich-text schemas", (getStore) => {
       type: "doc",
       content: [{ type: "customBlock", content: [{ type: "text", text: "Custom" }] }],
     }
-    const document = createDocument(getStore(), schema, initial)
+    const document = createRoot(getStore(), schema, initial)
     expect(document.snapshot()).toEqual(initial)
   })
 
   test("rejects invalid imports without replacing existing content", () => {
-    const document = createDocument(getStore(), array(richText(options)), [content("Kept")])
+    const document = createRoot(getStore(), array(richText(options)), [content("Kept")])
     const original = document.children()[0]!.id
     for (const invalid of [
       { type: "doc", content: [{ type: "unknown" }] },

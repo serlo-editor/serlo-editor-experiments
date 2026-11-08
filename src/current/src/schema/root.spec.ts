@@ -2,7 +2,7 @@ import { expect, test } from "bun:test"
 
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import type { JSONValue } from "../utils/index.ts"
-import { createDocument } from "./document.ts"
+import { createRoot } from "./root.ts"
 import type { Schema, StoredValue } from "./types.ts"
 
 describeWithStores("Document", (getStore) => {
@@ -25,7 +25,7 @@ describeWithStores("Document", (getStore) => {
         }
       },
     }
-    const document = createDocument(store, schema, "Initial")
+    const document = createRoot(store, schema, "Initial")
     const root = document
 
     expect(root.snapshot()).toBe("Initial")
@@ -44,8 +44,8 @@ describeWithStores("Document", (getStore) => {
       bind: (store, ref) => ({ snapshot: () => store.cell.get(ref) }),
     }
 
-    const first = createDocument(store, schema, "First")
-    const second = createDocument(store, schema, "Ignored")
+    const first = createRoot(store, schema, "First")
+    const second = createRoot(store, schema, "Ignored")
 
     expect(second.snapshot()).toBe("First")
     expect(second.snapshot()).toBe("First")

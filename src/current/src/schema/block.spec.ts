@@ -2,8 +2,8 @@ import { expect, test } from "bun:test"
 
 import { richText as definition } from "../rich-text/index.ts"
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
-import { createDocument } from "./document.ts"
 import { object, optional, richText, string, array, boolean, block } from "./index.ts"
+import { createRoot } from "./root.ts"
 import type { SnapshotOf } from "./types.ts"
 
 function choice() {
@@ -40,7 +40,7 @@ describeWithStores("block schemas", (getStore) => {
     expect(fresh.id).not.toBe("caller")
     expect(fresh.type).toBe("choice")
 
-    const document = createDocument(getStore(), blockDefinition, initial)
+    const document = createRoot(getStore(), blockDefinition, initial)
     const value = document
     expect(value.id satisfies string).toBe(initial.id)
     expect(value.type satisfies "choice").toBe("choice")
@@ -109,8 +109,8 @@ describeWithStores("block schemas", (getStore) => {
     const store = getStore()
     const blockDefinition = choice()
     const loaded = { ...blockDefinition.createSnapshot(choiceFields()), id: "previously-saved-id" }
-    const first = createDocument(store, blockDefinition, loaded)
-    const second = createDocument(
+    const first = createRoot(store, blockDefinition, loaded)
+    const second = createRoot(
       store,
       blockDefinition,
       blockDefinition.createSnapshot(choiceFields("Ignored")),
@@ -128,7 +128,7 @@ describeWithStores("block schemas", (getStore) => {
     })
     const body = { type: "doc", content: [{ type: "inlineBlock" }] }
     const initial = schema.createSnapshot({ body })
-    const root = createDocument(getStore(), schema, initial)
+    const root = createRoot(getStore(), schema, initial)
     expect(root.snapshot()).toEqual(initial)
     expect(root.field("body").id).not.toBe(root.id)
   })
