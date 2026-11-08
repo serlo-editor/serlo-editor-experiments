@@ -41,7 +41,7 @@ All commands run in `src/2026-11-02-demo-version`.
    `wss://` itself:
 
    ```bash
-   gh variable set PUBLIC_SYNC_HOST --body "serlo-editor-demo-sync.collab-editor-server.workers.dev"
+   gh variable set PUBLIC_SYNC_HOST --body "serlo-editor-demo-sync.botho.workers.dev"
    ```
 
 2. Push to `main`. The Pages workflow passes `PUBLIC_SYNC_HOST` to `bun run build`, which inlines only
