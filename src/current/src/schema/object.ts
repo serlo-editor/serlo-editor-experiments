@@ -1,8 +1,6 @@
 import type { AnySchema, Schema, SnapshotOf, StoredValue, StoredValueOf } from "./types.ts"
 
 export type StoredObject<Schemas extends SchemaMap> = StoredValue<ObjectSnapshot<Schemas>> & {
-  field<Key extends keyof Schemas & string>(key: Key): StoredValueOf<Schemas[Key]>
-} & {
   readonly [Key in keyof Schemas]: StoredValueOf<Schemas[Key]>
 }
 
@@ -15,8 +13,8 @@ export type ObjectSnapshot<Schemas extends SchemaMap> = {
 export function object<Schemas extends SchemaMap>(
   schemas: Schemas,
 ): Schema<ObjectSnapshot<Schemas>, StoredObject<Schemas>, "map"> {
-  for (const key of ["field", "snapshot"]) {
-    if (Object.hasOwn(schemas, key)) throw new TypeError(`Reserved object field: ${key}.`)
+  if (Object.hasOwn(schemas, "snapshot")) {
+    throw new TypeError("Reserved object field: snapshot.")
   }
 
   return {
@@ -37,28 +35,22 @@ export function object<Schemas extends SchemaMap>(
     },
 
     bind(store, ref) {
-      const field = <Key extends keyof Schemas & string>(key: Key): StoredValueOf<Schemas[Key]> => {
-        if (!Object.hasOwn(schemas, key)) {
-          throw new TypeError(`Unknown field: ${key}.`)
-        }
+      const child = (key: string) => {
         const childRef = store.map.getField(ref, key)
-        if (childRef === undefined) {
-          throw new TypeError(`Missing required field: ${key}.`)
-        }
-        return schemas[key]!.bind(store, childRef) as StoredValueOf<Schemas[Key]>
+        if (childRef === undefined) throw new TypeError(`Missing required field: ${key}.`)
+        return schemas[key]!.bind(store, childRef)
       }
 
       return Object.defineProperties(
         {
-          field,
           snapshot() {
             return Object.fromEntries(
-              Object.keys(schemas).map((key) => [key, field(key).snapshot()]),
+              Object.keys(schemas).map((key) => [key, child(key).snapshot()]),
             ) as ObjectSnapshot<Schemas>
           },
         },
         // Non-enumerable getters avoid reading removed fields during React prop inspection.
-        Object.fromEntries(Object.keys(schemas).map((key) => [key, { get: () => field(key) }])),
+        Object.fromEntries(Object.keys(schemas).map((key) => [key, { get: () => child(key) }])),
       ) as StoredObject<Schemas>
     },
   }

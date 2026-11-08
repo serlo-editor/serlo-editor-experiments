@@ -33,7 +33,7 @@ describeWithStores("BlockView", (getStore) => {
           const [mountedId] = useState(value.id)
           return (
             <p>
-              {mountedId}:{value.field("text").get()}
+              {mountedId}:{value.text.get()}
             </p>
           )
         },
@@ -44,7 +44,7 @@ describeWithStores("BlockView", (getStore) => {
         flushSync(() => reactRoot.render(<BlockView value={root.children()[0]!} />))
       render()
       expect(host.textContent).toBe(`${initial.id}:First`)
-      root.children()[0]!.field("text").set("Edited")
+      root.children()[0]!.text.set("Edited")
       render()
       expect(host.textContent).toBe(`${initial.id}:Edited`)
       const replacement = text.createSnapshot({ text: "Replacement" })
@@ -68,13 +68,13 @@ describeWithStores("BlockView", (getStore) => {
       fields: { text: string() },
       render: function TextView({ value }) {
         const id = useId()
-        return <p id={id}>{value.field("text").get()}</p>
+        return <p id={id}>{value.text.get()}</p>
       },
     })
     const other = block({
       type: "other",
       fields: { label: string() },
-      render: ({ value }) => <strong>{value.field("label").get()}</strong>,
+      render: ({ value }) => <strong>{value.label.get()}</strong>,
     })
     const lesson = block({
       type: "lesson",
@@ -82,7 +82,7 @@ describeWithStores("BlockView", (getStore) => {
       render: function LessonView({ value }) {
         return (
           <section>
-            {value.field("exercises").map((child) => (
+            {value.exercises.map((child) => (
               <BlockView key={child.id} value={child} />
             ))}
           </section>
@@ -100,8 +100,8 @@ describeWithStores("BlockView", (getStore) => {
     expect(renderToStaticMarkup(<BlockView value={root} />)).toMatch(
       /^<section><p id="[^"]+">First<\/p><strong>Second<\/strong><\/section>$/,
     )
-    root.field("exercises").remove(0)
-    root.field("exercises").insert(0, other.createSnapshot({ label: "Inserted" }))
+    root.exercises.remove(0)
+    root.exercises.insert(0, other.createSnapshot({ label: "Inserted" }))
     // Parent explicitly rerenders; BlockView has no subscriptions yet.
     expect(renderToStaticMarkup(<BlockView value={root} />)).toBe(
       "<section><strong>Inserted</strong><strong>Second</strong></section>",

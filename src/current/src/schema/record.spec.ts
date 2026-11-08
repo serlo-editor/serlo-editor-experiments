@@ -51,12 +51,12 @@ describeWithStores("record schemas", (getStore) => {
 
     const answer = root.get("answer")
     answer satisfies StoredValueOf<typeof child> | undefined
-    answer!.field("selected").insert(0, "option-a")
+    answer!.selected.insert(0, "option-a")
     expect(root.snapshot()).toEqual({
       answer: { text: "", selected: ["option-a"], active: false },
     })
     root.set("another", { text: "Other", selected: [], active: true })
-    expect(root.get("another")!.field("active").get()).toBe(true)
+    expect(root.get("another")!.active.get()).toBe(true)
 
     // @ts-expect-error Missing entries require an undefined check.
     const required: StoredValueOf<typeof child> = answer
@@ -172,7 +172,7 @@ describeWithStores("record schemas", (getStore) => {
     expect(observed).toEqual([])
 
     root.set("answer", { text: "Initial" })
-    root.get("answer")!.field("text").set("Edited")
+    root.get("answer")!.text.set("Edited")
     root.remove("answer")
     expect(observed).toEqual([{ answer: { text: "Initial" } }, { answer: { text: "Edited" } }, {}])
     expect(store.getRevision()).toBe(revision + 3)

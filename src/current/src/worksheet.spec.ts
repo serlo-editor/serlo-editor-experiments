@@ -23,15 +23,15 @@ test("opens worksheet with supplied answer and feedback schemas", () => {
   })
   answering.answers.get("task")!.set("Updated")
   expect(answering.answers.snapshot()).toEqual({ task: "Updated" })
-  expect(answering.feedback.get("task")!.field("correct").get()).toBe(false)
-  expect(() => answering.feedback.get("task")!.field("correct").set(true)).toThrow()
+  expect(answering.feedback.get("task")!.correct.get()).toBe(false)
+  expect(() => answering.feedback.get("task")!.correct.set(true)).toThrow()
 
   const grading = openWorksheet({
     ...options,
     mode: WorksheetMode.GivingFeedback,
     store: new FlatNodeStore(),
   })
-  grading.feedback.get("task")!.field("correct").set(true)
+  grading.feedback.get("task")!.correct.set(true)
   expect(grading.feedback.snapshot()).toEqual({ task: { correct: true } })
   expect(() => grading.answers.get("task")!.set("Changed")).toThrow()
 })

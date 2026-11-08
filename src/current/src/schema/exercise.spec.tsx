@@ -28,13 +28,7 @@ describeWithStores("exercise renderer", (getStore) => {
     answer: { fields: { response: string() } },
     feedback: { fields: { comment: string() } },
     render: ({ unit, answer, feedback, mode }) =>
-      render(
-        unit.field("question").get(),
-        answer?.field("response").get(),
-        feedback?.field("comment").get(),
-        mode,
-        unit.id,
-      ),
+      render(unit.question.get(), answer?.response.get(), feedback?.comment.get(), mode, unit.id),
   })
   const otherAnswer = taggedObject({ type: "other", fields: { response: string() } })
   const otherFeedback = taggedObject({ type: "other", fields: { comment: string() } })

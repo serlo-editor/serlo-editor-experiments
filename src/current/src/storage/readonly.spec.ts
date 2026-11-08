@@ -140,10 +140,10 @@ test("schema stored values read snapshots but cannot mutate content", () => {
   const initial = { title: "Title", items: ["First"], note: "Note" }
   const document = openRoot(store, schema, initial)
   for (const operation of [
-    () => document.field("title").set("Changed"),
-    () => document.field("items").insert(0, "Added"),
-    () => document.field("items").remove(0),
-    () => document.field("note").set("Changed"),
+    () => document.title.set("Changed"),
+    () => document.items.insert(0, "Added"),
+    () => document.items.remove(0),
+    () => document.note.set("Changed"),
   ])
     expect(operation).toThrow("Storage is read-only.")
   const snapshot = document.snapshot()

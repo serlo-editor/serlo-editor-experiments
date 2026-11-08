@@ -15,7 +15,7 @@ function choice() {
       explanation: string(),
     },
     render({ value }) {
-      return value.field("question").get() satisfies string
+      return value.question.get() satisfies string
     },
   })
 }
@@ -67,10 +67,6 @@ describeWithStores("block schemas", (getStore) => {
     expect(value.set).toBeUndefined()
     // @ts-expect-error Schemas have no validation hook.
     expect(blockDefinition.validate).toBeUndefined()
-    expect(() => {
-      // @ts-expect-error Metadata is read through properties, not field values.
-      value.field("id")
-    }).toThrow("Unknown field: id.")
 
     // @ts-expect-error Snapshot retains literal discriminator.
     const wrongType: SnapshotOf<typeof blockDefinition> = { ...initial, type: "forensic" }
@@ -125,7 +121,7 @@ describeWithStores("block schemas", (getStore) => {
     const initial = schema.createSnapshot({ body })
     const root = openRoot(getStore(), schema, initial)
     expect(root.snapshot()).toEqual(initial)
-    expect(root.field("body").id).not.toBe(root.id)
+    expect(root.body.id).not.toBe(root.id)
   })
 })
 

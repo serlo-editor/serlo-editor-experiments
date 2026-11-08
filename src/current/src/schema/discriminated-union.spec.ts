@@ -27,13 +27,13 @@ function definitions() {
       explanation: string(),
     },
     render({ value }) {
-      return value.field("question").get() satisfies string
+      return value.question.get() satisfies string
     },
   })
   const forensic = block({
     type: "forensic",
     fields: { caseId: string() },
-    render: ({ value }) => value.field("caseId").get(),
+    render: ({ value }) => value.caseId.get(),
   })
   return { choice, forensic, exercise: discriminatedUnion([choice, forensic]) }
 }
@@ -50,23 +50,21 @@ describeWithStores("discriminated unions", (getStore) => {
     const note = choice.createSnapshot(choiceFields("Note"))
     const schema = object({ exercise, note: exercise })
     const root = openRoot(store, schema, { exercise: initial, note })
-    const required = root.field("exercise")
+    const required = root.exercise
     expect(required.definition).toBe(choice)
     if (required.type === "choice") {
-      expect(required.field("question").get() satisfies string).toBe("Which answer?")
-      expect(() => {
-        // @ts-expect-error Narrowed choice values have no forensic fields.
-        required.field("caseId")
-      }).toThrow("Unknown field: caseId.")
+      expect(required.question.get() satisfies string).toBe("Which answer?")
+      // @ts-expect-error Narrowed choice values have no forensic fields.
+      expect(required.caseId).toBeUndefined()
     } else {
       throw new Error("Expected choice.")
     }
-    const current = root.field("note")
+    const current = root.note
     expect(current.id).toBe(note.id)
     expect(current.definition).toBe(choice)
     const typed: StoredValueOf<typeof exercise> = current
     expect(typed.snapshot()).toEqual(note)
-    expect(root.field("exercise").id).toBe(initial.id)
+    expect(root.exercise.id).toBe(initial.id)
   })
 
   test("combines tagged objects and blocks without renderer metadata on responses", () => {
@@ -76,7 +74,7 @@ describeWithStores("discriminated unions", (getStore) => {
     const root = openRoot(getStore(), schema, { answer: { type: "response", text: "Yes" } })
     const value = root.get("answer")!
     if (value.type !== "response") throw new Error("Expected response.")
-    expect(value.field("text").get() satisfies string).toBe("Yes")
+    expect(value.text.get() satisfies string).toBe("Yes")
     expect(value.snapshot()).toEqual({ type: "response", text: "Yes" })
     root.set("answer", choice.createSnapshot(choiceFields()))
     expect(root.get("answer")?.type).toBe("choice")

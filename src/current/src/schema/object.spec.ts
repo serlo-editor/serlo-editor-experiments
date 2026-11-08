@@ -26,13 +26,11 @@ describeWithStores("object schemas", (getStore) => {
     )
 
     expect(root.snapshot()).toEqual(initial)
-    expect(root.field("name").get() satisfies string).toBe("Ada")
-    expect(root.field("active").get() satisfies boolean).toBe(false)
     expect(root.name.get() satisfies string).toBe("Ada")
     expect(root.active.get() satisfies boolean).toBe(false)
 
     root.name.set("Grace")
-    root.field("active").set(true)
+    root.active.set(true)
     root.tags.insert(1, "code")
     root.profile.bio.set("Updated")
 
@@ -43,14 +41,14 @@ describeWithStores("object schemas", (getStore) => {
       profile: { bio: "Updated" },
     })
 
-    // @ts-expect-error Object stored values expose field(), not get().
+    // @ts-expect-error Object stored values expose child properties, not get().
     expect(root.get).toBe(undefined)
     // @ts-expect-error Fields are edited through child stored values, not replaced.
     expect(root.set).toBe(undefined)
-    expect(() => {
-      // @ts-expect-error Unknown fields are rejected.
-      root.field("missing")
-    }).toThrow()
+    // @ts-expect-error Field access method was removed.
+    expect(root.field).toBeUndefined()
+    // @ts-expect-error Unknown fields are not exposed.
+    expect(root.missing).toBeUndefined()
   })
 
   test("rejects missing and explicitly undefined fields", () => {
@@ -73,7 +71,6 @@ describeWithStores("object schemas", (getStore) => {
     )
     const root = schema.bind(store, ref)
     store.transact((write) => write.map.remove(ref, "name"))
-    expect(() => root.field("name")).toThrow("Missing required field: name.")
     expect(() => root.name).toThrow("Missing required field: name.")
     expect(() => root.snapshot()).toThrow("Missing required field: name.")
   })
@@ -87,7 +84,6 @@ describeWithStores("object schemas", (getStore) => {
     const initial = { ["__proto__"]: "proto", constructor: "ctor", toString: "text" }
     const root = openRoot(getStore(), schema, initial)
     expect(root.snapshot()).toEqual(initial)
-    expect(root.field("__proto__").get()).toBe("proto")
     expect(root.__proto__.get()).toBe("proto")
     expect(root.constructor.get()).toBe("ctor")
     expect(root.toString.get()).toBe("text")
@@ -95,14 +91,13 @@ describeWithStores("object schemas", (getStore) => {
       // @ts-expect-error Object.prototype.constructor is not a field value.
       schema.create(getStore(), { ["__proto__"]: "proto", toString: "text" })
     }).toThrow("Missing required field: constructor.")
-    expect(() => {
-      // @ts-expect-error Inherited schema properties are not declared fields.
-      root.field("hasOwnProperty")
-    }).toThrow("Unknown field: hasOwnProperty.")
+    expect(Object.hasOwn(root, "hasOwnProperty")).toBe(false)
   })
 
-  test("reserves object API names", () => {
-    expect(() => object({ field: string() })).toThrow("Reserved object field: field.")
+  test("supports field as a schema key and reserves snapshot", () => {
+    const root = openRoot(getStore(), object({ field: string() }), { field: "Value" })
+    expect(root.field.get()).toBe("Value")
+    expect(root.snapshot()).toEqual({ field: "Value" })
     expect(() => object({ snapshot: string() })).toThrow("Reserved object field: snapshot.")
   })
 

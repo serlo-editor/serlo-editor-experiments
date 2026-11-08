@@ -70,7 +70,7 @@ describeWithStores("rich-text schemas", (getStore) => {
     const store = getStore()
     const schema = object({ items: array(richText(options)) })
     const document = openRoot(store, schema, { items: [content("Kept")] })
-    const items = document.field("items")
+    const items = document.items
     const original = items.children()[0]!
 
     items.insert(0, content("Inserted"))
