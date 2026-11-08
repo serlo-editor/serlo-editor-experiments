@@ -5,7 +5,16 @@ import * as Y from "yjs"
 
 import { YjsNodeStore } from "../storage/index.ts"
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
-import { array, boolean, blockUnion, object, string, block } from "./index.ts"
+import {
+  array,
+  boolean,
+  discriminatedUnion,
+  object,
+  record,
+  string,
+  taggedObject,
+  block,
+} from "./index.ts"
 import { openRoot } from "./root.ts"
 import type { StoredValueOf } from "./types.ts"
 
@@ -26,14 +35,14 @@ function definitions() {
     fields: { caseId: string() },
     render: ({ value }) => value.field("caseId").get(),
   })
-  return { choice, forensic, exercise: blockUnion([choice, forensic]) }
+  return { choice, forensic, exercise: discriminatedUnion([choice, forensic]) }
 }
 
 function choiceFields(question = "Which answer?") {
   return { question, answers: [{ text: "First", correct: true }], explanation: "Because" }
 }
 
-describeWithStores("block unions", (getStore) => {
+describeWithStores("discriminated unions", (getStore) => {
   test("narrow stored values in object fields", () => {
     const store = getStore()
     const { choice, exercise } = definitions()
@@ -60,6 +69,19 @@ describeWithStores("block unions", (getStore) => {
     expect(root.field("exercise").id).toBe(initial.id)
   })
 
+  test("combines tagged objects and blocks without renderer metadata on responses", () => {
+    const { choice } = definitions()
+    const response = taggedObject({ type: "response", fields: { text: string() } })
+    const schema = record(discriminatedUnion([choice, response]))
+    const root = openRoot(getStore(), schema, { answer: { type: "response", text: "Yes" } })
+    const value = root.get("answer")!
+    if (value.type !== "response") throw new Error("Expected response.")
+    expect(value.field("text").get() satisfies string).toBe("Yes")
+    expect(value.snapshot()).toEqual({ type: "response", text: "Yes" })
+    root.set("answer", choice.createSnapshot(choiceFields()))
+    expect(root.get("answer")?.type).toBe("choice")
+  })
+
   test("sibling insertions and removals preserve unchanged IDs", () => {
     const { choice, forensic, exercise } = definitions()
     const kept = choice.createSnapshot(choiceFields("Kept"))
@@ -78,8 +100,8 @@ describeWithStores("block unions", (getStore) => {
 
   test("rejects empty and ambiguous child definitions", () => {
     const { choice } = definitions()
-    expect(() => blockUnion([])).toThrow("Expected at least one child block definition.")
-    expect(() => blockUnion([choice, choice])).toThrow("Duplicate block type: choice.")
+    expect(() => discriminatedUnion([])).toThrow("Expected at least one typed definition.")
+    expect(() => discriminatedUnion([choice, choice])).toThrow("Duplicate type: choice.")
   })
 
   test("rejects invalid block metadata and missing fields during insertion", () => {

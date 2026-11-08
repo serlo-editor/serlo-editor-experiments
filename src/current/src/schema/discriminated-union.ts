@@ -1,18 +1,16 @@
 import { isObject } from "../utils/guard.ts"
-import type { BlockDefinition } from "./block.ts"
 import type { Schema, SnapshotOf, StoredValueOf } from "./types.ts"
 
-type AnyBlockDefinition = BlockDefinition<any, any>
+type TypedDefinition = Schema<any, any, "map"> & { readonly type: string }
 
-/** Explicit union; each child carries its locally bound renderer definition. */
-export function blockUnion<const Definitions extends readonly AnyBlockDefinition[]>(
+/** Selects a schema by its persisted type discriminator. */
+export function discriminatedUnion<const Definitions extends readonly TypedDefinition[]>(
   definitions: Definitions,
 ): Schema<SnapshotOf<Definitions[number]>, StoredValueOf<Definitions[number]>, "map"> {
   const byType = new Map<string, Definitions[number]>()
-  if (definitions.length === 0) throw new TypeError("Expected at least one child block definition.")
+  if (definitions.length === 0) throw new TypeError("Expected at least one typed definition.")
   for (const definition of definitions) {
-    if (byType.has(definition.type))
-      throw new TypeError(`Duplicate block type: ${definition.type}.`)
+    if (byType.has(definition.type)) throw new TypeError(`Duplicate type: ${definition.type}.`)
     byType.set(definition.type, definition)
   }
 
@@ -22,16 +20,16 @@ export function blockUnion<const Definitions extends readonly AnyBlockDefinition
       !Object.hasOwn(snapshot, "type") ||
       typeof snapshot.type !== "string"
     ) {
-      throw new TypeError("Expected child block type.")
+      throw new TypeError("Expected child type.")
     }
     const definition = byType.get(snapshot.type)
-    if (!definition) throw new TypeError(`Unknown child block type: ${snapshot.type}.`)
+    if (!definition) throw new TypeError(`Unknown child type: ${snapshot.type}.`)
     return definition
   }
 
   return {
     create(store, snapshot) {
-      // Selection erases the concrete member while preserving the public snapshot union.
+      // Selection erases concrete member while preserving public snapshot union.
       const schema: Schema<any, any, "map"> = select(snapshot)
       return schema.create(store, snapshot)
     },
@@ -40,7 +38,7 @@ export function blockUnion<const Definitions extends readonly AnyBlockDefinition
       const definition = select({
         type: typeRef === undefined ? undefined : store.cell.get(typeRef),
       })
-      // Stored discriminator selects exactly one member of the inferred stored-value union.
+      // Stored discriminator selects one member of inferred stored-value union.
       return definition.bind(store, ref) as StoredValueOf<Definitions[number]>
     },
   }

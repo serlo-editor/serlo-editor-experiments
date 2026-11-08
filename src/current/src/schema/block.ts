@@ -3,7 +3,8 @@ import type { ReactNode } from "react"
 import { isObject } from "../utils/guard.ts"
 import { object, type ObjectSnapshot, type SchemaMap, type StoredObject } from "./object.ts"
 import { string } from "./primitives.ts"
-import type { Schema, SnapshotOf } from "./types.ts"
+import { taggedObject } from "./tagged-object.ts"
+import type { Schema } from "./types.ts"
 
 export type BlockSnapshot<Type extends string, Fields extends SchemaMap> = {
   readonly id: string
@@ -39,7 +40,7 @@ export function block<const Type extends string, Fields extends SchemaMap>({
   render,
 }: {
   type: Type
-  fields: Fields
+  fields: Fields & { id?: never; type?: never }
   render: BlockDefinition<Type, Fields>["render"]
 }): BlockDefinition<Type, Fields> {
   if (typeof type !== "string" || type.length === 0) throw new TypeError("Expected block type.")
@@ -48,7 +49,7 @@ export function block<const Type extends string, Fields extends SchemaMap>({
   }
 
   const contentSchema = object<Fields>(fields)
-  const storageSchema = object({ ...fields, id: string(), type: string() })
+  const storageSchema = taggedObject({ type, fields: { ...fields, id: string() } })
   const definition: BlockDefinition<Type, Fields> = {
     type,
     fields,
@@ -66,29 +67,21 @@ export function block<const Type extends string, Fields extends SchemaMap>({
       if (!Object.hasOwn(snapshot, "type") || snapshot.type !== type) {
         throw new TypeError(`Expected block type: ${type}.`)
       }
-      for (const key of Object.keys(snapshot)) {
-        if (key !== "id" && key !== "type" && !Object.hasOwn(fields, key)) {
-          throw new TypeError(`Unknown field: ${key}.`)
-        }
-      }
-      // Storage adds checked metadata to the same fields; TS cannot reduce generic mapped types.
-      return storageSchema.create(store, snapshot as SnapshotOf<typeof storageSchema>)
+      return storageSchema.create(store, snapshot)
     },
 
     bind(store, ref) {
       const idRef = store.map.getField(ref, "id")
-      const typeRef = store.map.getField(ref, "type")
       const id = idRef === undefined ? undefined : store.cell.get(idRef)
-      const storedType = typeRef === undefined ? undefined : store.cell.get(typeRef)
       if (typeof id !== "string" || !id) throw new TypeError("Expected block ID.")
-      if (storedType !== type) throw new TypeError(`Expected block type: ${type}.`)
+      const tagged = storageSchema.bind(store, ref)
       const content = contentSchema.bind(store, ref)
       return {
         ...content,
         id,
-        type,
+        type: tagged.type,
         definition,
-        snapshot: () => ({ id, type, ...content.snapshot() }),
+        snapshot: () => ({ id, type: tagged.type, ...content.snapshot() }),
       }
     },
   }

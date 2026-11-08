@@ -7,7 +7,7 @@ import { createRoot } from "react-dom/client"
 import { renderToStaticMarkup } from "react-dom/server"
 
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
-import { array, blockUnion, string, block, BlockView } from "./index.ts"
+import { array, discriminatedUnion, string, block, BlockView } from "./index.ts"
 import { openRoot } from "./root.ts"
 
 describeWithStores("BlockView", (getStore) => {
@@ -39,7 +39,7 @@ describeWithStores("BlockView", (getStore) => {
         },
       })
       const initial = text.createSnapshot({ text: "First" })
-      const root = openRoot(getStore(), array(blockUnion([text])), [initial])
+      const root = openRoot(getStore(), array(discriminatedUnion([text])), [initial])
       const render = () =>
         flushSync(() => reactRoot.render(<BlockView value={root.children()[0]!} />))
       render()
@@ -78,7 +78,7 @@ describeWithStores("BlockView", (getStore) => {
     })
     const lesson = block({
       type: "lesson",
-      fields: { exercises: array(blockUnion([text, other])) },
+      fields: { exercises: array(discriminatedUnion([text, other])) },
       render: function LessonView({ value }) {
         return (
           <section>

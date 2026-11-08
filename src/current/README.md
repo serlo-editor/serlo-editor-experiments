@@ -26,7 +26,7 @@ drop-in replacement. Remaining integration work is tracked in `tasks/`.
 | `src/utils/`              | JSON types, guards, and branded types                       |
 
 Schemas currently support strings, numbers, booleans, arrays, objects, rich text,
-blocks, and explicit block unions.
+blocks, tagged objects, and discriminated unions.
 `createDocument()` creates and attaches a root when store has none;
 otherwise it binds existing root and ignores supplied initial snapshot. Stored
 values read and edit content and produce snapshots.
@@ -112,7 +112,7 @@ Yjs stores only content and metadata using existing map/cell storage.
 
 ```tsx
 import { createDocument } from "./src/schema/document.ts"
-import { array, blockUnion, string, block, BlockView } from "./src/schema/index.ts"
+import { array, discriminatedUnion, string, block, BlockView } from "./src/schema/index.ts"
 
 const exercise = block({
   type: "exercise",
@@ -124,7 +124,7 @@ const exercise = block({
 
 const lesson = block({
   type: "lesson",
-  fields: { exercises: array(blockUnion([exercise])) },
+  fields: { exercises: array(discriminatedUnion([exercise])) },
   render: function LessonView({ value }) {
     return value.field("exercises").map((child) => <BlockView key={child.id} value={child} />)
   },
@@ -147,9 +147,9 @@ supplied block IDs; reopening
 an existing root still ignores initial snapshots. Field edits, sibling edits, and
 synchronization retain identity. `id` and `type` cannot be edited through stored values.
 
-`blockUnion([...definitions])` accepts explicit, nonempty lists with distinct type
-names. Stored `type` chooses the matching schema and local renderer; returned
-stored values form a discriminated union. No global renderer registry is used.
+`discriminatedUnion([...definitions])` accepts nonempty lists of tagged objects or
+blocks with distinct type names. Stored `type` chooses matching schema; block
+renderers remain local. Returned stored values form a discriminated union.
 
 Edit object fields through child stored values. Arrays support `insert()` and
 `remove()`. Direct replacement of object fields and atomic array replacement
@@ -174,9 +174,9 @@ awareness. Backend refs are not interchangeable with these keys: Yjs refs are
 shared-type objects, local to each replica. Integration needs stable node identity
 and a way to resolve schema information and children after synchronization.
 
-Block schemas now provide stable instance IDs and explicit block unions. Generic
-literals, wrappers, unions beyond blocks, and prototype-specific schema translation
-remain separate integration work.
+Block schemas provide stable instance IDs. Tagged objects and blocks share a
+discriminated union. Generic literals, wrappers, and prototype-specific schema
+translation remain separate integration work.
 
 ## Known integration blockers
 
