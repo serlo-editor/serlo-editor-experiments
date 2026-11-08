@@ -1,6 +1,4 @@
-import { boolean, type Schema, type StoredValue, openRoot, record } from "./schema"
-import type { StoredRecord } from "./schema/record.ts"
-import type { StoredValueOf } from "./schema/types.ts"
+import { type Schema, type StoredValue, openRoot } from "./schema"
 import { ReadonlyNodeStore, type NodeKind, type NodeRefs, type NodeStore } from "./storage"
 import type { JSONValue } from "./utils"
 
@@ -11,35 +9,46 @@ export enum WorksheetMode {
   ViewingFeedback = "viewing-feedback",
 }
 
-export interface Worksheet<Content extends StoredValue> {
+export interface Worksheet<
+  Content extends StoredValue,
+  Answers extends StoredValue,
+  Feedback extends StoredValue,
+> {
   content: Content
-  answers: StoredRecord<boolean, StoredValueOf<ReturnType<typeof boolean>>>
-  feedback: StoredRecord<boolean, StoredValueOf<ReturnType<typeof boolean>>>
+  answers: Answers
+  feedback: Feedback
 }
 
 export function openWorksheet<
   ContentSnapshot extends JSONValue,
   Content extends StoredValue<ContentSnapshot>,
   ContentKind extends NodeKind,
+  AnswersSnapshot extends JSONValue,
+  Answers extends StoredValue<AnswersSnapshot>,
+  AnswersKind extends NodeKind,
+  FeedbackSnapshot extends JSONValue,
+  Feedback extends StoredValue<FeedbackSnapshot>,
+  FeedbackKind extends NodeKind,
   Refs extends NodeRefs,
 >({
   mode,
   store,
   contentSchema,
+  answersSchema,
+  feedbackSchema,
   initialSnapshot,
 }: {
   mode: WorksheetMode
   store: NodeStore<Refs>
   contentSchema: Schema<ContentSnapshot, Content, ContentKind>
+  answersSchema: Schema<AnswersSnapshot, Answers, AnswersKind>
+  feedbackSchema: Schema<FeedbackSnapshot, Feedback, FeedbackKind>
   initialSnapshot: {
     content: ContentSnapshot
-    answers: Record<string, boolean>
-    feedback: Record<string, boolean>
+    answers: AnswersSnapshot
+    feedback: FeedbackSnapshot
   }
-}): Worksheet<Content> {
-  const answersSchema = record(boolean())
-  const feedbackSchema = record(boolean())
-
+}): Worksheet<Content, Answers, Feedback> {
   const content =
     mode === WorksheetMode.EditingContent
       ? openRoot(store, contentSchema, initialSnapshot.content)
