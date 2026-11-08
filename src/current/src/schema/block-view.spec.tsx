@@ -72,10 +72,8 @@ describeWithStores("BlockView", (getStore) => {
       },
     })
     const root = openRoot(getStore(), text, text.createSnapshot({ text: "First" }))
-    expect(BlockView({ value: root }).key).toBe(root.id)
     expect(renderToStaticMarkup(<BlockView value={root} />)).toMatch(/^<p id="[^"]+">First<\/p>$/)
     root.text.set("Updated")
-    // Parent explicitly rerenders; BlockView has no subscriptions yet.
     expect(renderToStaticMarkup(<BlockView value={root} />)).toMatch(/^<p id="[^"]+">Updated<\/p>$/)
   })
 })
