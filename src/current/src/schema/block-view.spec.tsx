@@ -7,7 +7,7 @@ import { createRoot } from "react-dom/client"
 import { renderToStaticMarkup } from "react-dom/server"
 
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
-import { array, blockUnion, object, optional, string, block, BlockView } from "./index.ts"
+import { array, blockUnion, string, block, BlockView } from "./index.ts"
 import { createRoot as createStoredRoot } from "./root.ts"
 
 describeWithStores("BlockView", (getStore) => {
@@ -39,18 +39,17 @@ describeWithStores("BlockView", (getStore) => {
         },
       })
       const initial = text.createSnapshot({ text: "First" })
-      const root = createStoredRoot(getStore(), object({ child: optional(blockUnion([text])) }), {
-        child: initial,
-      })
+      const root = createStoredRoot(getStore(), array(blockUnion([text])), [initial])
       const render = () =>
-        flushSync(() => reactRoot.render(<BlockView value={root.field("child")!} />))
+        flushSync(() => reactRoot.render(<BlockView value={root.children()[0]!} />))
       render()
       expect(host.textContent).toBe(`${initial.id}:First`)
-      root.field("child")!.field("text").set("Edited")
+      root.children()[0]!.field("text").set("Edited")
       render()
       expect(host.textContent).toBe(`${initial.id}:Edited`)
       const replacement = text.createSnapshot({ text: "Replacement" })
-      root.setOptional("child", replacement)
+      root.remove(0)
+      root.insert(0, replacement)
       render()
       expect(host.textContent).toBe(`${replacement.id}:Replacement`)
     } finally {

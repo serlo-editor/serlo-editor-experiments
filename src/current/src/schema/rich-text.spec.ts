@@ -4,7 +4,7 @@ import { defineNodeSpec } from "prosekit/core"
 
 import { richText as definition, type RichTextJSON } from "../rich-text/index.ts"
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
-import { array, object, optional, richText } from "./index.ts"
+import { array, object, richText } from "./index.ts"
 import { createRoot } from "./root.ts"
 
 const options = { definition: definition.inline({ marks: { bold: true } }) }
@@ -66,12 +66,9 @@ describeWithStores("rich-text schemas", (getStore) => {
     expect(editor.schema.marks.bold).toBeDefined()
   })
 
-  test("supports arrays, optional fields, and stable identities through sibling edits", () => {
+  test("supports arrays and stable identities through sibling edits", () => {
     const store = getStore()
-    const schema = object({
-      items: array(richText(options)),
-      note: optional(richText(options)),
-    })
+    const schema = object({ items: array(richText(options)) })
     const document = createRoot(store, schema, { items: [content("Kept")] })
     const items = document.field("items")
     const original = items.children()[0]!
@@ -82,10 +79,6 @@ describeWithStores("rich-text schemas", (getStore) => {
     items.remove(0)
     expect(items.children()[0]!.getEditor()).toBe(original.getEditor())
 
-    document.setOptional("note", content("Note"))
-    expect(document.field("note")?.snapshot()).toEqual(content("Note"))
-    expect(document.snapshot()).toEqual({ items: [content("Kept")], note: content("Note") })
-    document.removeOptional("note")
     expect(document.snapshot()).toEqual({ items: [content("Kept")] })
   })
 

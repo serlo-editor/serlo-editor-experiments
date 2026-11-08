@@ -2,7 +2,7 @@ import { expect, test } from "bun:test"
 
 import { richText as definition } from "../rich-text/index.ts"
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
-import { object, optional, richText, string, array, boolean, block } from "./index.ts"
+import { object, richText, string, array, boolean, block } from "./index.ts"
 import { createRoot } from "./root.ts"
 import type { SnapshotOf } from "./types.ts"
 
@@ -12,7 +12,7 @@ function choice() {
     fields: {
       question: string(),
       answers: array(object({ text: string(), correct: boolean() })),
-      explanation: optional(string()),
+      explanation: string(),
     },
     render({ value }) {
       return value.field("question").get() satisfies string
@@ -21,7 +21,7 @@ function choice() {
 }
 
 function choiceFields(question = "Which answer?") {
-  return { question, answers: [{ text: "First", correct: true }] }
+  return { question, answers: [{ text: "First", correct: true }], explanation: "Because" }
 }
 
 describeWithStores("block schemas", (getStore) => {
@@ -47,9 +47,8 @@ describeWithStores("block schemas", (getStore) => {
     expect(value.definition).toBe(blockDefinition)
     expect(value.snapshot()).toEqual(initial)
     expect(value.field("question").get() satisfies string).toBe("Which answer?")
-    expect(value.field("explanation")).toBeUndefined()
+    expect(value.field("explanation").get()).toBe("Because")
     value.field("question").set("Updated")
-    value.setOptional("explanation", "Because")
     expect(document.snapshot()).toEqual({
       ...initial,
       question: "Updated",
@@ -72,10 +71,6 @@ describeWithStores("block schemas", (getStore) => {
       // @ts-expect-error Metadata is read through properties, not field values.
       value.field("id")
     }).toThrow("Unknown field: id.")
-    expect(() => {
-      // @ts-expect-error Metadata cannot be set as an optional content field.
-      value.setOptional("type", "forensic")
-    }).toThrow("Unknown field: type.")
 
     // @ts-expect-error Snapshot retains literal discriminator.
     const wrongType: SnapshotOf<typeof blockDefinition> = { ...initial, type: "forensic" }

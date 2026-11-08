@@ -25,8 +25,8 @@ drop-in replacement. Remaining integration work is tracked in `tasks/`.
 | `src/test-utils/`         | Shared tests against both storage implementations           |
 | `src/utils/`              | JSON types, guards, and branded types                       |
 
-Schemas currently support strings, numbers, booleans, arrays, objects, optional
-object fields, rich text, blocks, and explicit block unions.
+Schemas currently support strings, numbers, booleans, arrays, objects, rich text,
+blocks, and explicit block unions.
 `createDocument()` creates and attaches a root when store has none;
 otherwise it binds existing root and ignores supplied initial snapshot. Stored
 values read and edit content and produce snapshots.
@@ -151,9 +151,9 @@ synchronization retain identity. `id` and `type` cannot be edited through stored
 names. Stored `type` chooses the matching schema and local renderer; returned
 stored values form a discriminated union. No global renderer registry is used.
 
-Edit object fields through child stored values. Optional fields support `setOptional()`
-and `removeOptional()`; arrays support `insert()` and `remove()`. Direct replacement
-of required fields and atomic array replacement are not provided.
+Edit object fields through child stored values. Arrays support `insert()` and
+`remove()`. Direct replacement of object fields and atomic array replacement
+are not provided.
 
 `definition.createSnapshot()` only builds snapshots; field handling remains with existing schemas
 when content is stored. Block creation checks IDs, type discriminators, and unknown

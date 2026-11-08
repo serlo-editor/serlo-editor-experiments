@@ -3,34 +3,13 @@ import type { AnySchema, Schema, SnapshotOf, StoredValue, StoredValueOf } from "
 export interface StoredObject<Schemas extends SchemaMap> extends StoredValue<
   ObjectSnapshot<Schemas>
 > {
-  field<Key extends keyof Schemas & string>(key: Key): FieldValue<Schemas[Key]>
-  setOptional<Key extends OptionalKeys<Schemas> & string>(
-    key: Key,
-    value: SnapshotOf<ChildSchema<Schemas[Key]>>,
-  ): void
-  removeOptional<Key extends OptionalKeys<Schemas> & string>(key: Key): void
+  field<Key extends keyof Schemas & string>(key: Key): StoredValueOf<Schemas[Key]>
 }
 
-export type SchemaMap = Readonly<Record<string, AnySchema | OptionalField<AnySchema>>>
-
-interface OptionalField<Child extends AnySchema> {
-  readonly optional: true
-  readonly schema: Child
-}
-
-type ChildSchema<Field> = Field extends OptionalField<infer Child> ? Child : Field
-
-type FieldValue<Field> =
-  Field extends OptionalField<infer Child> ? StoredValueOf<Child> | undefined : StoredValueOf<Field>
-
-type OptionalKeys<Schemas extends SchemaMap> = {
-  [Key in keyof Schemas]-?: Schemas[Key] extends OptionalField<AnySchema> ? Key : never
-}[keyof Schemas]
+export type SchemaMap = Readonly<Record<string, AnySchema>>
 
 export type ObjectSnapshot<Schemas extends SchemaMap> = {
-  readonly [Key in Exclude<keyof Schemas, OptionalKeys<Schemas>>]: SnapshotOf<Schemas[Key]>
-} & {
-  readonly [Key in OptionalKeys<Schemas>]?: SnapshotOf<ChildSchema<Schemas[Key]>>
+  readonly [Key in keyof Schemas]: SnapshotOf<Schemas[Key]>
 }
 
 export function object<Schemas extends SchemaMap>(
@@ -39,80 +18,41 @@ export function object<Schemas extends SchemaMap>(
   return {
     create(store, snapshot) {
       const fields = Object.fromEntries(
-        Object.entries(schemas).flatMap(([key, definition]) => {
+        Object.entries(schemas).map(([key, schema]) => {
           if (!Object.hasOwn(snapshot, key)) {
-            if ("optional" in definition) return []
             throw new TypeError(`Missing required field: ${key}.`)
           }
           const value = snapshot[key as keyof typeof snapshot]
           if (value === undefined) {
             throw new TypeError(`Undefined field: ${key}.`)
           }
-          const schema = "optional" in definition ? definition.schema : definition
-          return [[key, schema.create(store, value)]]
+          return [key, schema.create(store, value)]
         }),
       )
       return store.map.create(fields)
     },
 
     bind(store, ref) {
-      const definitionOf = (key: string) => {
+      const field = <Key extends keyof Schemas & string>(key: Key): StoredValueOf<Schemas[Key]> => {
         if (!Object.hasOwn(schemas, key)) {
           throw new TypeError(`Unknown field: ${key}.`)
         }
-        return schemas[key]!
-      }
-
-      const optionalSchema = (key: string) => {
-        const definition = definitionOf(key)
-        if (!("optional" in definition)) {
-          throw new TypeError(`Field is not optional: ${key}.`)
-        }
-        return definition.schema
-      }
-
-      const field = <Key extends keyof Schemas & string>(key: Key): FieldValue<Schemas[Key]> => {
-        const definition = definitionOf(key)
         const childRef = store.map.getField(ref, key)
         if (childRef === undefined) {
-          if ("optional" in definition) return undefined as FieldValue<Schemas[Key]>
           throw new TypeError(`Missing required field: ${key}.`)
         }
-        const schema = "optional" in definition ? definition.schema : definition
-        return schema.bind(store, childRef) as FieldValue<Schemas[Key]>
+        return schemas[key]!.bind(store, childRef) as StoredValueOf<Schemas[Key]>
       }
 
       return {
         field,
 
-        setOptional(key, value) {
-          const schema = optionalSchema(key)
-          if (value === undefined) {
-            throw new TypeError(`Undefined field: ${key}.`)
-          }
-          const childRef = schema.create(store, value)
-          store.transact((write) => write.map.set(ref, key, childRef))
-        },
-
-        removeOptional(key) {
-          optionalSchema(key)
-          store.transact((write) => write.map.remove(ref, key))
-        },
-
         snapshot() {
           return Object.fromEntries(
-            Object.keys(schemas).flatMap((key) => {
-              const child = field(key)
-              return child === undefined ? [] : [[key, (child as StoredValue<any>).snapshot()]]
-            }),
+            Object.keys(schemas).map((key) => [key, field(key).snapshot()]),
           ) as ObjectSnapshot<Schemas>
         },
       }
     },
   }
-}
-
-/** Marks an object field as optional; absent fields have no storage entry. */
-export function optional<Child extends AnySchema>(schema: Child): OptionalField<Child> {
-  return { optional: true, schema }
 }

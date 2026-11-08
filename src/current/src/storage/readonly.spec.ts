@@ -4,7 +4,7 @@ import { defineMarkSpec } from "prosekit/core"
 import { EditorState, TextSelection } from "prosekit/pm/state"
 
 import { richText as definition, type RichTextJSON } from "../rich-text/index.ts"
-import { array, object, optional, richText, string } from "../schema/index.ts"
+import { array, object, richText, string } from "../schema/index.ts"
 import { createRoot } from "../schema/root.ts"
 import type { JSONValue } from "../utils/index.ts"
 import { ReadonlyNodeStore } from "./index.ts"
@@ -136,21 +136,22 @@ test("closes failed initialization and permits retrying", () => {
 
 test("schema stored values read snapshots but cannot mutate content", () => {
   const store = new ReadonlyNodeStore()
-  const schema = object({ title: string(), items: array(string()), note: optional(string()) })
+  const schema = object({ title: string(), items: array(string()), note: string() })
   const initial = { title: "Title", items: ["First"], note: "Note" }
   const document = createRoot(store, schema, initial)
   for (const operation of [
     () => document.field("title").set("Changed"),
     () => document.field("items").insert(0, "Added"),
     () => document.field("items").remove(0),
-    () => document.setOptional("note", "Changed"),
-    () => document.removeOptional("note"),
+    () => document.field("note").set("Changed"),
   ])
     expect(operation).toThrow("Storage is read-only.")
   const snapshot = document.snapshot()
   Reflect.set(snapshot.items, "0", "Outside mutation")
   expect(document.snapshot()).toEqual(initial)
-  expect(createRoot(store, schema, { title: "Ignored", items: [] }).snapshot()).toEqual(initial)
+  expect(
+    createRoot(store, schema, { title: "Ignored", items: [], note: "Ignored" }).snapshot(),
+  ).toEqual(initial)
 })
 
 test("immutable stores keep a constant revision and never notify", () => {

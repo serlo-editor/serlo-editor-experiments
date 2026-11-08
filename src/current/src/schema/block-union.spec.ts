@@ -5,7 +5,7 @@ import * as Y from "yjs"
 
 import { YjsNodeStore } from "../storage/index.ts"
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
-import { array, boolean, blockUnion, object, optional, string, block } from "./index.ts"
+import { array, boolean, blockUnion, object, string, block } from "./index.ts"
 import { createRoot } from "./root.ts"
 import type { StoredValueOf } from "./types.ts"
 
@@ -15,7 +15,7 @@ function definitions() {
     fields: {
       question: string(),
       answers: array(object({ text: string(), correct: boolean() })),
-      explanation: optional(string()),
+      explanation: string(),
     },
     render({ value }) {
       return value.field("question").get() satisfies string
@@ -30,16 +30,16 @@ function definitions() {
 }
 
 function choiceFields(question = "Which answer?") {
-  return { question, answers: [{ text: "First", correct: true }] }
+  return { question, answers: [{ text: "First", correct: true }], explanation: "Because" }
 }
 
 describeWithStores("block unions", (getStore) => {
-  test("narrow stored values and support optional-field operations", () => {
+  test("narrow stored values in object fields", () => {
     const store = getStore()
-    const { choice, forensic, exercise } = definitions()
+    const { choice, exercise } = definitions()
     const initial = choice.createSnapshot(choiceFields())
     const note = choice.createSnapshot(choiceFields("Note"))
-    const schema = object({ exercise, note: optional(exercise) })
+    const schema = object({ exercise, note: exercise })
     const root = createRoot(store, schema, { exercise: initial, note })
     const required = root.field("exercise")
     expect(required.definition).toBe(choice)
@@ -52,28 +52,12 @@ describeWithStores("block unions", (getStore) => {
     } else {
       throw new Error("Expected choice.")
     }
-    const oldNote = root.field("note")!
-    const replacement = forensic.createSnapshot({ caseId: "case-42" })
-    root.setOptional("note", replacement)
-    const current = root.field("note")!
-    expect(current.id).toBe(replacement.id)
-    expect(current.id).not.toBe(oldNote.id)
-    expect(oldNote.type).toBe("choice")
-    expect(current.definition).toBe(forensic)
-    if (current.type === "forensic") {
-      expect(current.field("caseId").get() satisfies string).toBe("case-42")
-    }
-    expect(root.field("exercise").id).toBe(initial.id)
-
+    const current = root.field("note")
+    expect(current.id).toBe(note.id)
+    expect(current.definition).toBe(choice)
     const typed: StoredValueOf<typeof exercise> = current
-    expect(typed.snapshot()).toEqual(replacement)
-    const excluded = block({ type: "excluded", fields: {}, render: () => null })
-    expect(() => {
-      // @ts-expect-error Only explicitly allowed block types can occupy this child field.
-      root.setOptional("note", excluded.createSnapshot({}))
-    }).toThrow("Unknown child block type: excluded.")
-    root.removeOptional("note")
-    expect(root.field("note")).toBeUndefined()
+    expect(typed.snapshot()).toEqual(note)
+    expect(root.field("exercise").id).toBe(initial.id)
   })
 
   test("sibling insertions and removals preserve unchanged IDs", () => {
