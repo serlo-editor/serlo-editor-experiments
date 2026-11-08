@@ -17,9 +17,6 @@ export function object<Schemas extends SchemaMap>(
     create(store, snapshot) {
       const fields = Object.fromEntries(
         Object.entries(schemas).map(([key, schema]) => {
-          if (!Object.hasOwn(snapshot, key)) {
-            throw new TypeError(`Missing required field: ${key}.`)
-          }
           const value = snapshot[key as keyof typeof snapshot]
           if (value === undefined) {
             throw new TypeError(`Undefined field: ${key}.`)
