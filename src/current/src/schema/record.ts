@@ -1,26 +1,19 @@
-import type { NodeKind } from "../storage/index.ts"
 import { isObject } from "../utils/guard.ts"
-import type { JSONValue } from "../utils/index.ts"
-import type { Schema, StoredValue } from "./types.ts"
+import type { AnySchema, Schema, SnapshotOf, StoredValue, StoredValueOf } from "./types.ts"
 
-export interface StoredRecord<
-  Item extends JSONValue,
-  Child extends StoredValue<Item>,
-> extends StoredValue<Readonly<Record<string, Item>>> {
-  get(key: string): Child | undefined
+export interface StoredRecord<ChildSchema extends AnySchema> extends StoredValue<
+  Readonly<Record<string, SnapshotOf<ChildSchema>>>
+> {
+  get(key: string): StoredValueOf<ChildSchema> | undefined
   /** Replaces the child reference; previously bound children may become invalid. */
-  set(key: string, snapshot: Item): void
+  set(key: string, snapshot: SnapshotOf<ChildSchema>): void
   remove(key: string): void
 }
 
 /** Dynamic string keys sharing one child schema. */
-export function record<
-  Item extends JSONValue,
-  Child extends StoredValue<Item>,
-  ChildKind extends NodeKind,
->(
-  childSchema: Schema<Item, Child, ChildKind>,
-): Schema<Readonly<Record<string, Item>>, StoredRecord<Item, Child>, "map"> {
+export function record<ChildSchema extends AnySchema>(
+  childSchema: ChildSchema,
+): Schema<Readonly<Record<string, SnapshotOf<ChildSchema>>>, StoredRecord<ChildSchema>, "map"> {
   return {
     create(store, snapshots) {
       if (!isObject(snapshots)) throw new TypeError("Expected record snapshot.")
