@@ -4,6 +4,7 @@ import { useWorksheet } from "../worksheet-context.ts"
 import type { WorksheetMode } from "../worksheet.ts"
 import { block, type BlockDefinition, type BlockFields, type StoredBlock } from "./block.ts"
 import {
+  isTaggedObject,
   taggedObject,
   type StoredTaggedObject,
   type TaggedFields,
@@ -44,10 +45,16 @@ export function exercise<
       const { mode, answers, feedback: feedbackRecord } = useWorksheet()
       const answerValue = answers.get(value.id)
       const feedbackValue = feedbackRecord.get(value.id)
+      if (answerValue !== undefined && !isTaggedObject(answerValue, answerSchema)) {
+        return <p role="alert">Antwort passt nicht zur Aufgabe.</p>
+      }
+      if (feedbackValue !== undefined && !isTaggedObject(feedbackValue, feedbackSchema)) {
+        return <p role="alert">Feedback passt nicht zur Aufgabe.</p>
+      }
       return createElement(render, {
         unit: value,
-        answer: answerValue as StoredTaggedObject<UnitType, AnswerFields> | undefined,
-        feedback: feedbackValue as StoredTaggedObject<UnitType, FeedbackFields> | undefined,
+        answer: answerValue,
+        feedback: feedbackValue,
         mode,
       })
     },

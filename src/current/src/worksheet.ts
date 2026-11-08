@@ -13,8 +13,12 @@ export enum WorksheetMode {
 
 export interface Worksheet<
   Content extends StoredValue = StoredValue,
-  Answers extends StoredRecord<TaggedObjectDefinition> = StoredRecord<TaggedObjectDefinition>,
-  Feedback extends StoredRecord<TaggedObjectDefinition> = StoredRecord<TaggedObjectDefinition>,
+  Answers extends StoredRecord<TaggedObjectDefinition<string, {}>> = StoredRecord<
+    TaggedObjectDefinition<string, {}>
+  >,
+  Feedback extends StoredRecord<TaggedObjectDefinition<string, {}>> = StoredRecord<
+    TaggedObjectDefinition<string, {}>
+  >,
 > {
   mode: WorksheetMode
   content: Content
