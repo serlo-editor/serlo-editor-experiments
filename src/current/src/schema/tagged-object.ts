@@ -23,7 +23,6 @@ export interface TaggedObjectDefinition<
   Fields extends TaggedFields = TaggedFields,
 > extends Schema<TaggedSnapshot<Type, Fields>, StoredTaggedObject<Type, Fields>, "map"> {
   readonly type: Type
-  readonly fields: Fields
 }
 
 export function isTaggedObject<Type extends string, Fields extends TaggedFields>(
@@ -44,9 +43,9 @@ export function taggedObject<const Type extends string, Fields extends TaggedFie
 
   const contentSchema = object(fields)
   const storageSchema = object({ ...fields, type: string() })
+
   return {
     type,
-    fields,
     create(store, snapshot) {
       if (!isObject(snapshot) || !Object.hasOwn(snapshot, "type") || snapshot.type !== type)
         throw new TypeError(`Expected object type: ${type}.`)
