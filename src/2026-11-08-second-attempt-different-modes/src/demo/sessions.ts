@@ -1,71 +1,52 @@
+import { Awareness } from "y-protocols/awareness"
 import * as Y from "yjs"
 
-import { Root, type RootSnapshot } from "../editor/blocks"
-import { feedbackText } from "../editor/blocks/shared/feedback"
-import { Answers, Feedback } from "../editor/responses"
-import type { Schema, StoredValue } from "../editor/schema/types"
-import { createDocumentSession } from "../editor/session"
-import type { NodeKind } from "../editor/storage"
-import type { JSONValue } from "../editor/utils"
+import { YjsNodeStore } from "../editor/storage"
 import { syncCDRTs } from "./sync-cdrts"
 
-export function createDemoSessions(snapshot: RootSnapshot) {
-  const content = createSessionPair(Root, snapshot)
-  const cleanups = [content.destroy]
-  const destroy = () => {
-    for (const cleanup of cleanups) cleanup()
-  }
-  try {
-    const answers = createSessionPair(Answers, {})
-    cleanups.push(answers.destroy)
-    const feedback = createSessionPair(Feedback, { overall: feedbackText(), exercises: {} })
-    cleanups.push(feedback.destroy)
-    return {
-      first: {
-        ...content.first,
-        content: content.first,
-        answers: answers.first,
-        feedback: feedback.first,
-      },
-      second: {
-        ...content.second,
-        content: content.second,
-        answers: answers.second,
-        feedback: feedback.second,
-      },
-      destroy,
-    }
-  } catch (error) {
-    destroy()
-    throw error
+export interface EditorSession {
+  name: string
+  color: string
+  doc: Y.Doc
+  awareness: Awareness
+  store: YjsNodeStore
+  destroy(): void
+}
+
+export interface DemoSessions {
+  first: EditorSession
+  second: EditorSession
+  destroy(): void
+}
+
+/** A fresh document per editor; synchronization starts before either editor opens its root. */
+export function createDemoSessions(): DemoSessions {
+  const first = createSession("Editor 1", "#2563eb")
+  const second = createSession("Editor 2", "#b45309")
+  const disconnect = syncCDRTs(first, second)
+  return {
+    first,
+    second,
+    destroy() {
+      disconnect()
+      first.destroy()
+      second.destroy()
+    },
   }
 }
 
-function createSessionPair<
-  Snapshot extends JSONValue,
-  Value extends StoredValue<Snapshot>,
-  Kind extends NodeKind,
->(schema: Schema<Snapshot, Value, Kind>, snapshot: Snapshot) {
-  const first = createDocumentSession({ name: "Editor 1", color: "#2563eb" }, schema, snapshot)
-  try {
-    const second = createDocumentSession(
-      { name: "Editor 2", color: "#b45309" },
-      schema,
-      snapshot,
-      Y.encodeStateAsUpdate(first.doc),
-    )
-    const disconnect = syncCDRTs(first, second)
-    return {
-      first,
-      second,
-      destroy() {
-        disconnect()
-        first.destroy()
-        second.destroy()
-      },
-    }
-  } catch (error) {
-    first.destroy()
-    throw error
+function createSession(name: string, color: string) {
+  const doc = new Y.Doc()
+  const awareness = new Awareness(doc)
+  awareness.setLocalStateField("user", { name, color })
+  return {
+    name,
+    color,
+    doc,
+    awareness,
+    store: new YjsNodeStore({ doc, awareness }),
+    destroy() {
+      doc.destroy()
+    },
   }
 }

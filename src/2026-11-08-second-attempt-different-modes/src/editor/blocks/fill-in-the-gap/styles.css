@@ -1,0 +1,37 @@
+.exercise--fill-blank > .editor-rich-text {
+  margin-top: var(--space-3);
+}
+
+.ProseMirror .gap-mark {
+  display: inline-block;
+  min-width: 3rem;
+  padding: 0.15rem 0.5rem;
+  margin: 0 0.15rem;
+  color: var(--color-accent);
+  background: var(--color-lavender);
+  border: 1px solid #b6bdeb;
+  border-radius: var(--radius-1);
+}
+
+.exercise__instructions {
+  margin: 1.5rem 0;
+}
+
+.preview-gap {
+  width: 8rem;
+  max-width: 100%;
+  min-height: 2.5rem;
+  padding: 0.35rem 0.5rem;
+  margin: 0.2rem 0.25rem;
+  vertical-align: baseline;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2);
+  box-shadow: var(--shadow-1);
+}
+.preview-gap:disabled {
+  opacity: 1;
+  color: var(--color-text);
+  background: var(--color-surface-subtle);
+}

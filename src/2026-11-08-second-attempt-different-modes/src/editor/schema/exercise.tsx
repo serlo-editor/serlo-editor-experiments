@@ -2,7 +2,7 @@ import { createElement, useEffect, useReducer, type ReactNode } from "react"
 
 import { ReadonlyNodeStore } from "../storage/index.ts"
 import { useWorksheet } from "../worksheet-context.ts"
-import { WorksheetMode } from "../worksheet.ts"
+import { WorksheetMode, type Worksheet } from "../worksheet.ts"
 import { block, type BlockFields, type StoredBlock } from "./block.ts"
 import { openRoot } from "./root.ts"
 import {
@@ -52,7 +52,7 @@ export function exercise<
   /** Initializes missing feedback when giving feedback; undefined uses the schema default. */
   grade: (
     unit: StoredBlock<UnitType, UnitFields>,
-    answer: StoredTaggedObject<UnitType, AnswerFields>,
+    answer: StoredTaggedObject<UnitType, AnswerFields> | undefined,
   ) => TaggedSnapshot<UnitType, FeedbackFields> | null
   render: (
     props: ExerciseRenderProps<UnitType, UnitFields, AnswerFields, FeedbackFields>,
@@ -63,7 +63,8 @@ export function exercise<
   const unitBlock = block({
     ...unit,
     render: function ExerciseView({ value }) {
-      const { mode, answers, feedback: feedbackRecord } = useWorksheet()
+      const { mode, answers, feedback } = useWorksheet()
+      const feedbackRecord: Worksheet["answers"] = "get" in feedback ? feedback : feedback.exercises
       const [, rerender] = useReducer((revision: number) => revision + 1, 0)
       const answerValue = mode === WorksheetMode.EditingContent ? undefined : answers.get(value.id)
       const feedbackValue =
@@ -73,8 +74,7 @@ export function exercise<
       const defaultFeedback =
         mode === WorksheetMode.GivingFeedback &&
         feedbackValue === undefined &&
-        answerValue !== undefined &&
-        isTaggedObject(answerSchema, answerValue)
+        (answerValue === undefined || isTaggedObject(answerSchema, answerValue))
           ? (grade(value, answerValue) ?? feedbackSchema.defaultValue())
           : undefined
 
@@ -88,8 +88,6 @@ export function exercise<
           defaultFeedback !== undefined &&
           feedbackRecord.get(value.id) === undefined
         ) {
-          const storedAnswer = answers.get(value.id)
-          if (storedAnswer === undefined || !isTaggedObject(answerSchema, storedAnswer)) return
           feedbackRecord.set(value.id, defaultFeedback)
           rerender()
         }
@@ -122,12 +120,13 @@ export function exercise<
         })
       }
 
-      if (answerValue === undefined) throw new Error("Antwort fehlt zur Aufgabe.")
+      const shownAnswer =
+        answerValue ?? openRoot(new ReadonlyNodeStore(), answerSchema, answerSchema.defaultValue())
 
       return createElement(render, {
         unit: value,
         mode,
-        answer: answerValue,
+        answer: shownAnswer,
         feedback:
           feedbackValue ??
           openRoot(

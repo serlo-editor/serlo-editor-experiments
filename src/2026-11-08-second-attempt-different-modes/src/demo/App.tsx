@@ -1,15 +1,14 @@
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState, useSyncExternalStore, type RefObject } from "react"
 
 import {
-  createWorksheet,
   Editor,
-  prepareWorksheetMode,
   WorksheetMode,
-  type Worksheet,
+  initialWorksheetSnapshot,
+  type EditorHandle,
+  type WorksheetSnapshot,
 } from "../editor"
-import { useStorage } from "../editor/use-storage"
 import { initialContent } from "./initial-content"
-import { createDemoSessions } from "./sessions"
+import { createDemoSessions, type DemoSessions, type EditorSession } from "./sessions"
 
 const modes: { id: WorksheetMode; label: string }[] = [
   { id: WorksheetMode.EditingContent, label: "1. Inhalt bearbeiten" },
@@ -18,27 +17,29 @@ const modes: { id: WorksheetMode; label: string }[] = [
   { id: WorksheetMode.ViewingFeedback, label: "4. Feedback ansehen" },
 ]
 
+interface Workspace {
+  sessions: DemoSessions
+  mode: WorksheetMode
+  snapshot: WorksheetSnapshot
+}
+
 export default function App() {
-  const [workspace, setWorkspace] = useState<{
-    sessions: ReturnType<typeof createDemoSessions>
-    first: Worksheet
-    second: Worksheet
-  } | null>(null)
+  const [workspace, setWorkspace] = useState<Workspace>(() => ({
+    sessions: createDemoSessions(),
+    mode: WorksheetMode.EditingContent,
+    snapshot: initialWorksheetSnapshot(initialContent),
+  }))
+  const firstRef = useRef<EditorHandle>(null)
+  const secondRef = useRef<EditorHandle>(null)
   const [rightPane, setRightPane] = useState<"documents" | "collaboration">("collaboration")
+  useEffect(() => () => workspace.sessions.destroy(), [workspace.sessions])
 
-  useEffect(() => {
-    const sessions = createDemoSessions(initialContent)
-    setWorkspace({
-      sessions,
-      first: createWorksheet(WorksheetMode.EditingContent, sessions.first),
-      second: createWorksheet(WorksheetMode.EditingContent, sessions.second),
-    })
-    return () => sessions.destroy()
-  }, [])
-
-  if (!workspace) return <main className="app">Loading...</main>
-  const { sessions, first: worksheet, second } = workspace
-  const mode = worksheet.mode
+  const { sessions, mode, snapshot } = workspace
+  function switchMode(next: WorksheetMode) {
+    if (next === mode) return
+    const current = firstRef.current?.snapshot() ?? snapshot
+    setWorkspace({ sessions: createDemoSessions(), mode: next, snapshot: current })
+  }
 
   return (
     <main className="app">
@@ -51,15 +52,7 @@ export default function App() {
                 key={item.id}
                 type="button"
                 aria-pressed={mode === item.id}
-                onClick={() => {
-                  if (item.id === mode) return
-                  prepareWorksheetMode(mode, item.id, sessions.first)
-                  setWorkspace({
-                    sessions,
-                    first: createWorksheet(item.id, sessions.first),
-                    second: createWorksheet(item.id, sessions.second),
-                  })
-                }}
+                onClick={() => switchMode(item.id)}
               >
                 {item.label}
               </button>
@@ -87,7 +80,10 @@ export default function App() {
         <section className="app__authoring" aria-label="Aktiver Arbeitsbereich">
           <Editor
             key={mode}
-            worksheet={worksheet}
+            ref={firstRef}
+            mode={mode}
+            snapshot={snapshot}
+            store={sessions.first.store}
             name={sessions.first.name}
             color={sessions.first.color}
           />
@@ -103,44 +99,60 @@ export default function App() {
           <div hidden={rightPane !== "collaboration"}>
             <Editor
               key={mode}
-              worksheet={second}
+              ref={secondRef}
+              mode={mode}
+              snapshot={snapshot}
+              store={sessions.second.store}
               name={sessions.second.name}
               color={sessions.second.color}
             />
           </div>
-          <div hidden={rightPane !== "documents"}>
-            <Documents worksheet={worksheet} />
-          </div>
+          {rightPane === "documents" && (
+            <Documents mode={mode} snapshot={snapshot} editor={firstRef} session={sessions.first} />
+          )}
         </aside>
       </div>
     </main>
   )
 }
 
-function Documents({ worksheet }: { worksheet: Worksheet }) {
-  useStorage(worksheet.content.store)
-  useStorage(worksheet.answers.store)
-  useStorage(worksheet.feedback.store)
+function Documents({
+  mode,
+  snapshot,
+  editor,
+  session,
+}: {
+  mode: WorksheetMode
+  snapshot: WorksheetSnapshot
+  editor: RefObject<EditorHandle | null>
+  session: EditorSession
+}) {
+  useSyncExternalStore(
+    (listener) => session.store.subscribe(listener),
+    () => session.store.getRevision(),
+  )
+  const current = editor.current?.snapshot() ?? snapshot
   return (
     <section className="documents">
-      <h2>Unabhängige Dokumente</h2>
-      <p>Inhalt, Antworten und Feedback werden getrennt gespeichert.</p>
+      <h2>Arbeitsblatt-Snapshot</h2>
+      <p>
+        Jeder Modus erstellt zwei neue, synchronisierte Yjs-Editoren aus dem aktuellen Snapshot.
+      </p>
       <dl className="document-status">
         <dt>Inhalt</dt>
-        <dd>{documentStatus(worksheet.mode === WorksheetMode.EditingContent)}</dd>
+        <dd>{documentStatus(mode === WorksheetMode.EditingContent)}</dd>
         <dt>Antworten</dt>
-        <dd>{documentStatus(worksheet.mode === WorksheetMode.Answering)}</dd>
+        <dd>{documentStatus(mode === WorksheetMode.Answering)}</dd>
         <dt>Feedback</dt>
-        <dd>{documentStatus(worksheet.mode === WorksheetMode.GivingFeedback)}</dd>
+        <dd>{documentStatus(mode === WorksheetMode.GivingFeedback)}</dd>
       </dl>
       <p className="documents__note">
-        Alle drei Dokumente synchronisieren unabhängig über Yjs. Schreibgeschützte Ansichten bleiben
-        live aktuell. Beim Moduswechsel werden Daten nachfolgender Modi gelöscht: zurück zum Inhalt
-        löscht Antworten und Feedback, zurück zu den Aufgaben löscht Feedback.
+        Nur das Dokument des aktuellen Modus ist bearbeitbar. Beim Wechsel bleiben alle drei
+        Dokumente erhalten; die anderen sind unveränderliche Snapshots.
       </p>
-      <DocumentJSON label="Inhalt" document={worksheet.content.document} />
-      <DocumentJSON label="Antworten" document={worksheet.answers.document} />
-      <DocumentJSON label="Feedback" document={worksheet.feedback.document} />
+      <DocumentJSON label="Inhalt" value={current.content} />
+      <DocumentJSON label="Antworten" value={current.answers} />
+      <DocumentJSON label="Feedback" value={current.feedback} />
       <p className="documents__note">
         Debug-Ansicht enthält auch Lösungen. Schreibschutz ist keine Zugriffskontrolle.
       </p>
@@ -149,14 +161,14 @@ function Documents({ worksheet }: { worksheet: Worksheet }) {
 }
 
 function documentStatus(editable: boolean) {
-  return editable ? "Yjs · bearbeitbar" : "Live-Ansicht · schreibgeschützt"
+  return editable ? "Yjs · bearbeitbar" : "Snapshot · schreibgeschützt"
 }
 
-function DocumentJSON({ label, document }: { label: string; document: { snapshot(): unknown } }) {
+function DocumentJSON({ label, value }: { label: string; value: unknown }) {
   return (
     <details className="document-json">
       <summary>{label} · JSON</summary>
-      <pre>{JSON.stringify(document.snapshot(), null, 2)}</pre>
+      <pre>{JSON.stringify(value, null, 2)}</pre>
     </details>
   )
 }

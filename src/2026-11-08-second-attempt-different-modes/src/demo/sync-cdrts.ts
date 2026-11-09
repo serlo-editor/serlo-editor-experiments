@@ -1,7 +1,7 @@
 import { applyAwarenessUpdate, encodeAwarenessUpdate } from "y-protocols/awareness"
 import * as Y from "yjs"
 
-import type { EditorSession } from "../editor"
+import type { EditorSession } from "./sessions"
 
 /** Explicit transport origin forwards null-origin writes, but never echoes received updates. */
 export function syncCDRTs(

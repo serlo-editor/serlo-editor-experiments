@@ -3,7 +3,7 @@ import { mkdir, mkdtemp, rm } from "node:fs/promises"
 import { join } from "node:path"
 import { pathToFileURL } from "node:url"
 
-// Snap browsers have a private /tmp; use the shared project directory instead.
+// Build inside the project so the browser can load the bundled file URL.
 const dist = join(import.meta.dir, "../dist")
 await mkdir(dist, { recursive: true })
 const directory = await mkdtemp(join(dist, "worksheet-e2e-"))
@@ -29,7 +29,10 @@ beforeEach(async () => {
   view = new Bun.WebView({
     width: 1440,
     height: 1000,
-    backend: process.platform === "darwin" ? "webkit" : { type: "chrome", url: false },
+    backend:
+      process.platform === "darwin"
+        ? "webkit"
+        : { type: "chrome", url: false, argv: ["--no-sandbox", "--disable-dev-shm-usage"] },
     console,
   })
   await view.navigate(pathToFileURL(join(directory, "index.html")).href)
@@ -122,7 +125,7 @@ test("grades answers, syncs formatted feedback, and preserves overrides across v
   ])
 }, 30_000)
 
-test("mode switches clear only downstream documents on both peers", async () => {
+test("mode switches recreate editors without clearing answers or feedback", async () => {
   await click(`${modes} button:nth-child(2)`)
   await typeInto(`${first} .preview-gap`, "Paris")
   await click(`${second} .choice-card:nth-child(2) input`)
@@ -143,13 +146,15 @@ test("mode switches clear only downstream documents on both peers", async () => 
   ])
 
   await click(`${modes} button:nth-child(4)`)
+  await expectResults(["incorrect", "correct", "incorrect", "correct"])
+  await expectElements(".exercise--fill-blank .feedback-card .preview-rich-text", "textContent", [
+    "Gut gemacht!",
+    "Gut gemacht!",
+  ])
   await click(`${modes} button:nth-child(2)`)
   await expectElements(".preview-gap", "value", ["Paris", "Paris"])
   await expectElements(".choice-card:nth-child(2) input", "checked", [true, true])
   await expectElements(".feedback-card", "textContent", [])
-  await click(`${modes} button:nth-child(3)`)
-  await expectResults(["correct", "correct", "correct", "correct"])
-  await expectElements(".feedback-comment .ProseMirror", "textContent", Array(6).fill(""))
 
   await click(`${modes} button:first-child`)
   await expectElements(".editor-content > .ProseMirror", "textContent", [
@@ -157,11 +162,18 @@ test("mode switches clear only downstream documents on both peers", async () => 
     "This is an example of educational content with various types of items.",
   ])
   await click(`${modes} button:nth-child(2)`)
-  await expectElements(".preview-gap", "value", ["", ""])
-  await expectElements(".choice-card input", "checked", Array(6).fill(false))
+  await expectElements(".preview-gap", "value", ["Paris", "Paris"])
+  await expectElements(".choice-card:nth-child(2) input", "checked", [true, true])
   await click(`${modes} button:nth-child(3)`)
-  await expectResults(["incorrect", "incorrect", "incorrect", "incorrect"])
-  await expectElements(".feedback-comment .ProseMirror", "textContent", Array(6).fill(""))
+  await expectResults(["incorrect", "correct", "incorrect", "correct"])
+  await expectElements(".exercise--fill-blank .ProseMirror", "textContent", [
+    "Gut gemacht!",
+    "Gut gemacht!",
+  ])
+  await expectElements('[aria-label="Gesamtfeedback"] .ProseMirror', "textContent", [
+    "Weiter so.",
+    "Weiter so.",
+  ])
 }, 30_000)
 
 async function typeInto(selector: string, text: string) {

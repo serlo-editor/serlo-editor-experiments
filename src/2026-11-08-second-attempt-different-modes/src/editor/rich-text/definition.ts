@@ -104,10 +104,27 @@ function defineGap(): Extension {
   return union(
     defineMarkSpec({
       name: "gap",
-      parseDOM: [{ tag: 'span[data-gap="true"]' }],
-      toDOM: () => ["span", { class: "gap-mark", "data-gap": "true" }, 0],
+      attrs: { id: { default: null } },
+      parseDOM: [
+        {
+          tag: 'span[data-gap="true"]',
+          getAttrs: (element) => ({
+            id: element.getAttribute("data-gap-id") ?? crypto.randomUUID(),
+          }),
+        },
+      ],
+      toDOM: (mark) => [
+        "span",
+        { class: "gap-mark", "data-gap": "true", "data-gap-id": mark.attrs.id },
+        0,
+      ],
     }),
-    defineCommands({ toggleGap: () => toggleMark({ type: "gap" }) }),
-    defineKeymap({ "Mod-Alt-g": toggleMark({ type: "gap" }) }),
+    defineCommands({
+      toggleGap: () => toggleMark({ type: "gap", attrs: { id: crypto.randomUUID() } }),
+    }),
+    defineKeymap({
+      "Mod-Alt-g": (state, dispatch, view) =>
+        toggleMark({ type: "gap", attrs: { id: crypto.randomUUID() } })(state, dispatch, view),
+    }),
   )
 }

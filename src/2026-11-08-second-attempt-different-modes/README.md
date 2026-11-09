@@ -1,8 +1,8 @@
-# Worksheet modes with separate documents
+# Worksheet modes with reconstructed editors
 
-Reimplements `2026-10-24-designed-prototype-with-new-storage` with independent
-content, answer, and feedback documents. Storage/schema core comes from
-`2026-10-05-new-storage-for-prototype`. Source experiments remain unchanged.
+This experiment rebuilds the four-mode workflow from
+`2026-11-04-first-attempt-different-modes` on top of the copied `src/current/`
+schema and storage implementation. The earlier experiment remains unchanged.
 
 ## Run and check
 
@@ -12,146 +12,69 @@ bun run fix
 bun run build
 ```
 
-## Browser E2E tests
+## Browser E2E
+
+On this workstation, run the existing Bun.WebView E2E suite with the MS
+Playwright-installed headless shell (not the Playwright API):
 
 ```sh
-bun run test:e2e
+BUN_CHROME_PATH="$HOME/.cache/ms-playwright/chromium_headless_shell-1223/chrome-headless-shell-linux64/chrome-headless-shell" bun run test:e2e
 ```
 
-Requires Bun 1.4.2+ with experimental [`Bun.WebView`](https://bun.com/docs/runtime/webview).
-macOS uses system WebKit; Linux and Windows need Chrome, Chromium, Edge, or Brave.
-Set `BUN_CHROME_PATH` if Bun cannot find your browser.
+The Linux browser backend starts with `--no-sandbox` and
+`--disable-dev-shm-usage`. The test builds a bundled HTML fixture under `dist/`,
+opens fresh browser views, and removes the fixture afterward. Browser E2E runs
+separately from `bun test` and `bun run fix`.
 
-`e2e/worksheet.e2e.ts` builds self-contained HTML in a unique temporary directory
-under `dist/`, opens fresh browser views, and cleans up afterward. Fixtures stay
-inside the project because Snap browsers cannot see the host's `/tmp` directory.
-No dev server, fixed port, or new test dependency is needed. Tests use native
-clicks, typing, and key presses to cover:
+## Workflow
 
-- Collaborative content editing and answering, input focus, and document inspection.
-- Automatic grading, manual overrides, formatted comments, overall feedback, and read-only viewing.
-- Mode round trips, active-mode no-ops, and downstream resets on both Yjs peers.
+The two editors in the demo are synchronized Yjs peers. The right pane can
+instead display the three document snapshots as JSON.
 
-Run separately from `bun test` / `bun run fix`, which remain browser-independent.
+1. **Inhalt bearbeiten:** edit content, gaps, and correct choices.
+2. **Aufgaben lösen:** enter gap answers and select choices.
+3. **Feedback geben:** inspect automatic assessments, override grades, and
+   collaborate on formatted exercise comments and overall feedback.
+4. **Feedback ansehen:** inspect answers and feedback without editing them.
 
-## Try the workflow
+| Mode             | Content            | Answers            | Feedback           |
+| ---------------- | ------------------ | ------------------ | ------------------ |
+| Authoring        | Yjs writable       | Read-only snapshot | Read-only snapshot |
+| Answering        | Read-only snapshot | Yjs writable       | Read-only snapshot |
+| Adding feedback  | Read-only snapshot | Read-only snapshot | Yjs writable       |
+| Viewing feedback | Read-only snapshot | Read-only snapshot | Read-only snapshot |
 
-Every mode provides two synchronized Yjs peers. The right pane switches between
-collaboration and document JSON; both peers work on the same student's attempt.
+Every actual mode switch takes the current worksheet snapshot from the first
+editor, creates **two new editors** with new Yjs documents and stores, and
+initializes both from that snapshot. The peers synchronize within the active
+mode. Nothing is cleared when switching back to content or answers: content,
+answers, comments, manual grades, and overall feedback travel together. Clicking
+the active mode does nothing. A read-only document is an immutable snapshot,
+not a live projection of a previous Yjs document.
 
-1. **Inhalt bearbeiten:** edit rich text, mark gaps, and set correct choices.
-   Content and editor-scoped awareness synchronize through Yjs.
-2. **Aufgaben lösen:** fill gaps and choose answers together. Only the answer
-   document is writable; changes appear immediately in the other peer.
-3. **Feedback geben:** inspect answers and automatic right/wrong assessments.
-   Collaboratively override assessments and write rich-text comments and overall
-   feedback using the formatting toolbar. Only the feedback document is writable;
-   rich-text presence is scoped to the corresponding comment.
-4. **Feedback ansehen:** both peers view answers and formatted feedback with
-   every document read-only. All three documents remain available in every mode;
-   locked documents are live, immutable projections of their source.
+The `Editor` component receives `mode`, `snapshot`, and the Yjs `store`. It
+opens the worksheet with `openWorksheet()` using the copied storage/schema
+core. The current mode selects the only writable document; other documents
+use `ReadonlyNodeStore`. `EditorHandle.snapshot()` exposes the latest combined
+snapshot for the next mode switch. Content block IDs connect exercises to
+answer and feedback records. Gap and choice IDs connect responses to content.
 
-Mode switches keep the selected mode's data and all earlier data, but clear
-later documents on both peers:
+On first entry into feedback, missing feedback records receive automatic
+assessments. Re-entering feedback refreshes automatic results while preserving
+manual overrides and comments. Feedback is not recreated on each visit.
 
-- Returning to **Inhalt bearbeiten** clears answers and all feedback.
-- Returning to **Aufgaben lösen** keeps answers and clears assessments, comments,
-  and overall feedback.
-- Switching between **Feedback geben** and **Feedback ansehen** keeps feedback.
-- Clicking the already active mode changes nothing.
+## Implementation and limits
 
-Re-entering feedback after a reset computes fresh automatic assessments.
+- `src/editor/worksheet.ts`: mode permissions and worksheet snapshot shape.
+- `src/editor/schema/exercise.tsx`: joins exercises to answers and feedback.
+- `src/editor/blocks/`, `components/`, `responses.ts`: four-mode UI and response
+  schemas.
+- `src/editor/storage/`, `schema/`, `rich-text/`: copied editor core.
+- `src/demo/sessions.ts`, `sync-cdrts.ts`, `App.tsx`: per-mode Yjs peer pair,
+  snapshot handoff, controls, and inspector.
 
-| Mode             | Content       | Answers       | Feedback      |
-| ---------------- | ------------- | ------------- | ------------- |
-| Authoring        | Yjs writable  | Yjs read-only | Yjs read-only |
-| Answering        | Yjs read-only | Yjs writable  | Yjs read-only |
-| Adding feedback  | Yjs read-only | Yjs read-only | Yjs writable  |
-| Viewing feedback | Yjs read-only | Yjs read-only | Yjs read-only |
-
-The demo uses one attempt with separate answer and feedback stores.
-Document roles are worksheet properties, not storage node kinds or schema
-metadata. `bindDocument()` accepts any supported backend independently; the
-worksheet groups all three bindings per peer. The demo uses three
-independent `Y.Doc` pairs, each with its own store, root, awareness, and
-transport. Read-only bindings forward source subscriptions and cache
-immutable projections per revision; they expose no writable source values.
-
-## Structure
-
-- `src/editor/worksheet-mode.ts`: mode values shared by worksheet and blocks.
-- `src/editor/documents.ts`: backend-neutral binding and live read-only projections.
-- `src/editor/schema/exercise.tsx`: exercise facade joins unit, answer, and feedback handles by unit ID when rendering.
-- `src/editor/blocks/`: text, gap-fill, and multiple-choice definitions alongside renderers, styles, and block-specific answer/grading logic; `shared/` holds UI, fields, and styles used by both exercises.
-- `src/editor/responses.ts`: answer/feedback document composition and feedback initialization.
-- `src/editor/worksheet.ts`: worksheet composition, downstream resets, mode bindings, and automatic assessment traversal.
-- `src/editor/worksheet-context.ts`: application context joining documents for renderers.
-- `src/editor/components/`: reusable rich-text views, exercise badge, editor, and toolbar.
-- `src/editor/session.ts`: schema-independent Yjs document/awareness lifetime.
-- `src/editor/storage/`, `schema/`, `rich-text/`: independent backend/schema core.
-- `src/demo/`: two replicas per document, one student, mode controls, document inspector.
-
-Content drives traversal in every mode, including exercises with no answer yet.
-Exercise facade reads worksheet context and passes matching response handles and mode to renderers; missing responses remain absent until interaction or feedback initialization.
-Answer and feedback record keys are content IDs; response blocks have their own
-IDs and distinct variants. Multiple-choice options carry explicit `optionId`s;
-gap marks carry persistent IDs. Neither rich-text editor IDs nor array indices
-are used as cross-document response references.
-
-Missing answer entries are created on interaction; exercise feedback is initialized on
-entry into feedback mode, never during render. Subsequent interactions edit existing
-children rather than replacing entire answer blocks. React subscribes to all three stores. Gap DOM updates preserve focus
-and selection while answers change; read-only content is serialized without
-mounting additional ProseMirror views.
-
-## Automatic grading and rich-text feedback
-
-Entering feedback mode refreshes automatic assessments. Gap solutions come from
-text carrying the same gap ID, including text split by formatting marks. Comparison
-ignores letter case and leading/trailing/repeated whitespace; every gap must match.
-Multiple choice requires every current option's selected state to match its
-`isCorrect` flag. Missing answers are incorrect; exercises without gaps/options
-remain unassessed. Removed answer keys are ignored.
-
-Automatic results and manual overrides are stored separately. Regrading and
-switching between feedback editing/viewing preserve comments and overrides;
-returning to answering or authoring deletes them. Selecting **Automatisch** restores
-the automatic assessment. Exercise comments and overall feedback store ProseMirror JSON,
-including bold/italic formatting and lists. Viewing mode serializes that formatting
-without mounting editable views.
-
-## Lifetime and limits
-
-All three document pairs live for the app session, independently of mode and pane
-visibility. Locked bindings forward source subscriptions and refresh their cached
-`ReadonlyNodeStore` projections on source revisions, including remote changes.
-Read-only projections reject writes even through programmatic schema methods;
-previously obtained values remain immutable snapshots. Mode switches preserve
-current and earlier source data and identities; downstream resets use the existing
-stores, so deletions synchronize through Yjs without replacing sessions.
-`prepareWorksheetMode()` runs once per actual mode switch on the first peer,
-clearing downstream documents and grading when entering feedback mode;
-`createWorksheet()` only composes mode-specific permissions.
-
-Sessions disconnect all three transports and destroy awareness/Yjs documents on
-teardown. Yjs stores unmount every cached rich-text view when their document is
-destroyed, including feedback comments. Read-only projection caches become
-collectible with their mode. No generic backend disposal or unused-fragment
-garbage collection is added.
-
-Returning to content editing clears responses rather than migrating them. Direct
-programmatic content edits outside demo mode switches do not reset or migrate
-responses: unchanged IDs retain associations after sibling edits, removed responses
-remain stored but hidden, and semantic changes under an existing ID can make
-responses stale. Publication/versioning, stale-response policy, copy/paste ID
-normalization, submissions, analytics UI, durable persistence, network providers,
-and cross-document atomic transactions are outside this prototype.
-
-Mode restrictions and read-only storage prevent unintended edits, not unauthorized
-access. Debug JSON intentionally includes solutions and must not be exposed as a
-student-facing authorization boundary. Grading is deterministic and local; no
-alternative gap solutions, semantic matching, or scoring model is implemented.
-
-Rich-text tests cover Yjs replacement content with and without mounted views,
-remote changes, cursor isolation, and teardown. Schema/storage suites cover the
-shared backend APIs.
+New mode sessions discard old Yjs history and awareness; only JSON worksheet
+snapshots survive a switch. There is no persistent database or authorization
+boundary: the debug JSON includes solutions. Editing content with existing
+answers does not migrate those answers; stable IDs keep their associations,
+while changed exercise semantics may make prior answers stale.

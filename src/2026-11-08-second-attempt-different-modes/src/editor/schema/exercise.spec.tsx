@@ -22,7 +22,7 @@ describeWithStores("exercise renderer", (getStore) => {
     answer: { fields: { response: string() } },
     feedback: { fields: { comment: string() } },
     grade: (_unit, answer) =>
-      answer.response.get() === "42" ? { type: "question", comment: "Correct" } : null,
+      answer?.response.get() === "42" ? { type: "question", comment: "Correct" } : null,
     render: ({ unit, answer, feedback, mode }) => (
       <p>{`${unit.question.get()} / ${answer?.response.get() ?? ""} / ${feedback?.comment.get() ?? ""} / ${mode} / ${unit.id}`}</p>
     ),
@@ -136,10 +136,22 @@ describeWithStores("exercise renderer", (getStore) => {
     })
   })
 
-  test("missing answer in either feedback mode throws", () => {
+  test("missing answers render read-only defaults in feedback modes", () => {
     for (const mode of [WorksheetMode.GivingFeedback, WorksheetMode.ViewingFeedback]) {
-      expect(() => renderExercise({ mode })).toThrow("Antwort fehlt zur Aufgabe.")
+      expect(renderExercise({ mode })).toBe(`<p>What? /  /  / ${mode} / task</p>`)
     }
+  })
+
+  test("giving feedback grades exercises even without an answer", async () => {
+    const worksheet = openExercise({ mode: WorksheetMode.GivingFeedback })
+    await mountExercise(worksheet, (host) => {
+      expect(host.textContent).toBe("What? /  /  / giving-feedback / task")
+      expect(worksheet.answers.snapshot()).toEqual({})
+      expect(worksheet.feedback.get("task")?.snapshot()).toEqual({
+        type: "question",
+        comment: "",
+      })
+    })
   })
 
   test("giving feedback initializes a graded result without replacing an existing one", async () => {

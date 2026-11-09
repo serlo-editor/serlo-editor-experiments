@@ -1,5 +1,6 @@
 import { type StoredValue, openRoot } from "./schema"
 import type { StoredRecord } from "./schema/record.ts"
+import type { StoredRichText } from "./schema/rich-text.ts"
 import type { TaggedObjectDefinition } from "./schema/tagged-object.ts"
 import type { AnySchema, SnapshotOf, StoredValueOf } from "./schema/types.ts"
 import { ReadonlyNodeStore, type NodeRefs, type NodeStore } from "./storage"
@@ -11,14 +12,17 @@ export enum WorksheetMode {
   ViewingFeedback = "viewing-feedback",
 }
 
+type ResponseRecord = StoredRecord<TaggedObjectDefinition<string, {}>>
+
+type FeedbackObject = StoredValue & {
+  readonly overall: StoredRichText
+  readonly exercises: ResponseRecord
+}
+
 export interface Worksheet<
   Content extends StoredValue = StoredValue,
-  Answers extends StoredRecord<TaggedObjectDefinition<string, {}>> = StoredRecord<
-    TaggedObjectDefinition<string, {}>
-  >,
-  Feedback extends StoredRecord<TaggedObjectDefinition<string, {}>> = StoredRecord<
-    TaggedObjectDefinition<string, {}>
-  >,
+  Answers extends ResponseRecord = ResponseRecord,
+  Feedback extends StoredValue = ResponseRecord | FeedbackObject,
 > {
   mode: WorksheetMode
   content: Content
