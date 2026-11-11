@@ -72,24 +72,7 @@ export function defineRichTextExtension(definition: RichTextDefinition): Extensi
       }),
     )
   } else {
-    extensions.push(defineParagraph())
-    const { heading, orderedList, bulletList } = definition.config.blocks
-    if (heading) {
-      extensions.push(
-        defineHeading(),
-        defineNodeAttr({ type: "heading", attr: "level", default: 1 }),
-      )
-    }
-    if (orderedList || bulletList) {
-      extensions.push(
-        defineList(),
-        defineNodeAttr({
-          type: "list",
-          attr: "kind",
-          default: bulletList ? "bullet" : "ordered",
-        }),
-      )
-    }
+    extensions.push(...defineBlockNodes(definition.config.blocks))
   }
 
   const marks = definition.config.marks
@@ -98,6 +81,27 @@ export function defineRichTextExtension(definition: RichTextDefinition): Extensi
   if (marks?.gap) extensions.push(defineGap())
 
   return union(extensions)
+}
+
+function defineBlockNodes(blocks: BlockConfig["blocks"]): Extension[] {
+  const extensions: Extension[] = [defineParagraph()]
+  const { heading, orderedList, bulletList } = blocks
+
+  if (heading) {
+    extensions.push(defineHeading(), defineNodeAttr({ type: "heading", attr: "level", default: 1 }))
+  }
+  if (orderedList || bulletList) {
+    extensions.push(
+      defineList(),
+      defineNodeAttr({
+        type: "list",
+        attr: "kind",
+        default: bulletList ? "bullet" : "ordered",
+      }),
+    )
+  }
+
+  return extensions
 }
 
 function defineGap(): Extension {
