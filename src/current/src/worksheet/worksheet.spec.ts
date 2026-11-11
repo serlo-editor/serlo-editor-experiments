@@ -2,7 +2,7 @@ import { expect, test } from "bun:test"
 
 import { boolean, object, record, string } from "../schema"
 import { FlatNodeStore } from "../storage"
-import { openWorksheet, WorksheetMode } from "./index.ts"
+import { openWorksheet, WorksheetMode } from "./worksheet.ts"
 
 test("opens worksheet with supplied answer and feedback schemas", () => {
   const options = {

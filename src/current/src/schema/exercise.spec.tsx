@@ -1,13 +1,12 @@
 import { expect, test } from "bun:test"
 
+import { openWorksheet, WorksheetContext, WorksheetMode, type Worksheet } from "@editor/worksheet"
 import { Window } from "happy-dom"
 import { flushSync } from "react-dom"
 import { createRoot } from "react-dom/client"
 import { renderToStaticMarkup } from "react-dom/server"
 
 import { describeWithStores } from "../test-utils/test-with-stores.ts"
-import { WorksheetContext } from "../worksheet/context.ts"
-import { openWorksheet, WorksheetMode, type Worksheet } from "../worksheet/index.ts"
 import { BlockView } from "./block-view.ts"
 import { discriminatedUnion } from "./discriminated-union.ts"
 import { exercise } from "./exercise.tsx"
