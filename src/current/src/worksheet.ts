@@ -1,8 +1,8 @@
-import { type StoredValue, openRoot } from "./schema"
-import type { StoredRecord } from "./schema/record.ts"
-import type { TaggedObjectDefinition } from "./schema/tagged-object.ts"
-import type { AnySchema, SnapshotOf, StoredValueOf } from "./schema/types.ts"
-import { ReadonlyNodeStore, type NodeRefs, type NodeStore } from "./storage"
+import { type StoredValue, openRoot } from "@editor/schema"
+import type { StoredRecord } from "@editor/schema/record.ts"
+import type { TaggedObjectDefinition } from "@editor/schema/tagged-object.ts"
+import type { AnySchema, SnapshotOf, StoredValueOf } from "@editor/schema/types.ts"
+import { ReadonlyNodeStore, type NodeRefs, type NodeStore } from "@editor/storage"
 
 export enum WorksheetMode {
   EditingContent = "editing-content",
