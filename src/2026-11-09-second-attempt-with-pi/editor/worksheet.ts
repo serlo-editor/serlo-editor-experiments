@@ -1,4 +1,4 @@
-import { type StoredValue, openRoot } from "./schema"
+import { object, type StoredValue, openRoot } from "./schema"
 import type { StoredRecord } from "./schema/record.ts"
 import type { TaggedObjectDefinition } from "./schema/tagged-object.ts"
 import type { AnySchema, SnapshotOf, StoredValueOf } from "./schema/types.ts"
@@ -13,12 +13,8 @@ export enum WorksheetMode {
 
 export interface Worksheet<
   Content extends StoredValue = StoredValue,
-  Answers extends StoredRecord<TaggedObjectDefinition<string, {}>> = StoredRecord<
-    TaggedObjectDefinition<string, {}>
-  >,
-  Feedback extends StoredRecord<TaggedObjectDefinition<string, {}>> = StoredRecord<
-    TaggedObjectDefinition<string, {}>
-  >,
+  Answers extends StoredValue = StoredRecord<TaggedObjectDefinition<string, {}>>,
+  Feedback extends StoredValue = StoredRecord<TaggedObjectDefinition<string, {}>>,
 > {
   mode: WorksheetMode
   content: Content
@@ -54,19 +50,23 @@ export function openWorksheet<
   StoredValueOf<AnswersSchema>,
   StoredValueOf<FeedbackSchema>
 > {
+  // One root per writable store. Locked documents get independent immutable snapshots.
+  const root = openRoot(
+    store,
+    object({ content: contentSchema, answers: answersSchema, feedback: feedbackSchema }),
+    initialSnapshot,
+  )
   const content =
     mode === WorksheetMode.EditingContent
-      ? openRoot(store, contentSchema, initialSnapshot.content)
+      ? root.content
       : openRoot(new ReadonlyNodeStore(), contentSchema, initialSnapshot.content)
-
   const answers =
     mode === WorksheetMode.Answering
-      ? openRoot(store, answersSchema, initialSnapshot.answers)
+      ? root.answers
       : openRoot(new ReadonlyNodeStore(), answersSchema, initialSnapshot.answers)
-
   const feedback =
     mode === WorksheetMode.GivingFeedback
-      ? openRoot(store, feedbackSchema, initialSnapshot.feedback)
+      ? root.feedback
       : openRoot(new ReadonlyNodeStore(), feedbackSchema, initialSnapshot.feedback)
 
   return { mode, content, answers, feedback }

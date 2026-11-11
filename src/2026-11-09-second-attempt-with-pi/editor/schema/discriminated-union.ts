@@ -2,7 +2,9 @@ import { isObject } from "../utils/guard.ts"
 import type { TaggedObjectDefinition } from "./tagged-object.ts"
 import type { Schema, SnapshotOf, StoredValueOf } from "./types.ts"
 
-export function discriminatedUnion<const Definitions extends readonly TaggedObjectDefinition[]>(
+export function discriminatedUnion<
+  const Definitions extends readonly TaggedObjectDefinition<string, {}>[],
+>(
   definitions: Definitions,
 ): Schema<SnapshotOf<Definitions[number]>, StoredValueOf<Definitions[number]>, "map"> {
   const firstDefinition = definitions[0]
@@ -21,7 +23,8 @@ export function discriminatedUnion<const Definitions extends readonly TaggedObje
   }
 
   return {
-    defaultValue: () => firstDefinition.defaultValue(),
+    // First definition belongs to union; TypeScript widens generic method return to constraint.
+    defaultValue: () => firstDefinition.defaultValue() as SnapshotOf<Definitions[number]>,
 
     create(store, snapshot) {
       const value: unknown = snapshot

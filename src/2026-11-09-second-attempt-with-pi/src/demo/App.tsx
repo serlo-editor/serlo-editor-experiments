@@ -1,130 +1,105 @@
-import { useEffect, useState } from "react"
+import { useState } from "react"
 
-import {
-  createWorksheet,
-  Editor,
-  prepareWorksheetMode,
-  WorksheetMode,
-  type Worksheet,
-} from "../editor"
-import { useStorage } from "../editor/use-storage"
+import { Root, type RootSnapshot } from "../../editor/blocks"
+import { Editor, type EditorWorksheet } from "../../editor/components/Editor"
+import { Answers, Feedback, initialFeedback } from "../../editor/responses"
+import { FlatNodeStore } from "../../editor/storage"
+import { useStorage } from "../../editor/use-storage"
+import { openWorksheet, WorksheetMode } from "../../editor/worksheet"
 import { initialContent } from "./initial-content"
-import { createDemoSessions } from "./sessions"
 
-const modes: { id: WorksheetMode; label: string }[] = [
+const modes = [
   { id: WorksheetMode.EditingContent, label: "1. Inhalt bearbeiten" },
   { id: WorksheetMode.Answering, label: "2. Aufgaben lösen" },
   { id: WorksheetMode.GivingFeedback, label: "3. Feedback geben" },
   { id: WorksheetMode.ViewingFeedback, label: "4. Feedback ansehen" },
 ]
 
+type Snapshot = {
+  content: RootSnapshot
+  answers: ReturnType<typeof Answers.defaultValue>
+  feedback: ReturnType<typeof Feedback.defaultValue>
+}
+type Workspace = { worksheet: EditorWorksheet; store: FlatNodeStore; generation: number }
+
+function createWorkspace(mode: WorksheetMode, snapshot: Snapshot, generation: number): Workspace {
+  const store = new FlatNodeStore()
+  return {
+    store,
+    generation,
+    worksheet: openWorksheet({
+      mode,
+      store,
+      contentSchema: Root,
+      answersSchema: Answers,
+      feedbackSchema: Feedback,
+      initialSnapshot: snapshot,
+    }),
+  }
+}
+
+function nextSnapshot(worksheet: EditorWorksheet, mode: WorksheetMode): Snapshot {
+  const content = worksheet.content.snapshot()
+  const answers = mode === WorksheetMode.EditingContent ? {} : worksheet.answers.snapshot()
+  const feedback =
+    mode === WorksheetMode.EditingContent || mode === WorksheetMode.Answering
+      ? initialFeedback()
+      : worksheet.feedback.snapshot()
+  return { content, answers, feedback }
+}
+
 export default function App() {
-  const [workspace, setWorkspace] = useState<{
-    sessions: ReturnType<typeof createDemoSessions>
-    first: Worksheet
-    second: Worksheet
-  } | null>(null)
-  const [rightPane, setRightPane] = useState<"documents" | "collaboration">("collaboration")
-
-  useEffect(() => {
-    const sessions = createDemoSessions(initialContent)
-    setWorkspace({
-      sessions,
-      first: createWorksheet(WorksheetMode.EditingContent, sessions.first),
-      second: createWorksheet(WorksheetMode.EditingContent, sessions.second),
-    })
-    return () => sessions.destroy()
-  }, [])
-
-  if (!workspace) return <main className="app">Loading...</main>
-  const { sessions, first: worksheet, second } = workspace
-  const mode = worksheet.mode
-
+  const [workspace, setWorkspace] = useState(() =>
+    createWorkspace(
+      WorksheetMode.EditingContent,
+      {
+        content: initialContent,
+        answers: {},
+        feedback: initialFeedback(),
+      },
+      0,
+    ),
+  )
+  const { worksheet, store, generation } = workspace
   return (
     <main className="app">
       <header className="app__header">
         <h1>Ein Arbeitsblatt · drei Dokumente</h1>
-        <div className="app__header-controls">
-          <nav className="app__view-switch" aria-label="Arbeitsmodus">
-            {modes.map((item) => (
-              <button
-                key={item.id}
-                type="button"
-                aria-pressed={mode === item.id}
-                onClick={() => {
-                  if (item.id === mode) return
-                  prepareWorksheetMode(mode, item.id, sessions.first)
-                  setWorkspace({
-                    sessions,
-                    first: createWorksheet(item.id, sessions.first),
-                    second: createWorksheet(item.id, sessions.second),
-                  })
-                }}
-              >
-                {item.label}
-              </button>
-            ))}
-          </nav>
-          <div className="app__view-switch" role="group" aria-label="Rechter Bereich">
+        <nav className="app__view-switch" aria-label="Arbeitsmodus">
+          {modes.map((item) => (
             <button
+              key={item.id}
               type="button"
-              aria-pressed={rightPane === "collaboration"}
-              onClick={() => setRightPane("collaboration")}
+              aria-pressed={worksheet.mode === item.id}
+              onClick={() => {
+                if (item.id === worksheet.mode) return
+                const snapshot = nextSnapshot(worksheet, item.id)
+                setWorkspace(createWorkspace(item.id, snapshot, generation + 1))
+              }}
             >
-              Zusammenarbeit
+              {item.label}
             </button>
-            <button
-              type="button"
-              aria-pressed={rightPane === "documents"}
-              onClick={() => setRightPane("documents")}
-            >
-              Dokumente
-            </button>
-          </div>
-        </div>
+          ))}
+        </nav>
       </header>
       <div className="app__workspace">
         <section className="app__authoring" aria-label="Aktiver Arbeitsbereich">
-          <Editor
-            key={mode}
-            worksheet={worksheet}
-            name={sessions.first.name}
-            color={sessions.first.color}
-          />
+          <Editor key={generation} worksheet={worksheet} store={store} name="Editor 1" />
         </section>
-        <aside
-          className={
-            rightPane === "collaboration"
-              ? "app__preview app__preview--collaboration"
-              : "app__preview"
-          }
-          aria-label="Zusammenarbeit und Dokumente"
-        >
-          <div hidden={rightPane !== "collaboration"}>
-            <Editor
-              key={mode}
-              worksheet={second}
-              name={sessions.second.name}
-              color={sessions.second.color}
-            />
-          </div>
-          <div hidden={rightPane !== "documents"}>
-            <Documents worksheet={worksheet} />
-          </div>
+        <aside className="app__preview" aria-label="Dokumente">
+          <Documents key={generation} worksheet={worksheet} store={store} />
         </aside>
       </div>
     </main>
   )
 }
 
-function Documents({ worksheet }: { worksheet: Worksheet }) {
-  useStorage(worksheet.content.store)
-  useStorage(worksheet.answers.store)
-  useStorage(worksheet.feedback.store)
+function Documents({ worksheet, store }: { worksheet: EditorWorksheet; store: FlatNodeStore }) {
+  useStorage(store)
   return (
     <section className="documents">
-      <h2>Unabhängige Dokumente</h2>
-      <p>Inhalt, Antworten und Feedback werden getrennt gespeichert.</p>
+      <h2>Inhalt · Antworten · Feedback</h2>
+      <p>Beim Moduswechsel: Snapshot → neuer Store → neues Arbeitsblatt → neuer Editor.</p>
       <dl className="document-status">
         <dt>Inhalt</dt>
         <dd>{documentStatus(worksheet.mode === WorksheetMode.EditingContent)}</dd>
@@ -134,13 +109,12 @@ function Documents({ worksheet }: { worksheet: Worksheet }) {
         <dd>{documentStatus(worksheet.mode === WorksheetMode.GivingFeedback)}</dd>
       </dl>
       <p className="documents__note">
-        Alle drei Dokumente synchronisieren unabhängig über Yjs. Schreibgeschützte Ansichten bleiben
-        live aktuell. Beim Moduswechsel werden Daten nachfolgender Modi gelöscht: zurück zum Inhalt
-        löscht Antworten und Feedback, zurück zu den Aufgaben löscht Feedback.
+        Nur aktueller Modus ist bearbeitbar. Zurück zum Inhalt löscht Antworten und Feedback; zurück
+        zu Aufgaben löscht Feedback.
       </p>
-      <DocumentJSON label="Inhalt" document={worksheet.content.document} />
-      <DocumentJSON label="Antworten" document={worksheet.answers.document} />
-      <DocumentJSON label="Feedback" document={worksheet.feedback.document} />
+      <DocumentJSON label="Inhalt" snapshot={worksheet.content.snapshot()} />
+      <DocumentJSON label="Antworten" snapshot={worksheet.answers.snapshot()} />
+      <DocumentJSON label="Feedback" snapshot={worksheet.feedback.snapshot()} />
       <p className="documents__note">
         Debug-Ansicht enthält auch Lösungen. Schreibschutz ist keine Zugriffskontrolle.
       </p>
@@ -149,14 +123,14 @@ function Documents({ worksheet }: { worksheet: Worksheet }) {
 }
 
 function documentStatus(editable: boolean) {
-  return editable ? "Yjs · bearbeitbar" : "Live-Ansicht · schreibgeschützt"
+  return editable ? "Bearbeitbar" : "Schreibgeschützt"
 }
 
-function DocumentJSON({ label, document }: { label: string; document: { snapshot(): unknown } }) {
+function DocumentJSON({ label, snapshot }: { label: string; snapshot: unknown }) {
   return (
     <details className="document-json">
       <summary>{label} · JSON</summary>
-      <pre>{JSON.stringify(document.snapshot(), null, 2)}</pre>
+      <pre>{JSON.stringify(snapshot, null, 2)}</pre>
     </details>
   )
 }

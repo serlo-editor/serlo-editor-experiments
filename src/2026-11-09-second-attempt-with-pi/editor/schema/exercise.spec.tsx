@@ -136,9 +136,9 @@ describeWithStores("exercise renderer", (getStore) => {
     })
   })
 
-  test("missing answer in either feedback mode throws", () => {
+  test("missing answer in either feedback mode renders an unanswered exercise", () => {
     for (const mode of [WorksheetMode.GivingFeedback, WorksheetMode.ViewingFeedback]) {
-      expect(() => renderExercise({ mode })).toThrow("Antwort fehlt zur Aufgabe.")
+      expect(renderExercise({ mode })).toBe(`<p>What? /  /  / ${mode} / task</p>`)
     }
   })
 

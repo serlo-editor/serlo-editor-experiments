@@ -70,12 +70,14 @@ export function exercise<
         mode === WorksheetMode.GivingFeedback || mode === WorksheetMode.ViewingFeedback
           ? feedbackRecord.get(value.id)
           : undefined
+      // Skipping answering still renders and grades an unanswered exercise.
+      const emptyAnswer = () =>
+        openRoot(new ReadonlyNodeStore(), answerSchema, answerSchema.defaultValue())
       const defaultFeedback =
         mode === WorksheetMode.GivingFeedback &&
         feedbackValue === undefined &&
-        answerValue !== undefined &&
-        isTaggedObject(answerSchema, answerValue)
-          ? (grade(value, answerValue) ?? feedbackSchema.defaultValue())
+        (answerValue === undefined || isTaggedObject(answerSchema, answerValue))
+          ? (grade(value, answerValue ?? emptyAnswer()) ?? feedbackSchema.defaultValue())
           : undefined
 
       useEffect(() => {
@@ -88,8 +90,6 @@ export function exercise<
           defaultFeedback !== undefined &&
           feedbackRecord.get(value.id) === undefined
         ) {
-          const storedAnswer = answers.get(value.id)
-          if (storedAnswer === undefined || !isTaggedObject(answerSchema, storedAnswer)) return
           feedbackRecord.set(value.id, defaultFeedback)
           rerender()
         }
@@ -115,19 +115,15 @@ export function exercise<
         return createElement(render, {
           unit: value,
           mode,
-          answer:
-            answerValue ??
-            openRoot(new ReadonlyNodeStore(), answerSchema, answerSchema.defaultValue()),
+          answer: answerValue ?? emptyAnswer(),
           feedback: undefined,
         })
       }
 
-      if (answerValue === undefined) throw new Error("Antwort fehlt zur Aufgabe.")
-
       return createElement(render, {
         unit: value,
         mode,
-        answer: answerValue,
+        answer: answerValue ?? emptyAnswer(),
         feedback:
           feedbackValue ??
           openRoot(
