@@ -1,8 +1,8 @@
 import { createElement, useEffect, useReducer, type ReactNode } from "react"
 
 import { ReadonlyNodeStore } from "../storage/index.ts"
-import { useWorksheet } from "../worksheet-context.ts"
-import { WorksheetMode } from "../worksheet.ts"
+import { useWorksheet } from "../worksheet/context.ts"
+import { WorksheetMode } from "../worksheet/index.ts"
 import { block, type BlockFields, type StoredBlock } from "./block.ts"
 import { openRoot } from "./root.ts"
 import {

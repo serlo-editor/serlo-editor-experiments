@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react"
 
-import type { Worksheet } from "./worksheet"
+import type { Worksheet } from "./index.ts"
 
 export const WorksheetContext = createContext<Worksheet | null>(null)
 
