@@ -1,10 +1,10 @@
 import { expect, test } from "bun:test"
 
+import { ReadonlyNodeStore, YjsNodeStore } from "@editor/storage"
+import { describeWithStores } from "@editor/test-utils"
 import { Awareness } from "y-protocols/awareness"
 import * as Y from "yjs"
 
-import { ReadonlyNodeStore, YjsNodeStore } from "../storage/index.ts"
-import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import { array, boolean, object, record, string } from "./index.ts"
 import { openRoot } from "./root.ts"
 import type { SnapshotOf, StoredValueOf } from "./types.ts"

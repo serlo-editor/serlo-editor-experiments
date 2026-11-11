@@ -1,12 +1,12 @@
 import { expect, test } from "bun:test"
 
+import { describeWithStores } from "@editor/test-utils"
 import { Window } from "happy-dom"
 import { useId, useState } from "react"
 import { flushSync } from "react-dom"
 import { createRoot } from "react-dom/client"
 import { renderToStaticMarkup } from "react-dom/server"
 
-import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import { array, string, block, BlockView } from "./index.ts"
 import { openRoot } from "./root.ts"
 

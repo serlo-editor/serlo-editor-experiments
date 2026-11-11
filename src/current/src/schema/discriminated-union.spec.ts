@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test"
 
-import { describeWithStores } from "../test-utils/test-with-stores.ts"
+import { describeWithStores } from "@editor/test-utils"
+
 import { array } from "./array.ts"
 import { discriminatedUnion } from "./discriminated-union.ts"
 import { boolean, string } from "./primitives.ts"

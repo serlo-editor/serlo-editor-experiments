@@ -1,4 +1,5 @@
-import { isObject } from "../utils/guard.ts"
+import { isObject } from "@editor/utils"
+
 import type { AnySchema, Schema, SnapshotOf, StoredValue, StoredValueOf } from "./types.ts"
 
 export interface StoredRecord<ChildSchema extends AnySchema> extends StoredValue<

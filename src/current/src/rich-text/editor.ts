@@ -1,3 +1,4 @@
+import type { JSONValue } from "@editor/utils"
 import {
   createEditor,
   defineUpdateHandler,
@@ -7,7 +8,6 @@ import {
   union,
 } from "prosekit/core"
 
-import type { JSONValue } from "../utils/json-value.ts"
 import { defineRichTextExtension, type RichTextDefinition } from "./definition.ts"
 
 export interface RichTextEditorConfig {

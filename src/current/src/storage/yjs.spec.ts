@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test"
 
+import type { JSONValue } from "@editor/utils"
 import { Awareness } from "y-protocols/awareness"
 import * as Y from "yjs"
 
-import type { JSONValue } from "../utils/index.ts"
 import { YjsNodeStore } from "./index.ts"
 
 test("YjsNodeStore uses store origin and groups nested transactions", () => {

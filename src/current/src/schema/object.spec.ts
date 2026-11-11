@@ -1,6 +1,7 @@
 import { expect, test } from "bun:test"
 
-import { describeWithStores } from "../test-utils/test-with-stores.ts"
+import { describeWithStores } from "@editor/test-utils"
+
 import { array } from "./array.ts"
 import { boolean, object, string } from "./index.ts"
 import { openRoot } from "./root.ts"

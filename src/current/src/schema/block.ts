@@ -1,6 +1,6 @@
+import { isObject } from "@editor/utils"
 import type { ReactNode } from "react"
 
-import { isObject } from "../utils/guard.ts"
 import { object, type ObjectSnapshot, type StoredObject } from "./object.ts"
 import { string } from "./primitives.ts"
 import { taggedObject, type TaggedFields } from "./tagged-object.ts"

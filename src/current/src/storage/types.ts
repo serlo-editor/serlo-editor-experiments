@@ -1,9 +1,5 @@
-import type {
-  RichTextEditor,
-  RichTextEditorConfig,
-  RichTextEditorOptions,
-} from "../rich-text/index.ts"
-import type { Branded, JSONValue } from "../utils/index.ts"
+import type { RichTextEditor, RichTextEditorConfig, RichTextEditorOptions } from "@editor/rich-text"
+import type { Branded, JSONValue } from "@editor/utils"
 
 export type Ref = Branded<unknown, "Ref">
 

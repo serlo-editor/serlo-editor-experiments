@@ -1,9 +1,8 @@
 import { afterEach, beforeEach, describe } from "bun:test"
 
+import { FlatNodeStore, type NodeStore, YjsNodeStore } from "@editor/storage"
 import { Awareness } from "y-protocols/awareness"
 import * as Y from "yjs"
-
-import { FlatNodeStore, type NodeStore, YjsNodeStore } from "../storage/index.ts"
 
 export function describeWithStores(
   name: string,

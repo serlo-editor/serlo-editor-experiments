@@ -1,5 +1,9 @@
 import { afterAll, afterEach, beforeAll, describe, expect, test } from "bun:test"
 
+import { richText as definition, type RichTextEditor, type RichTextJSON } from "@editor/rich-text"
+import { array, richText } from "@editor/schema"
+import { openRoot } from "@editor/schema"
+import { describeWithStores } from "@editor/test-utils"
 import { Window } from "happy-dom"
 import { defineHistory } from "prosekit/core"
 import { undo } from "prosekit/pm/history"
@@ -9,14 +13,6 @@ import { yCursorPluginKey } from "y-prosemirror"
 import { Awareness, applyAwarenessUpdate, encodeAwarenessUpdate } from "y-protocols/awareness"
 import * as Y from "yjs"
 
-import {
-  richText as definition,
-  type RichTextEditor,
-  type RichTextJSON,
-} from "../rich-text/index.ts"
-import { array, richText } from "../schema/index.ts"
-import { openRoot } from "../schema/root.ts"
-import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import { FlatNodeStore, ReadonlyNodeStore, YjsNodeStore } from "./index.ts"
 
 const options = { definition: definition.inline({ marks: { bold: true } }) }

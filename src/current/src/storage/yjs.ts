@@ -1,10 +1,10 @@
+import { createRichTextEditor, type RichTextEditor } from "@editor/rich-text"
+import type { JSONValue } from "@editor/utils"
 import { defineMountHandler } from "prosekit/core"
 import { type Awareness, defineYjs } from "prosekit/extensions/yjs"
 import { prosemirrorToYXmlFragment, yXmlFragmentToProseMirrorRootNode } from "y-prosemirror"
 import * as Y from "yjs"
 
-import { createRichTextEditor, type RichTextEditor } from "../rich-text/index.ts"
-import type { JSONValue } from "../utils/index.ts"
 import { ChangeTracker } from "./change-tracker.ts"
 import { createEditorSpecificAwareness } from "./editor-awareness.ts"
 import type { NodeKind, NodeStore, NodeWriter, Ref, RichTextId } from "./types.ts"

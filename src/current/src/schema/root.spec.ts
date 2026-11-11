@@ -1,7 +1,8 @@
 import { expect, test } from "bun:test"
 
-import { describeWithStores } from "../test-utils/test-with-stores.ts"
-import type { JSONValue } from "../utils/index.ts"
+import { describeWithStores } from "@editor/test-utils"
+import type { JSONValue } from "@editor/utils"
+
 import { openRoot } from "./root.ts"
 import type { Schema, StoredValue } from "./types.ts"
 

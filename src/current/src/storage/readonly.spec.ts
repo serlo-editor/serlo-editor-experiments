@@ -1,12 +1,12 @@
 import { expect, test } from "bun:test"
 
+import { richText as definition, type RichTextJSON } from "@editor/rich-text"
+import { array, object, richText, string } from "@editor/schema"
+import { openRoot } from "@editor/schema"
+import type { JSONValue } from "@editor/utils"
 import { defineMarkSpec } from "prosekit/core"
 import { EditorState, TextSelection } from "prosekit/pm/state"
 
-import { richText as definition, type RichTextJSON } from "../rich-text/index.ts"
-import { array, object, richText, string } from "../schema/index.ts"
-import { openRoot } from "../schema/root.ts"
-import type { JSONValue } from "../utils/index.ts"
 import { ReadonlyNodeStore } from "./index.ts"
 
 const options = { definition: definition.inline({ marks: { gap: true } }) }

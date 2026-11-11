@@ -1,4 +1,5 @@
-import type { NodeRefs, NodeStore } from "../storage/index.ts"
+import type { NodeRefs, NodeStore } from "@editor/storage"
+
 import type { AnySchema, SnapshotOf, StoredValueOf } from "./types.ts"
 
 export function openRoot<RootSchema extends AnySchema, Refs extends NodeRefs>(

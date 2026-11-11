@@ -1,9 +1,9 @@
+import { createRichTextEditor, type RichTextEditor } from "@editor/rich-text"
+import type { Branded, JSONValue } from "@editor/utils"
 import { definePlugin } from "prosekit/core"
 import type { Node as ProseMirrorNode } from "prosekit/pm/model"
 import { Plugin } from "prosekit/pm/state"
 
-import { createRichTextEditor, type RichTextEditor } from "../rich-text/index.ts"
-import type { Branded, JSONValue } from "../utils/index.ts"
 import { ChangeTracker } from "./change-tracker.ts"
 import type { NodeKind, NodeStore, NodeWriter, Ref, RichTextId } from "./types.ts"
 import { withWriter } from "./writer.ts"

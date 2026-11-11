@@ -1,5 +1,6 @@
-import { isBoolean, isString } from "../utils/index.ts"
-import type { Guard, Primitive } from "../utils/index.ts"
+import { isBoolean, isString } from "@editor/utils"
+import type { Guard, Primitive } from "@editor/utils"
+
 import type { Schema, StoredValue } from "./types.ts"
 
 export function string() {

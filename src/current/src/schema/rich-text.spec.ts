@@ -1,9 +1,9 @@
 import { expect, test } from "bun:test"
 
+import { richText as definition, type RichTextJSON } from "@editor/rich-text"
+import { describeWithStores } from "@editor/test-utils"
 import { defineNodeSpec } from "prosekit/core"
 
-import { richText as definition, type RichTextJSON } from "../rich-text/index.ts"
-import { describeWithStores } from "../test-utils/test-with-stores.ts"
 import { array, object, richText } from "./index.ts"
 import { openRoot } from "./root.ts"
 

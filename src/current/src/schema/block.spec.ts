@@ -1,7 +1,8 @@
 import { expect, test } from "bun:test"
 
-import { richText as definition } from "../rich-text/index.ts"
-import { describeWithStores } from "../test-utils/test-with-stores.ts"
+import { richText as definition } from "@editor/rich-text"
+import { describeWithStores } from "@editor/test-utils"
+
 import { object, richText, string, array, boolean, block } from "./index.ts"
 import { openRoot } from "./root.ts"
 import type { SnapshotOf } from "./types.ts"

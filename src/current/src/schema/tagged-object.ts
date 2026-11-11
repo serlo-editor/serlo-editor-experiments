@@ -1,4 +1,5 @@
-import { isObject } from "../utils/guard.ts"
+import { isObject } from "@editor/utils"
+
 import { object, type ObjectSnapshot, type ObjectFields, type StoredObject } from "./object.ts"
 import { string } from "./primitives.ts"
 import type { Schema, SnapshotOf } from "./types.ts"

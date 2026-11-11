@@ -1,6 +1,7 @@
-import type { RichTextEditor, RichTextEditorConfig, RichTextJSON } from "../rich-text/index.ts"
-import { isRichTextId, type RichTextId } from "../storage/index.ts"
-import type { JSONValue } from "../utils/index.ts"
+import type { RichTextEditor, RichTextEditorConfig, RichTextJSON } from "@editor/rich-text"
+import { isRichTextId, type RichTextId } from "@editor/storage"
+import type { JSONValue } from "@editor/utils"
+
 import type { Schema, StoredValue } from "./types.ts"
 
 export interface StoredRichText extends StoredValue<RichTextJSON> {

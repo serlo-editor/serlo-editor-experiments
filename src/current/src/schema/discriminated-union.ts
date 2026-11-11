@@ -1,4 +1,5 @@
-import { isObject } from "../utils/guard.ts"
+import { isObject } from "@editor/utils"
+
 import type { TaggedObjectDefinition } from "./tagged-object.ts"
 import type { Schema, SnapshotOf, StoredValueOf } from "./types.ts"
 

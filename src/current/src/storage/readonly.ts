@@ -1,12 +1,12 @@
-import { defineMountHandler, definePlugin } from "prosekit/core"
-import { Plugin, type EditorState } from "prosekit/pm/state"
-
 import {
   createRichTextEditor,
   type RichTextEditor,
   type RichTextEditorOptions,
-} from "../rich-text/index.ts"
-import type { JSONValue } from "../utils/index.ts"
+} from "@editor/rich-text"
+import type { JSONValue } from "@editor/utils"
+import { defineMountHandler, definePlugin } from "prosekit/core"
+import { Plugin, type EditorState } from "prosekit/pm/state"
+
 import type { NodeStore, NodeWriter, Ref, RichTextId } from "./types.ts"
 
 type ReadonlyNodeRef = JSONValue & Ref
