@@ -1,6 +1,6 @@
 import { useCallback, useSyncExternalStore } from "react"
 
-import type { NodeStore } from "./storage/types"
+import type { NodeStore } from "./types.ts"
 
 // ponytail: document-wide invalidation; split subscriptions only if render cost warrants it.
 export function useStorage(store?: Pick<NodeStore, "subscribe" | "getRevision">) {
