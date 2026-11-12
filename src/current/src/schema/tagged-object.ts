@@ -4,16 +4,14 @@ import { object, type ObjectSnapshot, type ObjectFields, type StoredObject } fro
 import { string } from "./primitives.ts"
 import type { Schema, SnapshotOf } from "./types.ts"
 
-export type TaggedFields = ObjectFields
-
-export type TaggedSnapshot<Type extends string, Fields extends TaggedFields> = {
+export type TaggedSnapshot<Type extends string, Fields extends ObjectFields> = {
   readonly type: Type
 } & ObjectSnapshot<Fields>
 
 // TODO: Can this type be simplified?
 export type StoredTaggedObject<
   Type extends string = string,
-  Fields extends TaggedFields = {},
+  Fields extends ObjectFields = {},
 > = Omit<StoredObject<Fields>, "snapshot"> & {
   readonly type: Type
   snapshot(): TaggedSnapshot<Type, Fields>
@@ -21,19 +19,19 @@ export type StoredTaggedObject<
 
 export interface TaggedObjectDefinition<
   Type extends string = string,
-  Fields extends TaggedFields = TaggedFields,
+  Fields extends ObjectFields = ObjectFields,
 > extends Schema<TaggedSnapshot<Type, Fields>, StoredTaggedObject<Type, Fields>, "map"> {
   readonly type: Type
 }
 
-export function isTaggedObject<Type extends string, Fields extends TaggedFields>(
+export function isTaggedObject<Type extends string, Fields extends ObjectFields>(
   definition: TaggedObjectDefinition<Type, Fields>,
   value: StoredTaggedObject,
 ): value is StoredTaggedObject<Type, Fields> {
   return isObject(value) && value.type === definition.type
 }
 
-export function taggedObject<const Type extends string, Fields extends TaggedFields>({
+export function taggedObject<const Type extends string, Fields extends ObjectFields>({
   type,
   fields,
 }: {

@@ -1,19 +1,17 @@
 import { isObject } from "@editor/utils"
 import type { ReactNode } from "react"
 
-import { object, type ObjectSnapshot, type StoredObject } from "./object.ts"
+import { object, type ObjectFields, type ObjectSnapshot, type StoredObject } from "./object.ts"
 import { string } from "./primitives.ts"
-import { taggedObject, type TaggedFields } from "./tagged-object.ts"
+import { taggedObject } from "./tagged-object.ts"
 import type { Schema } from "./types.ts"
 
-export type BlockFields = TaggedFields
-
-export type BlockSnapshot<Type extends string, Fields extends BlockFields> = {
+export type BlockSnapshot<Type extends string, Fields extends ObjectFields> = {
   readonly id: string
   readonly type: Type
 } & ObjectSnapshot<Fields>
 
-export type StoredBlock<Type extends string, Fields extends BlockFields> = Omit<
+export type StoredBlock<Type extends string, Fields extends ObjectFields> = Omit<
   StoredObject<Fields>,
   "snapshot"
 > & {
@@ -23,7 +21,7 @@ export type StoredBlock<Type extends string, Fields extends BlockFields> = Omit<
   snapshot(): BlockSnapshot<Type, Fields>
 }
 
-export interface BlockDefinition<Type extends string, Fields extends BlockFields> extends Schema<
+export interface BlockDefinition<Type extends string, Fields extends ObjectFields> extends Schema<
   BlockSnapshot<Type, Fields>,
   StoredBlock<Type, Fields>,
   "map"
@@ -36,7 +34,7 @@ export interface BlockDefinition<Type extends string, Fields extends BlockFields
 }
 
 /** Object schema with immutable identity, discriminator, and local renderer metadata. */
-export function block<const Type extends string, Fields extends BlockFields>({
+export function block<const Type extends string, Fields extends ObjectFields>({
   type,
   fields,
   render,

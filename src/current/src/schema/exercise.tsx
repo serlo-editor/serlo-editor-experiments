@@ -2,21 +2,21 @@ import { ReadonlyNodeStore } from "@editor/storage"
 import { useWorksheet, WorksheetMode } from "@editor/worksheet"
 import { createElement, useEffect, useReducer, type ReactNode } from "react"
 
-import { block, type BlockFields, type StoredBlock } from "./block.ts"
+import { block, type StoredBlock } from "./block.ts"
+import type { ObjectFields } from "./object.ts"
 import { openRoot } from "./root.ts"
 import {
   isTaggedObject,
   taggedObject,
   type StoredTaggedObject,
-  type TaggedFields,
   type TaggedSnapshot,
 } from "./tagged-object.ts"
 
 type ExerciseRenderProps<
   UnitType extends string,
-  UnitFields extends BlockFields,
-  AnswerFields extends TaggedFields,
-  FeedbackFields extends TaggedFields,
+  UnitFields extends ObjectFields,
+  AnswerFields extends ObjectFields,
+  FeedbackFields extends ObjectFields,
 > = {
   unit: StoredBlock<UnitType, UnitFields>
 } & (
@@ -35,9 +35,9 @@ type ExerciseRenderProps<
 
 export function exercise<
   const UnitType extends string,
-  UnitFields extends BlockFields,
-  AnswerFields extends TaggedFields,
-  FeedbackFields extends TaggedFields,
+  UnitFields extends ObjectFields,
+  AnswerFields extends ObjectFields,
+  FeedbackFields extends ObjectFields,
 >({
   unit,
   answer,
