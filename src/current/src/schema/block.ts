@@ -6,7 +6,7 @@ import { string } from "./primitives.ts"
 import { taggedObject, type TaggedFields } from "./tagged-object.ts"
 import type { Schema } from "./types.ts"
 
-export type BlockFields = TaggedFields & { id?: never }
+export type BlockFields = TaggedFields
 
 export type BlockSnapshot<Type extends string, Fields extends BlockFields> = {
   readonly id: string
@@ -42,7 +42,7 @@ export function block<const Type extends string, Fields extends BlockFields>({
   render,
 }: {
   type: Type
-  fields: Fields
+  fields: Fields & { id?: never; type?: never }
   render: BlockDefinition<Type, Fields>["render"]
 }): BlockDefinition<Type, Fields> {
   if (typeof type !== "string" || type.length === 0) throw new TypeError("Expected block type.")

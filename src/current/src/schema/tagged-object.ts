@@ -4,7 +4,7 @@ import { object, type ObjectSnapshot, type ObjectFields, type StoredObject } fro
 import { string } from "./primitives.ts"
 import type { Schema, SnapshotOf } from "./types.ts"
 
-export type TaggedFields = ObjectFields & { type?: never }
+export type TaggedFields = ObjectFields
 
 export type TaggedSnapshot<Type extends string, Fields extends TaggedFields> = {
   readonly type: Type
@@ -38,7 +38,7 @@ export function taggedObject<const Type extends string, Fields extends TaggedFie
   fields,
 }: {
   type: Type
-  fields: Fields
+  fields: Fields & { type?: never }
 }): TaggedObjectDefinition<Type, Fields> {
   if (type.length === 0) throw new TypeError("Expected object type.")
 

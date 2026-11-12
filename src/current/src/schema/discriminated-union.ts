@@ -22,7 +22,7 @@ export function discriminatedUnion<const Definitions extends readonly TaggedObje
   }
 
   return {
-    defaultValue: () => firstDefinition.defaultValue(),
+    defaultValue: () => firstDefinition.defaultValue() as SnapshotOf<Definitions[number]>,
 
     create(store, snapshot) {
       const value: unknown = snapshot
