@@ -41,8 +41,6 @@ export function record<ChildSchema extends AnySchema>(
           const current = store.map.getField(ref, key)
           if (current !== undefined) return childSchema.bind(store, current)
           return store.transact((write) => {
-            const existing = store.map.getField(ref, key)
-            if (existing !== undefined) return childSchema.bind(store, existing)
             const snapshot = create()
             rejectUndefined(key, snapshot)
             const childRef = childSchema.create(store, snapshot)
