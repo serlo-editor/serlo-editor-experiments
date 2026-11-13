@@ -60,7 +60,8 @@ export function exercise<
   const unitBlock = block({
     ...unit,
     render: function ExerciseView({ value }) {
-      const { mode, answers, feedbacks: feedbackRecord } = useWorksheet()
+      const { mode, answers, feedbacks } = useWorksheet()
+
       if (mode === WorksheetMode.EditingContent) {
         return createElement(render, {
           unit: value,
@@ -79,7 +80,7 @@ export function exercise<
         return createElement(render, { unit: value, mode, answer, feedback: undefined })
       }
 
-      const feedback = feedbackRecord.getOrCreate(
+      const feedback = feedbacks.getOrCreate(
         value.id,
         () => grade(value, answer) ?? feedbackSchema.defaultValue(),
       )
