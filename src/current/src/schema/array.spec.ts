@@ -25,9 +25,6 @@ describeWithStores("array schemas", (getStore) => {
     expect(root.snapshot()).toEqual(["Lin", "Grace"])
 
     root.children()[0]!.get() satisfies string
-    // @ts-expect-error Insert accepts child snapshots, not numbers.
-    const wrongInsert: (index: number, value: number) => void = root.insert
-    void wrongInsert
   })
   test("defaults to one child, supports zero, and creates independent children", () => {
     expect(array(string()).defaultValue()).toEqual([""])

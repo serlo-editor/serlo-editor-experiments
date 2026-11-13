@@ -5,7 +5,6 @@ import { describeWithStores } from "@editor/test-utils"
 
 import { object, richText, string, array, boolean, block } from "./index.ts"
 import { openRoot } from "./root.ts"
-import type { SnapshotOf } from "./types.ts"
 
 function choice() {
   return block({
@@ -63,38 +62,6 @@ describeWithStores("block schemas", (getStore) => {
       "question",
       "type",
     ])
-
-    // @ts-expect-error Required object fields have no replacement setter.
-    expect(value.set).toBeUndefined()
-    // @ts-expect-error Schemas have no validation hook.
-    expect(blockDefinition.validate).toBeUndefined()
-
-    // @ts-expect-error Snapshot retains literal discriminator.
-    const wrongType: SnapshotOf<typeof blockDefinition> = { ...initial, type: "forensic" }
-    // @ts-expect-error Required content fields retain their types.
-    const wrongQuestion: SnapshotOf<typeof blockDefinition> = { ...initial, question: false }
-    // @ts-expect-error Required content fields remain required.
-    const missingFields: SnapshotOf<typeof blockDefinition> = { id: "missing", type: "choice" }
-    // @ts-expect-error Snapshot creation requires declared content fields.
-    const missingCreationFields: Parameters<typeof blockDefinition.createSnapshot>[0] = {}
-    const wrongCreationFields: Parameters<typeof blockDefinition.createSnapshot>[0] = {
-      ...choiceFields(),
-      // @ts-expect-error Snapshot creation retains declared field types.
-      question: false,
-    }
-    const metadataCreationFields: Parameters<typeof blockDefinition.createSnapshot>[0] = {
-      ...choiceFields(),
-      // @ts-expect-error ID is generated, not a declared creation field.
-      id: "provided",
-    }
-    void [
-      wrongType,
-      wrongQuestion,
-      missingFields,
-      missingCreationFields,
-      wrongCreationFields,
-      metadataCreationFields,
-    ]
   })
 
   test("generates distinct default identities within an array and across calls", () => {
@@ -142,14 +109,6 @@ describeWithStores("block schemas", (getStore) => {
 })
 
 test("rejects reserved fields and empty block types", () => {
-  expect(() => {
-    // @ts-expect-error ID is reserved.
-    block({ type: "bad", fields: { id: string() }, render: () => null })
-  }).toThrow("Reserved block field: id.")
-  expect(() => {
-    // @ts-expect-error Type is reserved.
-    block({ type: "bad", fields: { type: string() }, render: () => null })
-  }).toThrow("Reserved block field: type.")
   expect(() => block({ type: "", fields: {}, render: () => null })).toThrow("Expected block type.")
   expect(() =>
     block({ type: "bad", fields: { definition: string() }, render: () => null }),

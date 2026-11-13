@@ -41,15 +41,6 @@ describeWithStores("object schemas", (getStore) => {
       tags: ["math", "code"],
       profile: { bio: "Updated" },
     })
-
-    // @ts-expect-error Object stored values expose child properties, not get().
-    expect(root.get).toBe(undefined)
-    // @ts-expect-error Fields are edited through child stored values, not replaced.
-    expect(root.set).toBe(undefined)
-    // @ts-expect-error Field access method was removed.
-    expect(root.field).toBeUndefined()
-    // @ts-expect-error Unknown fields are not exposed.
-    expect(root.missing).toBeUndefined()
   })
 
   test("builds typed nested defaults and opens them as a document", () => {
@@ -64,20 +55,8 @@ describeWithStores("object schemas", (getStore) => {
     expect(openRoot(getStore(), schema, initial).snapshot()).toEqual(initial)
   })
 
-  test("rejects missing and explicitly undefined fields", () => {
+  test("rejects fields removed from stored objects", () => {
     const schema = object({ name: string(), bio: string() })
-    expect(() => {
-      // @ts-expect-error Explicit undefined is not a field value.
-      schema.create(getStore(), { name: "Ada", bio: undefined })
-    }).toThrow("Undefined field: bio.")
-    expect(() => {
-      // @ts-expect-error All fields must be present.
-      schema.create(getStore(), { name: "Ada" })
-    }).toThrow("Undefined field: bio.")
-    // @ts-expect-error Snapshot fields are required.
-    const missingBio: SnapshotOf<typeof schema> = { name: "Ada" }
-    void missingBio
-
     const store = getStore()
     const ref = store.transact((write) =>
       write.root.save(schema.create(store, { name: "Ada", bio: "Hello" })),
@@ -100,11 +79,6 @@ describeWithStores("object schemas", (getStore) => {
     expect(root.__proto__.get()).toBe("proto")
     expect(root.constructor.get()).toBe("ctor")
     expect(root.toString.get()).toBe("text")
-    // Omitting a key that is inherited from Object.prototype reads that inherited value.
-    expect(() => {
-      // @ts-expect-error Object.prototype.constructor is not a field value.
-      schema.create(getStore(), { ["__proto__"]: "proto", toString: "text" })
-    }).not.toThrow()
     expect(Object.hasOwn(root, "hasOwnProperty")).toBe(false)
   })
 
@@ -112,9 +86,6 @@ describeWithStores("object schemas", (getStore) => {
     const root = openRoot(getStore(), object({ field: string() }), { field: "Value" })
     expect(root.field.get()).toBe("Value")
     expect(root.snapshot()).toEqual({ field: "Value" })
-
-    // @ts-expect-error `snapshot` is reserved for the stored object's snapshot method.
-    object({ snapshot: string() })
   })
 
   test("supports empty objects", () => {

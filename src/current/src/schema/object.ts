@@ -24,11 +24,6 @@ export function object<Schemas extends ObjectFields>(
       const fields = Object.fromEntries(
         Object.entries(schemas).map(([key, schema]) => {
           const value = snapshot[key as keyof typeof snapshot]
-          // TODO: Decide whether we need it here => this should result in TSC
-          // error otherwise
-          if (value === undefined) {
-            throw new TypeError(`Undefined field: ${key}.`)
-          }
           return [key, schema.create(store, value)]
         }),
       )

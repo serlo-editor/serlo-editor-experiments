@@ -1,5 +1,3 @@
-import { isObject } from "@editor/utils"
-
 import type { AnySchema, Schema, SnapshotOf, StoredValue, StoredValueOf } from "./types.ts"
 
 export interface StoredRecord<ChildSchema extends AnySchema> extends StoredValue<
@@ -19,7 +17,6 @@ export function record<ChildSchema extends AnySchema>(
     defaultValue: () => ({}),
 
     create(store, snapshots) {
-      if (!isObject(snapshots)) throw new TypeError("Expected record snapshot.")
       const refs = Object.fromEntries(
         Object.entries(snapshots).map(([key, snapshot]) => {
           return [key, childSchema.create(store, snapshot)]

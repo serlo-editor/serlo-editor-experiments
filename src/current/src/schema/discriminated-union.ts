@@ -1,5 +1,3 @@
-import { isObject } from "@editor/utils"
-
 import type { TaggedObjectDefinition } from "./tagged-object.ts"
 import type { Schema, SnapshotOf, StoredValueOf } from "./types.ts"
 
@@ -25,11 +23,7 @@ export function discriminatedUnion<const Definitions extends readonly TaggedObje
     defaultValue: () => firstDefinition.defaultValue() as SnapshotOf<Definitions[number]>,
 
     create(store, snapshot) {
-      const value: unknown = snapshot
-      if (!isObject(value) || !Object.hasOwn(value, "type") || typeof value.type !== "string") {
-        throw new TypeError("Expected child type.")
-      }
-      return select(value.type).create(store, snapshot)
+      return select(snapshot.type).create(store, snapshot)
     },
     bind(store, ref) {
       const typeRef = store.map.getField(ref, "type")

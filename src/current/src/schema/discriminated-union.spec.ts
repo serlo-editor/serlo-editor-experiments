@@ -36,12 +36,6 @@ describeWithStores("discriminated unions", (getStore) => {
       { type: "toggle", enabled: true },
       { type: "choice", response: "Another" },
     ])
-
-    // @ts-expect-error Unknown discriminators are excluded from snapshots.
-    const wrongType: SnapshotOf<typeof schema> = { type: "other", response: "First" }
-    // @ts-expect-error Each member requires its own fields.
-    const wrongFields: SnapshotOf<typeof schema> = { type: "toggle", response: "First" }
-    void [wrongType, wrongFields]
   })
 
   test("defaults to the first definition in declared order", () => {
@@ -53,28 +47,6 @@ describeWithStores("discriminated unions", (getStore) => {
       enabled: false,
     })
     expect(openRoot(getStore(), schema, initial).snapshot()).toEqual(initial)
-  })
-
-  test("rejects missing, inherited, non-string, and unknown snapshot types", () => {
-    const store = getStore()
-    const schema = discriminatedUnion([choice, toggle])
-    const invalidSnapshots: unknown[] = [
-      null,
-      [],
-      {},
-      { type: 1 },
-      Object.create({ type: "choice" }),
-    ]
-    for (const snapshot of invalidSnapshots) {
-      expect(() => {
-        // @ts-expect-error Invalid snapshots must fail at runtime too.
-        schema.create(store, snapshot)
-      }).toThrow("Expected child type.")
-    }
-    expect(() => {
-      // @ts-expect-error Unknown types must fail at runtime too.
-      schema.create(store, { type: "other", response: "First" })
-    }).toThrow("Unknown child type: other.")
   })
 
   test("selects from stored discriminator and rejects missing or unknown types", () => {

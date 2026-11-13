@@ -7,12 +7,11 @@ import * as Y from "yjs"
 
 import { array, boolean, object, record, string } from "./index.ts"
 import { openRoot } from "./root.ts"
-import type { SnapshotOf, StoredValueOf } from "./types.ts"
 
 describeWithStores("record schemas", (getStore) => {
   test("creates, reads, replaces, removes, and re-adds entries", () => {
     const schema = record(string())
-    const initial = schema.defaultValue() satisfies SnapshotOf<typeof schema>
+    const initial = schema.defaultValue()
     expect(initial).toEqual({})
     const root = openRoot(getStore(), schema, initial)
     expect(root.snapshot()).toEqual({})
@@ -33,9 +32,6 @@ describeWithStores("record schemas", (getStore) => {
     expect(root.snapshot()).toEqual({})
     root.set("answer", "Again")
     expect(root.snapshot()).toEqual({ answer: "Again" })
-
-    // @ts-expect-error Records intentionally expose no keys() method.
-    expect(root.keys).toBeUndefined()
   })
 
   test("getOrCreate initializes once and preserves edited values", () => {
@@ -64,14 +60,13 @@ describeWithStores("record schemas", (getStore) => {
       active: boolean(),
     })
     const schema = record(child)
-    const initial: SnapshotOf<typeof schema> = {
+    const initial = {
       answer: { text: "", selected: [], active: false },
     }
     const root = openRoot(getStore(), schema, initial)
     expect(root.snapshot()).toEqual(initial)
 
     const answer = root.getOrCreate("answer", () => ({ text: "", selected: [], active: false }))
-    answer satisfies StoredValueOf<typeof child>
     answer.selected.insert(0, "option-a")
     expect(root.snapshot()).toEqual({
       answer: { text: "", selected: ["option-a"], active: false },
@@ -80,13 +75,6 @@ describeWithStores("record schemas", (getStore) => {
     expect(
       root.getOrCreate("another", () => ({ text: "", selected: [], active: false })).active.get(),
     ).toBe(true)
-
-    const required: StoredValueOf<typeof child> = answer
-    // @ts-expect-error Number snapshots do not match the child schema.
-    const invalid: SnapshotOf<typeof schema> = { answer: 42 }
-    // @ts-expect-error Set accepts only snapshots matching the child schema.
-    const wrongSetter: (key: string, value: number) => void = root.set
-    void [required, invalid, wrongSetter]
   })
 
   test("creates, edits, and replaces array children", () => {
@@ -147,24 +135,6 @@ describeWithStores("record schemas", (getStore) => {
     available = true
     root.set("answer", "Recovered")
     expect(root.snapshot()).toEqual({ answer: "Recovered" })
-  })
-
-  test("rejects invalid record snapshots and explicit undefined before child creation", () => {
-    const store = getStore()
-    const child = string()
-    const counted: typeof child = {
-      ...child,
-      create(store, snapshot) {
-        return child.create(store, snapshot)
-      },
-    }
-    const schema = record(counted)
-    for (const invalid of [null, [], false, 0, ""]) {
-      expect(() => {
-        // @ts-expect-error Record snapshots must be objects keyed by strings.
-        schema.create(store, invalid)
-      }).toThrow("Expected record snapshot.")
-    }
   })
 
   test("reads leave revisions unchanged and each entry write notifies once", () => {

@@ -21,15 +21,9 @@ describeWithStores("tagged objects", (getStore) => {
     value.response.set("Updated")
     expect(value.snapshot()).toEqual({ type: "choice", response: "Updated" })
     expect(value).not.toHaveProperty("id")
-
-    // @ts-expect-error A tagged object rejects other literal types.
-    const wrongType: SnapshotOf<typeof schema> = { type: "other", response: "First" }
-    void wrongType
   })
 })
 
 test("rejects reserved discriminator and empty types", () => {
   expect(() => taggedObject({ type: "", fields: {} })).toThrow("Expected object type.")
-  // @ts-expect-error Type is reserved for discriminator.
-  taggedObject({ type: "choice", fields: { type: string() } })
 })

@@ -43,7 +43,7 @@ export function block<const Type extends string, Fields extends ObjectFields>({
   fields: Fields & { id?: never; type?: never }
   render: BlockDefinition<Type, Fields>["render"]
 }): BlockDefinition<Type, Fields> {
-  if (typeof type !== "string" || type.length === 0) throw new TypeError("Expected block type.")
+  if (type.length === 0) throw new TypeError("Expected block type.")
   for (const key of ["id", "type", "definition"]) {
     if (Object.hasOwn(fields, key)) throw new TypeError(`Reserved block field: ${key}.`)
   }

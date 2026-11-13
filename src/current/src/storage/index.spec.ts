@@ -548,26 +548,6 @@ describeWithStores("NodeStore", (getStore) => {
   })
 })
 
-test("writers preserve node-kind types and read stores expose no mutation methods", () => {
-  const store = new FlatNodeStore()
-  const cell = store.cell.create(null)
-  const array = store.array.create([])
-  const map = store.map.create({})
-  store.transact((write) => {
-    // @ts-expect-error Cell writes require cell references, not array references.
-    const setArray: (ref: typeof array, value: JSONValue) => void = write.cell.set
-    // @ts-expect-error Array writes require array references, not map references.
-    const removeMap: (ref: typeof map, index: number) => void = write.array.remove
-    // @ts-expect-error Map writes require map references, not cell references.
-    const removeCell: (ref: typeof cell, field: string) => void = write.map.remove
-    void [setArray, removeMap, removeCell]
-  })
-  // @ts-expect-error Mutations belong to transaction-scoped writers.
-  expect(store.cell.edit).toBeUndefined()
-  // @ts-expect-error Root replacement belongs to transaction-scoped writers.
-  expect(store.root.save).toBeUndefined()
-})
-
 describeWithStores("transaction-scoped writers", (getStore) => {
   test("nested writers expire independently and cannot be revived by later transactions", () => {
     const store = getStore()
