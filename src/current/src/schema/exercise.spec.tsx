@@ -53,7 +53,7 @@ describeWithStores("exercise renderer", (getStore) => {
       createStore: getStore,
       contentSchema: schema,
       answersSchema,
-      feedbackSchema,
+      feedbacksSchema: feedbackSchema,
       initialSnapshot: { content: unit, answers, feedback },
     })
   }
@@ -140,7 +140,7 @@ describeWithStores("exercise renderer", (getStore) => {
       expect(answer.snapshot()).toEqual({ type: "question", response: "" })
       answer.response.set("42")
       expect(answer.response.get()).toBe("42")
-      expect(worksheet.feedback.snapshot()).toEqual({})
+      expect(worksheet.feedbacks.snapshot()).toEqual({})
     })
   })
 
@@ -166,7 +166,7 @@ describeWithStores("exercise renderer", (getStore) => {
       "<p>What? / 42 / Correct / giving-feedback / task</p>",
     )
     expect(
-      worksheet.feedback.getOrCreate("task", () => ({ type: "question", comment: "" })).snapshot(),
+      worksheet.feedbacks.getOrCreate("task", () => ({ type: "question", comment: "" })).snapshot(),
     ).toEqual({ type: "question", comment: "Correct" })
   })
 
@@ -177,7 +177,7 @@ describeWithStores("exercise renderer", (getStore) => {
     })
     await mountExercise(worksheet, (host, rerender) => {
       expect(host.textContent).toBe("What? / 42 / Correct / giving-feedback / task")
-      const feedback = worksheet.feedback.getOrCreate("task", () => ({
+      const feedback = worksheet.feedbacks.getOrCreate("task", () => ({
         type: "question",
         comment: "",
       }))
@@ -195,7 +195,7 @@ describeWithStores("exercise renderer", (getStore) => {
     })
     await mountExercise(worksheet, (host) => {
       expect(host.textContent).toBe("What? / Other /  / giving-feedback / task")
-      expect(worksheet.feedback.snapshot()).toEqual({
+      expect(worksheet.feedbacks.snapshot()).toEqual({
         task: { type: "question", comment: "" },
       })
     })

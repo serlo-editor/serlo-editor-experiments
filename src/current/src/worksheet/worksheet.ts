@@ -21,43 +21,43 @@ export interface Worksheet<
   Answers extends StoredRecord<TaggedObjectDefinition<string, {}>> = StoredRecord<
     TaggedObjectDefinition<string, {}>
   >,
-  Feedback extends StoredRecord<TaggedObjectDefinition<string, {}>> = StoredRecord<
+  Feedbacks extends StoredRecord<TaggedObjectDefinition<string, {}>> = StoredRecord<
     TaggedObjectDefinition<string, {}>
   >,
 > {
   mode: WorksheetMode
   content: Content
   answers: Answers
-  feedback: Feedback
+  feedbacks: Feedbacks
 }
 
 export function openWorksheet<
   ContentSchema extends AnySchema,
   AnswersSchema extends AnySchema,
-  FeedbackSchema extends AnySchema,
+  FeedbacksSchema extends AnySchema,
   Refs extends NodeRefs,
 >({
   mode,
   createStore,
   contentSchema,
   answersSchema,
-  feedbackSchema,
+  feedbacksSchema,
   initialSnapshot,
 }: {
   mode: WorksheetMode
   createStore: () => NodeStore<Refs>
   contentSchema: ContentSchema
   answersSchema: AnswersSchema
-  feedbackSchema: FeedbackSchema
+  feedbacksSchema: FeedbacksSchema
   initialSnapshot: {
     content: SnapshotOf<ContentSchema>
     answers: SnapshotOf<AnswersSchema>
-    feedback: SnapshotOf<FeedbackSchema>
+    feedback: SnapshotOf<FeedbacksSchema>
   }
 }): Worksheet<
   StoredValueOf<ContentSchema>,
   StoredValueOf<AnswersSchema>,
-  StoredValueOf<FeedbackSchema>
+  StoredValueOf<FeedbacksSchema>
 > {
   const content =
     mode === WorksheetMode.EditingContent
@@ -67,10 +67,10 @@ export function openWorksheet<
     mode === WorksheetMode.Answering
       ? openRoot(createStore(), answersSchema, initialSnapshot.answers)
       : openRoot(new ReadonlyNodeStore(), answersSchema, initialSnapshot.answers)
-  const feedback =
+  const feedbacks =
     mode === WorksheetMode.GivingFeedback
-      ? openRoot(createStore(), feedbackSchema, initialSnapshot.feedback)
-      : openRoot(new ReadonlyNodeStore(), feedbackSchema, initialSnapshot.feedback)
+      ? openRoot(createStore(), feedbacksSchema, initialSnapshot.feedback)
+      : openRoot(new ReadonlyNodeStore(), feedbacksSchema, initialSnapshot.feedback)
 
-  return { mode, content, answers, feedback }
+  return { mode, content, answers, feedbacks }
 }

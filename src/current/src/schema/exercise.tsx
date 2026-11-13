@@ -60,7 +60,7 @@ export function exercise<
   const unitBlock = block({
     ...unit,
     render: function ExerciseView({ value }) {
-      const { mode, answers, feedback: feedbackRecord } = useWorksheet()
+      const { mode, answers, feedbacks: feedbackRecord } = useWorksheet()
       if (mode === WorksheetMode.EditingContent) {
         return createElement(render, {
           unit: value,
