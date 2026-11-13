@@ -121,12 +121,12 @@ export function exercise<
         })
       }
 
-      if (answerValue === undefined) throw new Error("Antwort fehlt zur Aufgabe.")
-
       return createElement(render, {
         unit: value,
         mode,
-        answer: answerValue,
+        answer:
+          answerValue ??
+          openRoot(new ReadonlyNodeStore(), answerSchema, answerSchema.defaultValue()),
         feedback:
           feedbackValue ??
           openRoot(

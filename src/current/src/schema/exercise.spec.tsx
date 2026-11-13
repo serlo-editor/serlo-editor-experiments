@@ -135,9 +135,11 @@ describeWithStores("exercise renderer", (getStore) => {
     })
   })
 
-  test("missing answer in either feedback mode throws", () => {
+  test("missing answer in either feedback mode uses schema default without storing it", () => {
     for (const mode of [WorksheetMode.GivingFeedback, WorksheetMode.ViewingFeedback]) {
-      expect(() => renderExercise({ mode })).toThrow("Antwort fehlt zur Aufgabe.")
+      const worksheet = openExercise({ mode })
+      expect(renderToStaticMarkup(view(worksheet))).toBe(`<p>What? /  /  / ${mode} / task</p>`)
+      expect(worksheet.answers.snapshot()).toEqual({})
     }
   })
 
