@@ -38,14 +38,14 @@ export function openWorksheet<
   Refs extends NodeRefs,
 >({
   mode,
-  store,
+  createStore,
   contentSchema,
   answersSchema,
   feedbackSchema,
   initialSnapshot,
 }: {
   mode: WorksheetMode
-  store: NodeStore<Refs>
+  createStore: () => NodeStore<Refs>
   contentSchema: ContentSchema
   answersSchema: AnswersSchema
   feedbackSchema: FeedbackSchema
@@ -61,17 +61,15 @@ export function openWorksheet<
 > {
   const content =
     mode === WorksheetMode.EditingContent
-      ? openRoot(store, contentSchema, initialSnapshot.content)
+      ? openRoot(createStore(), contentSchema, initialSnapshot.content)
       : openRoot(new ReadonlyNodeStore(), contentSchema, initialSnapshot.content)
-
   const answers =
     mode === WorksheetMode.Answering
-      ? openRoot(store, answersSchema, initialSnapshot.answers)
+      ? openRoot(createStore(), answersSchema, initialSnapshot.answers)
       : openRoot(new ReadonlyNodeStore(), answersSchema, initialSnapshot.answers)
-
   const feedback =
     mode === WorksheetMode.GivingFeedback
-      ? openRoot(store, feedbackSchema, initialSnapshot.feedback)
+      ? openRoot(createStore(), feedbackSchema, initialSnapshot.feedback)
       : openRoot(new ReadonlyNodeStore(), feedbackSchema, initialSnapshot.feedback)
 
   return { mode, content, answers, feedback }

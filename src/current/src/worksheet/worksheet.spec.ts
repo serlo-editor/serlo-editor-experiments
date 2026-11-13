@@ -20,7 +20,7 @@ test("opens worksheet with supplied answer and feedback schemas", () => {
   const answering = openWorksheet({
     ...options,
     mode: WorksheetMode.Answering,
-    store: new FlatNodeStore(),
+    createStore: () => new FlatNodeStore(),
   })
   answering.answers.get("task")!.set("Updated")
   expect(answering.answers.snapshot()).toEqual({ task: "Updated" })
@@ -30,7 +30,7 @@ test("opens worksheet with supplied answer and feedback schemas", () => {
   const grading = openWorksheet({
     ...options,
     mode: WorksheetMode.GivingFeedback,
-    store: new FlatNodeStore(),
+    createStore: () => new FlatNodeStore(),
   })
   grading.feedback.get("task")!.correct.set(true)
   expect(grading.feedback.snapshot()).toEqual({ task: { correct: true } })

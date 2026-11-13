@@ -50,7 +50,7 @@ describeWithStores("exercise renderer", (getStore) => {
     const unit = { ...schema.createSnapshot({ question: "What?" }), id: "task" }
     return openWorksheet({
       mode,
-      store: getStore(),
+      createStore: getStore,
       contentSchema: schema,
       answersSchema,
       feedbackSchema,
