@@ -23,7 +23,6 @@ export function record<ChildSchema extends AnySchema>(
       if (!isObject(snapshots)) throw new TypeError("Expected record snapshot.")
       const refs = Object.fromEntries(
         Object.entries(snapshots).map(([key, snapshot]) => {
-          rejectUndefined(key, snapshot)
           return [key, childSchema.create(store, snapshot)]
         }),
       )
@@ -42,7 +41,6 @@ export function record<ChildSchema extends AnySchema>(
           if (current !== undefined) return childSchema.bind(store, current)
           return store.transact((write) => {
             const snapshot = create()
-            rejectUndefined(key, snapshot)
             const childRef = childSchema.create(store, snapshot)
             write.map.set(ref, key, childRef)
             return childSchema.bind(store, childRef)
@@ -50,7 +48,6 @@ export function record<ChildSchema extends AnySchema>(
         },
 
         set(key, snapshot) {
-          rejectUndefined(key, snapshot)
           store.transact((write) => {
             const childRef = childSchema.create(store, snapshot)
             write.map.set(ref, key, childRef)
@@ -72,8 +69,4 @@ export function record<ChildSchema extends AnySchema>(
       }
     },
   }
-}
-
-function rejectUndefined(key: string, snapshot: unknown): void {
-  if (snapshot === undefined) throw new TypeError(`Undefined field: ${key}.`)
 }

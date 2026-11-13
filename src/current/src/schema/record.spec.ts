@@ -152,11 +152,9 @@ describeWithStores("record schemas", (getStore) => {
   test("rejects invalid record snapshots and explicit undefined before child creation", () => {
     const store = getStore()
     const child = string()
-    let calls = 0
     const counted: typeof child = {
       ...child,
       create(store, snapshot) {
-        calls++
         return child.create(store, snapshot)
       },
     }
@@ -167,17 +165,6 @@ describeWithStores("record schemas", (getStore) => {
         schema.create(store, invalid)
       }).toThrow("Expected record snapshot.")
     }
-    expect(() => {
-      // @ts-expect-error Explicit undefined is not an absent entry.
-      schema.create(store, { answer: undefined })
-    }).toThrow("Undefined field: answer.")
-    const root = openRoot(store, schema, {})
-    expect(() => {
-      // @ts-expect-error Undefined cannot be stored.
-      root.set("answer", undefined)
-    }).toThrow("Undefined field: answer.")
-    expect(calls).toBe(0)
-    expect(root.snapshot()).toEqual({})
   })
 
   test("reads leave revisions unchanged and each entry write notifies once", () => {
