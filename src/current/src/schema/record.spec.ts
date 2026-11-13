@@ -16,20 +16,20 @@ describeWithStores("record schemas", (getStore) => {
     expect(initial).toEqual({})
     const root = openRoot(getStore(), schema, initial)
     expect(root.snapshot()).toEqual({})
-    expect(root.get("missing")).toBeUndefined()
+    expect(Object.hasOwn(root.snapshot(), "missing")).toBe(false)
     root.remove("missing")
 
     root.set("answer", "Initial")
-    const original = root.get("answer")!
+    const original = root.getOrCreate("answer", () => "")
     expect(original.get()).toBe("Initial")
     original.set("Edited")
     expect(root.snapshot()).toEqual({ answer: "Edited" })
 
     root.set("answer", "Replacement")
-    expect(root.get("answer")!.get()).toBe("Replacement")
+    expect(root.getOrCreate("answer", () => "").get()).toBe("Replacement")
     root.remove("answer")
     root.remove("answer")
-    expect(root.get("answer")).toBeUndefined()
+    expect(Object.hasOwn(root.snapshot(), "answer")).toBe(false)
     expect(root.snapshot()).toEqual({})
     root.set("answer", "Again")
     expect(root.snapshot()).toEqual({ answer: "Again" })
@@ -52,7 +52,7 @@ describeWithStores("record schemas", (getStore) => {
     expect(root.getOrCreate("answer", create).get()).toBe("Initial")
     expect(calls).toBe(1)
     expect(store.getRevision()).toBe(revision + 1)
-    root.get("answer")!.set("Edited")
+    root.getOrCreate("answer", () => "").set("Edited")
     expect(root.getOrCreate("answer", create).get()).toBe("Edited")
     expect(calls).toBe(1)
   })
@@ -70,16 +70,17 @@ describeWithStores("record schemas", (getStore) => {
     const root = openRoot(getStore(), schema, initial)
     expect(root.snapshot()).toEqual(initial)
 
-    const answer = root.get("answer")
-    answer satisfies StoredValueOf<typeof child> | undefined
-    answer!.selected.insert(0, "option-a")
+    const answer = root.getOrCreate("answer", () => ({ text: "", selected: [], active: false }))
+    answer satisfies StoredValueOf<typeof child>
+    answer.selected.insert(0, "option-a")
     expect(root.snapshot()).toEqual({
       answer: { text: "", selected: ["option-a"], active: false },
     })
     root.set("another", { text: "Other", selected: [], active: true })
-    expect(root.get("another")!.active.get()).toBe(true)
+    expect(
+      root.getOrCreate("another", () => ({ text: "", selected: [], active: false })).active.get(),
+    ).toBe(true)
 
-    // @ts-expect-error Missing entries require an undefined check.
     const required: StoredValueOf<typeof child> = answer
     // @ts-expect-error Number snapshots do not match the child schema.
     const invalid: SnapshotOf<typeof schema> = { answer: 42 }
@@ -91,10 +92,10 @@ describeWithStores("record schemas", (getStore) => {
   test("creates, edits, and replaces array children", () => {
     const schema = record(array(string()))
     const root = openRoot(getStore(), schema, { selected: ["option-a"] })
-    root.get("selected")!.insert(1, "option-b")
+    root.getOrCreate("selected", () => []).insert(1, "option-b")
     expect(root.snapshot()).toEqual({ selected: ["option-a", "option-b"] })
     root.set("selected", ["option-c"])
-    expect(root.get("selected")!.length).toBe(1)
+    expect(root.getOrCreate("selected", () => []).length).toBe(1)
     expect(root.snapshot()).toEqual({ selected: ["option-c"] })
   })
 
@@ -103,9 +104,9 @@ describeWithStores("record schemas", (getStore) => {
     const schema = record(string())
     const root = openRoot(getStore(), schema, {})
     for (const key of keys) {
-      expect(root.get(key)).toBeUndefined()
+      expect(Object.hasOwn(root.snapshot(), key)).toBe(false)
       root.set(key, key)
-      expect(root.get(key)!.get()).toBe(key)
+      expect(root.getOrCreate(key, () => "").get()).toBe(key)
     }
     expect(root.snapshot()).toEqual(Object.fromEntries(keys.map((key) => [key, key])))
     const reopened = openRoot(getStore(), schema, { ignored: "Ignored" })
@@ -135,9 +136,8 @@ describeWithStores("record schemas", (getStore) => {
     const revision = store.getRevision()
     available = false
 
-    expect(root.get("missing")).toBeUndefined()
     expect(() => schema.create(store, { answer: "New" })).toThrow(error)
-    expect(() => root.get("answer")).toThrow(error)
+    expect(() => root.getOrCreate("answer", () => "")).toThrow(error)
     expect(() => root.set("answer", "Changed")).toThrow(error)
     expect(() => root.snapshot()).toThrow(error)
     expect(store.getRevision()).toBe(revision)
@@ -169,22 +169,23 @@ describeWithStores("record schemas", (getStore) => {
 
   test("reads leave revisions unchanged and each entry write notifies once", () => {
     const store = getStore()
-    const root = openRoot(store, record(object({ text: string() })), {})
+    const root = openRoot(store, record(object({ text: string() })), {
+      answer: { text: "Initial" },
+    })
     const revision = store.getRevision()
     const observed: unknown[] = []
     store.subscribe(() => observed.push(root.snapshot()))
 
-    root.get("missing")
+    root.getOrCreate("answer", () => ({ text: "" }))
     root.snapshot()
     root.remove("missing")
     expect(store.getRevision()).toBe(revision)
     expect(observed).toEqual([])
 
-    root.set("answer", { text: "Initial" })
-    root.get("answer")!.text.set("Edited")
+    root.getOrCreate("answer", () => ({ text: "" })).text.set("Edited")
     root.remove("answer")
-    expect(observed).toEqual([{ answer: { text: "Initial" } }, { answer: { text: "Edited" } }, {}])
-    expect(store.getRevision()).toBe(revision + 3)
+    expect(observed).toEqual([{ answer: { text: "Edited" } }, {}])
+    expect(store.getRevision()).toBe(revision + 2)
   })
 })
 
@@ -204,9 +205,9 @@ test("read-only records initialize but reject writes before child creation", () 
   const document = openRoot(store, schema, initial)
   expect(document.snapshot()).toEqual(initial)
   for (const [key, value] of Object.entries(initial)) {
-    expect(document.get(key)?.snapshot()).toEqual(value)
+    expect(document.getOrCreate(key, () => []).snapshot()).toEqual(value)
   }
-  expect(document.get("constructor")).toBeUndefined()
+  expect(Object.hasOwn(document.snapshot(), "constructor")).toBe(false)
   const beforeWrite = calls
   expect(document.getOrCreate("tags", () => ["Changed"]).snapshot()).toEqual(["tag"])
   expect(() => document.getOrCreate("missing", () => ["New"])).toThrow("Storage is read-only.")
@@ -225,8 +226,8 @@ test("read-only records initialize but reject writes before child creation", () 
 test("read-only records preserve falsy primitive refs", () => {
   const active = openRoot(new ReadonlyNodeStore(), record(boolean()), { answer: false })
   const text = openRoot(new ReadonlyNodeStore(), record(string()), { answer: "" })
-  expect(active.get("answer")!.get()).toBe(false)
-  expect(text.get("answer")!.get()).toBe("")
+  expect(active.getOrCreate("answer", () => true).get()).toBe(false)
+  expect(text.getOrCreate("answer", () => "fallback").get()).toBe("")
 })
 
 test("Yjs records reopen, observe remote edits, and converge after concurrent additions", () => {
@@ -241,11 +242,11 @@ test("Yjs records reopen, observe remote edits, and converge after concurrent ad
     const first = openRoot(firstStore, schema, { answer: "Initial" })
     Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
     const second = openRoot(secondStore, schema, { ignored: "Ignored" })
-    const cached = second.get("answer")!
+    const cached = second.getOrCreate("answer", () => "")
     const observed: unknown[] = []
     secondStore.subscribe(() => observed.push(second.snapshot()))
 
-    first.get("answer")!.set("Edited")
+    first.getOrCreate("answer", () => "").set("Edited")
     Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
     expect(cached.get()).toBe("Edited")
     expect(observed).toEqual([{ answer: "Edited" }])
@@ -259,7 +260,7 @@ test("Yjs records reopen, observe remote edits, and converge after concurrent ad
 
     first.remove("answer")
     Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
-    expect(second.get("answer")).toBeUndefined()
+    expect(Object.hasOwn(second.snapshot(), "answer")).toBe(false)
     expect(second.snapshot()).toEqual(first.snapshot())
   } finally {
     firstAwareness.destroy()

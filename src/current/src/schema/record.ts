@@ -5,7 +5,6 @@ import type { AnySchema, Schema, SnapshotOf, StoredValue, StoredValueOf } from "
 export interface StoredRecord<ChildSchema extends AnySchema> extends StoredValue<
   Readonly<Record<string, SnapshotOf<ChildSchema>>>
 > {
-  get(key: string): StoredValueOf<ChildSchema> | undefined
   getOrCreate(key: string, create: () => SnapshotOf<ChildSchema>): StoredValueOf<ChildSchema>
   /** Replaces the child reference; previously bound children may become invalid. */
   set(key: string, snapshot: SnapshotOf<ChildSchema>): void
@@ -31,11 +30,6 @@ export function record<ChildSchema extends AnySchema>(
 
     bind(store, ref) {
       return {
-        get(key) {
-          const childRef = store.map.getField(ref, key)
-          return childRef === undefined ? undefined : childSchema.bind(store, childRef)
-        },
-
         getOrCreate(key, create) {
           const current = store.map.getField(ref, key)
           if (current !== undefined) return childSchema.bind(store, current)
