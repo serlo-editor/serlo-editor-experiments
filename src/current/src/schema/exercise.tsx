@@ -70,34 +70,24 @@ export function exercise<
         })
       }
 
-      const answerValue = answers.getOrCreate(value.id, () => answerSchema.defaultValue())
-      if (!isTaggedObject(answerSchema, answerValue)) {
+      const answer = answers.getOrCreate(value.id, () => answerSchema.defaultValue())
+      if (!isTaggedObject(answerSchema, answer)) {
         throw new Error("Antwort passt nicht zur Aufgabe.")
       }
 
       if (mode === WorksheetMode.Answering) {
-        return createElement(render, {
-          unit: value,
-          mode,
-          answer: answerValue,
-          feedback: undefined,
-        })
+        return createElement(render, { unit: value, mode, answer, feedback: undefined })
       }
 
-      const feedbackValue = feedbackRecord.getOrCreate(
+      const feedback = feedbackRecord.getOrCreate(
         value.id,
-        () => grade(value, answerValue) ?? feedbackSchema.defaultValue(),
+        () => grade(value, answer) ?? feedbackSchema.defaultValue(),
       )
-      if (!isTaggedObject(feedbackSchema, feedbackValue)) {
+      if (!isTaggedObject(feedbackSchema, feedback)) {
         throw new Error("Feedback passt nicht zur Aufgabe.")
       }
 
-      return createElement(render, {
-        unit: value,
-        mode,
-        answer: answerValue,
-        feedback: feedbackValue,
-      })
+      return createElement(render, { unit: value, mode, answer, feedback })
     },
   })
   return Object.assign(unitBlock, { answer: answerSchema, feedback: feedbackSchema })
