@@ -126,32 +126,17 @@ describeWithStores("exercise renderer", (getStore) => {
     const worksheet = openExercise({ mode: WorksheetMode.Answering })
     await mountExercise(worksheet, (host) => {
       expect(host.textContent).toBe("What? /  /  / answering / task")
-      expect(worksheet.answers.get("task")?.snapshot()).toEqual({
-        type: "question",
-        response: "",
-      })
+      expect(worksheet.answers.get("task")?.snapshot()).toEqual({ type: "question", response: "" })
       worksheet.answers.get("task")!.response.set("42")
       expect(worksheet.answers.get("task")?.response.get()).toBe("42")
       expect(worksheet.feedback.snapshot()).toEqual({})
     })
   })
 
-  test("missing answers render read-only defaults in feedback modes", () => {
+  test("missing answer in either feedback mode renders an unanswered exercise", () => {
     for (const mode of [WorksheetMode.GivingFeedback, WorksheetMode.ViewingFeedback]) {
       expect(renderExercise({ mode })).toBe(`<p>What? /  /  / ${mode} / task</p>`)
     }
-  })
-
-  test("giving feedback grades exercises even without an answer", async () => {
-    const worksheet = openExercise({ mode: WorksheetMode.GivingFeedback })
-    await mountExercise(worksheet, (host) => {
-      expect(host.textContent).toBe("What? /  /  / giving-feedback / task")
-      expect(worksheet.answers.snapshot()).toEqual({})
-      expect(worksheet.feedback.get("task")?.snapshot()).toEqual({
-        type: "question",
-        comment: "",
-      })
-    })
   })
 
   test("giving feedback initializes a graded result without replacing an existing one", async () => {
@@ -171,24 +156,19 @@ describeWithStores("exercise renderer", (getStore) => {
     })
   })
 
-  test("giving feedback falls back to schema defaults when grading returns undefined", async () => {
+  test("giving feedback falls back to schema defaults when grading returns null", async () => {
     const worksheet = openExercise({
       mode: WorksheetMode.GivingFeedback,
       answers: { task: { type: "question", response: "Other" } },
     })
     await mountExercise(worksheet, (host) => {
       expect(host.textContent).toBe("What? / Other /  / giving-feedback / task")
-      expect(worksheet.feedback.get("task")?.snapshot()).toEqual({
-        type: "question",
-        comment: "",
-      })
+      expect(worksheet.feedback.get("task")?.snapshot()).toEqual({ type: "question", comment: "" })
     })
   })
 
   test("viewing feedback uses a read-only default without persisting it", () => {
-    const worksheet = openExercise({
-      answers: { task: { type: "question", response: "42" } },
-    })
+    const worksheet = openExercise({ answers: { task: { type: "question", response: "42" } } })
     expect(renderToStaticMarkup(view(worksheet))).toBe(
       "<p>What? / 42 /  / viewing-feedback / task</p>",
     )

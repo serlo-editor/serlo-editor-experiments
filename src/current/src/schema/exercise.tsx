@@ -1,10 +1,8 @@
-import { ReadonlyNodeStore } from "@editor/storage"
 import { useWorksheet, WorksheetMode } from "@editor/worksheet"
 import { createElement, type ReactNode } from "react"
 
 import { block, type StoredBlock } from "./block.ts"
 import type { ObjectFields } from "./object.ts"
-import { openRoot } from "./root.ts"
 import {
   isTaggedObject,
   taggedObject,
@@ -72,11 +70,12 @@ export function exercise<
         })
       }
 
+      const answerValue = answers.getOrCreate(value.id, () => answerSchema.defaultValue())
+      if (!isTaggedObject(answerSchema, answerValue)) {
+        throw new Error("Antwort passt nicht zur Aufgabe.")
+      }
+
       if (mode === WorksheetMode.Answering) {
-        const answerValue = answers.getOrCreate(value.id, () => answerSchema.defaultValue())
-        if (!isTaggedObject(answerSchema, answerValue)) {
-          throw new Error("Antwort passt nicht zur Aufgabe.")
-        }
         return createElement(render, {
           unit: value,
           mode,
@@ -85,30 +84,19 @@ export function exercise<
         })
       }
 
-      const answerValue = answers.get(value.id)
-      if (answerValue !== undefined && !isTaggedObject(answerSchema, answerValue)) {
-        throw new Error("Antwort passt nicht zur Aufgabe.")
-      }
-      const feedbackValue =
-        mode === WorksheetMode.GivingFeedback && answerValue !== undefined
-          ? feedbackRecord.getOrCreate(
-              value.id,
-              () => grade(value, answerValue) ?? feedbackSchema.defaultValue(),
-            )
-          : feedbackRecord.get(value.id)
-      if (feedbackValue !== undefined && !isTaggedObject(feedbackSchema, feedbackValue)) {
+      const feedbackValue = feedbackRecord.getOrCreate(
+        value.id,
+        () => grade(value, answerValue) ?? feedbackSchema.defaultValue(),
+      )
+      if (!isTaggedObject(feedbackSchema, feedbackValue)) {
         throw new Error("Feedback passt nicht zur Aufgabe.")
       }
 
       return createElement(render, {
         unit: value,
         mode,
-        answer:
-          answerValue ??
-          openRoot(new ReadonlyNodeStore(), answerSchema, answerSchema.defaultValue()),
-        feedback:
-          feedbackValue ??
-          openRoot(new ReadonlyNodeStore(), feedbackSchema, feedbackSchema.defaultValue()),
+        answer: answerValue,
+        feedback: feedbackValue,
       })
     },
   })
