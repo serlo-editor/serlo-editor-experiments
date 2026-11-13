@@ -52,7 +52,7 @@ export function openWorksheet<
   initialSnapshot: {
     content: SnapshotOf<ContentSchema>
     answers: SnapshotOf<AnswersSchema>
-    feedback: SnapshotOf<FeedbacksSchema>
+    feedbacks: SnapshotOf<FeedbacksSchema>
   }
 }): Worksheet<
   StoredValueOf<ContentSchema>,
@@ -69,8 +69,8 @@ export function openWorksheet<
       : openRoot(new ReadonlyNodeStore(), answersSchema, initialSnapshot.answers)
   const feedbacks =
     mode === WorksheetMode.GivingFeedback
-      ? openRoot(createStore(), feedbacksSchema, initialSnapshot.feedback)
-      : openRoot(new ReadonlyNodeStore(), feedbacksSchema, initialSnapshot.feedback)
+      ? openRoot(createStore(), feedbacksSchema, initialSnapshot.feedbacks)
+      : openRoot(new ReadonlyNodeStore(), feedbacksSchema, initialSnapshot.feedbacks)
 
   return { mode, content, answers, feedbacks }
 }

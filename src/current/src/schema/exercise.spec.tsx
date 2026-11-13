@@ -29,23 +29,26 @@ describeWithStores("exercise renderer", (getStore) => {
   const otherAnswer = taggedObject({ type: "other", fields: { response: string() } })
   const otherFeedback = taggedObject({ type: "other", fields: { comment: string() } })
   const answersSchema = record(discriminatedUnion([schema.answer, otherAnswer]))
-  const feedbackSchema = record(discriminatedUnion([schema.feedback, otherFeedback]))
+  const feedbacksSchema = record(discriminatedUnion([schema.feedback, otherFeedback]))
 
   type ExerciseWorksheet = Worksheet<
     StoredValueOf<typeof schema>,
     StoredValueOf<typeof answersSchema>,
-    StoredValueOf<typeof feedbackSchema>
+    StoredValueOf<typeof feedbacksSchema>
   >
   type ExerciseOptions = {
     mode?: WorksheetMode
     answers?: Record<string, SnapshotOf<typeof schema.answer> | SnapshotOf<typeof otherAnswer>>
-    feedback?: Record<string, SnapshotOf<typeof schema.feedback> | SnapshotOf<typeof otherFeedback>>
+    feedbacks?: Record<
+      string,
+      SnapshotOf<typeof schema.feedback> | SnapshotOf<typeof otherFeedback>
+    >
   }
 
   function openExercise({
     mode = WorksheetMode.ViewingFeedback,
     answers = {},
-    feedback = {},
+    feedbacks = {},
   }: ExerciseOptions = {}): ExerciseWorksheet {
     const unit = { ...schema.createSnapshot({ question: "What?" }), id: "task" }
     return openWorksheet({
@@ -53,8 +56,8 @@ describeWithStores("exercise renderer", (getStore) => {
       createStore: getStore,
       contentSchema: schema,
       answersSchema,
-      feedbacksSchema: feedbackSchema,
-      initialSnapshot: { content: unit, answers, feedback },
+      feedbacksSchema,
+      initialSnapshot: { content: unit, answers, feedbacks },
     })
   }
 
@@ -106,7 +109,7 @@ describeWithStores("exercise renderer", (getStore) => {
       renderExercise({
         mode: WorksheetMode.EditingContent,
         answers: { task: { type: "question", response: "42" } },
-        feedback: { task: { type: "question", comment: "Correct" } },
+        feedbacks: { task: { type: "question", comment: "Correct" } },
       }),
     ).toBe("<p>What? /  /  / editing-content / task</p>")
   })
@@ -116,7 +119,7 @@ describeWithStores("exercise renderer", (getStore) => {
       renderExercise({
         mode: WorksheetMode.Answering,
         answers: { task: { type: "question", response: "42" } },
-        feedback: { task: { type: "question", comment: "Correct" } },
+        feedbacks: { task: { type: "question", comment: "Correct" } },
       }),
     ).toBe("<p>What? / 42 /  / answering / task</p>")
   })
@@ -149,7 +152,7 @@ describeWithStores("exercise renderer", (getStore) => {
       const worksheet = openExercise({
         mode,
         answers: { task: { type: "question", response: "42" } },
-        feedback: { task: { type: "question", comment: "Correct" } },
+        feedbacks: { task: { type: "question", comment: "Correct" } },
       })
       expect(renderToStaticMarkup(view(worksheet))).toBe(
         `<p>What? / 42 / Correct / ${mode} / task</p>`,
@@ -205,7 +208,7 @@ describeWithStores("exercise renderer", (getStore) => {
     expect(
       renderExercise({
         answers: { task: { type: "question", response: "42" } },
-        feedback: { task: { type: "question", comment: "Correct" } },
+        feedbacks: { task: { type: "question", comment: "Correct" } },
       }),
     ).toBe("<p>What? / 42 / Correct / viewing-feedback / task</p>")
   })
@@ -220,7 +223,7 @@ describeWithStores("exercise renderer", (getStore) => {
     expect(() =>
       renderExercise({
         answers: { task: { type: "question", response: "42" } },
-        feedback: { task: { type: "other", comment: "Incorrect" } },
+        feedbacks: { task: { type: "other", comment: "Incorrect" } },
       }),
     ).toThrow("Feedback passt nicht zur Aufgabe.")
   })

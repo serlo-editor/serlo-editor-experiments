@@ -9,11 +9,11 @@ test("opens worksheet with supplied answer and feedback schemas", () => {
   const options = {
     contentSchema: string(),
     answersSchema: record(string()),
-    feedbackSchema: record(object({ correct: boolean() })),
+    feedbacksSchema: record(object({ correct: boolean() })),
     initialSnapshot: {
       content: "Question",
       answers: { task: "Original" },
-      feedback: { task: { correct: false } },
+      feedbacks: { task: { correct: false } },
     },
   }
 
