@@ -5,6 +5,7 @@ export interface StoredRecord<ChildSchema extends AnySchema> extends StoredValue
   Readonly<Record<string, SnapshotOf<ChildSchema>>>
 > {
   get(key: string): StoredValueOf<ChildSchema> | undefined
+  getOrCreate(key: string, create: () => SnapshotOf<ChildSchema>): StoredValueOf<ChildSchema>
   /** Replaces the child reference; previously bound children may become invalid. */
   set(key: string, snapshot: SnapshotOf<ChildSchema>): void
   remove(key: string): void
@@ -33,6 +34,20 @@ export function record<ChildSchema extends AnySchema>(
         get(key) {
           const childRef = store.map.getField(ref, key)
           return childRef === undefined ? undefined : childSchema.bind(store, childRef)
+        },
+
+        getOrCreate(key, create) {
+          const current = store.map.getField(ref, key)
+          if (current !== undefined) return childSchema.bind(store, current)
+          return store.transact((write) => {
+            const existing = store.map.getField(ref, key)
+            if (existing !== undefined) return childSchema.bind(store, existing)
+            const snapshot = create()
+            rejectUndefined(key, snapshot)
+            const childRef = childSchema.create(store, snapshot)
+            write.map.set(ref, key, childRef)
+            return childSchema.bind(store, childRef)
+          })
         },
 
         set(key, snapshot) {

@@ -1,4 +1,4 @@
-import { createElement, useEffect, useReducer, type ReactNode } from "react"
+import { createElement, type ReactNode } from "react"
 
 import { ReadonlyNodeStore } from "../storage/index.ts"
 import { useWorksheet } from "../worksheet-context.ts"
@@ -64,40 +64,28 @@ export function exercise<
     ...unit,
     render: function ExerciseView({ value }) {
       const { mode, answers, feedback: feedbackRecord } = useWorksheet()
-      const [, rerender] = useReducer((revision: number) => revision + 1, 0)
-      const answerValue = mode === WorksheetMode.EditingContent ? undefined : answers.get(value.id)
-      const feedbackValue =
-        mode === WorksheetMode.GivingFeedback || mode === WorksheetMode.ViewingFeedback
-          ? feedbackRecord.get(value.id)
-          : undefined
-      // Skipping answering still renders and grades an unanswered exercise.
-      const emptyAnswer = () =>
-        openRoot(new ReadonlyNodeStore(), answerSchema, answerSchema.defaultValue())
-      const defaultFeedback =
-        mode === WorksheetMode.GivingFeedback &&
-        feedbackValue === undefined &&
-        (answerValue === undefined || isTaggedObject(answerSchema, answerValue))
-          ? (grade(value, answerValue ?? emptyAnswer()) ?? feedbackSchema.defaultValue())
-          : undefined
-
-      useEffect(() => {
-        if (mode === WorksheetMode.Answering && answers.get(value.id) === undefined) {
-          answers.set(value.id, answerSchema.defaultValue())
-          rerender()
-        }
-        if (
-          mode === WorksheetMode.GivingFeedback &&
-          defaultFeedback !== undefined &&
-          feedbackRecord.get(value.id) === undefined
-        ) {
-          feedbackRecord.set(value.id, defaultFeedback)
-          rerender()
-        }
-      }, [mode, answers, feedbackRecord, value, defaultFeedback])
-
+      const answerValue =
+        mode === WorksheetMode.EditingContent
+          ? undefined
+          : mode === WorksheetMode.Answering
+            ? answers.getOrCreate(value.id, () => answerSchema.defaultValue())
+            : answers.get(value.id)
       if (answerValue !== undefined && !isTaggedObject(answerSchema, answerValue)) {
         throw new Error("Antwort passt nicht zur Aufgabe.")
       }
+
+      // Skipping answering still renders and grades an unanswered exercise.
+      const emptyAnswer = () =>
+        openRoot(new ReadonlyNodeStore(), answerSchema, answerSchema.defaultValue())
+      const feedbackValue =
+        mode === WorksheetMode.GivingFeedback
+          ? feedbackRecord.getOrCreate(
+              value.id,
+              () => grade(value, answerValue ?? emptyAnswer()) ?? feedbackSchema.defaultValue(),
+            )
+          : mode === WorksheetMode.ViewingFeedback
+            ? feedbackRecord.get(value.id)
+            : undefined
       if (feedbackValue !== undefined && !isTaggedObject(feedbackSchema, feedbackValue)) {
         throw new Error("Feedback passt nicht zur Aufgabe.")
       }
@@ -126,11 +114,7 @@ export function exercise<
         answer: answerValue ?? emptyAnswer(),
         feedback:
           feedbackValue ??
-          openRoot(
-            new ReadonlyNodeStore(),
-            feedbackSchema,
-            defaultFeedback ?? feedbackSchema.defaultValue(),
-          ),
+          openRoot(new ReadonlyNodeStore(), feedbackSchema, feedbackSchema.defaultValue()),
       })
     },
   })
