@@ -1,6 +1,6 @@
 import { ReadonlyNodeStore } from "@editor/storage"
 import { useWorksheet, WorksheetMode } from "@editor/worksheet"
-import { createElement, useEffect, useReducer, type ReactNode } from "react"
+import { createElement, type ReactNode } from "react"
 
 import { block, type StoredBlock } from "./block.ts"
 import type { ObjectFields } from "./object.ts"
@@ -63,44 +63,6 @@ export function exercise<
     ...unit,
     render: function ExerciseView({ value }) {
       const { mode, answers, feedback: feedbackRecord } = useWorksheet()
-      const [, rerender] = useReducer((revision: number) => revision + 1, 0)
-      const answerValue = mode === WorksheetMode.EditingContent ? undefined : answers.get(value.id)
-      const feedbackValue =
-        mode === WorksheetMode.GivingFeedback || mode === WorksheetMode.ViewingFeedback
-          ? feedbackRecord.get(value.id)
-          : undefined
-      const defaultFeedback =
-        mode === WorksheetMode.GivingFeedback &&
-        feedbackValue === undefined &&
-        answerValue !== undefined &&
-        isTaggedObject(answerSchema, answerValue)
-          ? (grade(value, answerValue) ?? feedbackSchema.defaultValue())
-          : undefined
-
-      useEffect(() => {
-        if (mode === WorksheetMode.Answering && answers.get(value.id) === undefined) {
-          answers.set(value.id, answerSchema.defaultValue())
-          rerender()
-        }
-        if (
-          mode === WorksheetMode.GivingFeedback &&
-          defaultFeedback !== undefined &&
-          feedbackRecord.get(value.id) === undefined
-        ) {
-          const storedAnswer = answers.get(value.id)
-          if (storedAnswer === undefined || !isTaggedObject(answerSchema, storedAnswer)) return
-          feedbackRecord.set(value.id, defaultFeedback)
-          rerender()
-        }
-      }, [mode, answers, feedbackRecord, value, defaultFeedback])
-
-      if (answerValue !== undefined && !isTaggedObject(answerSchema, answerValue)) {
-        throw new Error("Antwort passt nicht zur Aufgabe.")
-      }
-      if (feedbackValue !== undefined && !isTaggedObject(feedbackSchema, feedbackValue)) {
-        throw new Error("Feedback passt nicht zur Aufgabe.")
-      }
-
       if (mode === WorksheetMode.EditingContent) {
         return createElement(render, {
           unit: value,
@@ -111,14 +73,31 @@ export function exercise<
       }
 
       if (mode === WorksheetMode.Answering) {
+        const answerValue = answers.getOrCreate(value.id, () => answerSchema.defaultValue())
+        if (!isTaggedObject(answerSchema, answerValue)) {
+          throw new Error("Antwort passt nicht zur Aufgabe.")
+        }
         return createElement(render, {
           unit: value,
           mode,
-          answer:
-            answerValue ??
-            openRoot(new ReadonlyNodeStore(), answerSchema, answerSchema.defaultValue()),
+          answer: answerValue,
           feedback: undefined,
         })
+      }
+
+      const answerValue = answers.get(value.id)
+      if (answerValue !== undefined && !isTaggedObject(answerSchema, answerValue)) {
+        throw new Error("Antwort passt nicht zur Aufgabe.")
+      }
+      const feedbackValue =
+        mode === WorksheetMode.GivingFeedback && answerValue !== undefined
+          ? feedbackRecord.getOrCreate(
+              value.id,
+              () => grade(value, answerValue) ?? feedbackSchema.defaultValue(),
+            )
+          : feedbackRecord.get(value.id)
+      if (feedbackValue !== undefined && !isTaggedObject(feedbackSchema, feedbackValue)) {
+        throw new Error("Feedback passt nicht zur Aufgabe.")
       }
 
       return createElement(render, {
@@ -129,11 +108,7 @@ export function exercise<
           openRoot(new ReadonlyNodeStore(), answerSchema, answerSchema.defaultValue()),
         feedback:
           feedbackValue ??
-          openRoot(
-            new ReadonlyNodeStore(),
-            feedbackSchema,
-            defaultFeedback ?? feedbackSchema.defaultValue(),
-          ),
+          openRoot(new ReadonlyNodeStore(), feedbackSchema, feedbackSchema.defaultValue()),
       })
     },
   })

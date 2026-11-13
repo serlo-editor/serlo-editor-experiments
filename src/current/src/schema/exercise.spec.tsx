@@ -121,6 +121,12 @@ describeWithStores("exercise renderer", (getStore) => {
     ).toBe("<p>What? / 42 /  / answering / task</p>")
   })
 
+  test("answering initializes missing answer synchronously", () => {
+    const worksheet = openExercise({ mode: WorksheetMode.Answering })
+    expect(renderToStaticMarkup(view(worksheet))).toBe("<p>What? /  /  / answering / task</p>")
+    expect(worksheet.answers.get("task")?.snapshot()).toEqual({ type: "question", response: "" })
+  })
+
   test("missing answer is initialized in answering mode", async () => {
     const worksheet = openExercise({ mode: WorksheetMode.Answering })
     await mountExercise(worksheet, (host) => {
@@ -140,7 +146,22 @@ describeWithStores("exercise renderer", (getStore) => {
       const worksheet = openExercise({ mode })
       expect(renderToStaticMarkup(view(worksheet))).toBe(`<p>What? /  /  / ${mode} / task</p>`)
       expect(worksheet.answers.snapshot()).toEqual({})
+      expect(worksheet.feedback.snapshot()).toEqual({})
     }
+  })
+
+  test("giving feedback initializes graded result synchronously", () => {
+    const worksheet = openExercise({
+      mode: WorksheetMode.GivingFeedback,
+      answers: { task: { type: "question", response: "42" } },
+    })
+    expect(renderToStaticMarkup(view(worksheet))).toBe(
+      "<p>What? / 42 / Correct / giving-feedback / task</p>",
+    )
+    expect(worksheet.feedback.get("task")?.snapshot()).toEqual({
+      type: "question",
+      comment: "Correct",
+    })
   })
 
   test("giving feedback initializes a graded result without replacing an existing one", async () => {

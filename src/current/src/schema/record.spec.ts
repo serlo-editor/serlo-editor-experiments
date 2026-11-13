@@ -38,6 +38,25 @@ describeWithStores("record schemas", (getStore) => {
     expect(root.keys).toBeUndefined()
   })
 
+  test("getOrCreate initializes once and preserves edited values", () => {
+    const store = getStore()
+    const root = openRoot(store, record(string()), {})
+    const revision = store.getRevision()
+    let calls = 0
+    const create = () => {
+      calls++
+      return "Initial"
+    }
+
+    expect(root.getOrCreate("answer", create).get()).toBe("Initial")
+    expect(root.getOrCreate("answer", create).get()).toBe("Initial")
+    expect(calls).toBe(1)
+    expect(store.getRevision()).toBe(revision + 1)
+    root.get("answer")!.set("Edited")
+    expect(root.getOrCreate("answer", create).get()).toBe("Edited")
+    expect(calls).toBe(1)
+  })
+
   test("infers object child snapshots and stored values", () => {
     const child = object({
       text: string(),
@@ -202,6 +221,8 @@ test("read-only records initialize but reject writes before child creation", () 
   }
   expect(document.get("constructor")).toBeUndefined()
   const beforeWrite = calls
+  expect(document.getOrCreate("tags", () => ["Changed"]).snapshot()).toEqual(["tag"])
+  expect(() => document.getOrCreate("missing", () => ["New"])).toThrow("Storage is read-only.")
   expect(() => document.set("tags", ["Changed"])).toThrow("Storage is read-only.")
   expect(() => document.remove("tags")).toThrow("Storage is read-only.")
   expect(calls).toBe(beforeWrite)
