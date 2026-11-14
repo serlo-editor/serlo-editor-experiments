@@ -1,0 +1,134 @@
+import {
+  defineBaseKeymap,
+  defineCommands,
+  defineKeymap,
+  defineMarkSpec,
+  defineNodeAttr,
+  defineNodeSpec,
+  type Extension,
+  toggleMark,
+  union,
+} from "prosekit/core"
+import { defineBold } from "prosekit/extensions/bold"
+import { defineHeading } from "prosekit/extensions/heading"
+import { defineItalic } from "prosekit/extensions/italic"
+import { defineList } from "prosekit/extensions/list"
+import { defineParagraph } from "prosekit/extensions/paragraph"
+import { defineText } from "prosekit/extensions/text"
+
+export interface Marks {
+  readonly bold?: boolean
+  readonly italic?: boolean
+  readonly gap?: boolean
+}
+
+export interface InlineConfig {
+  readonly marks?: Marks
+  readonly blocks?: never
+}
+
+export interface BlockConfig {
+  readonly marks?: Marks
+  readonly blocks: {
+    readonly paragraph: true
+    readonly heading?: boolean
+    readonly orderedList?: boolean
+    readonly bulletList?: boolean
+  }
+}
+
+export type RichTextDefinition =
+  | { readonly mode: "inline"; readonly config: InlineConfig }
+  | { readonly mode: "block"; readonly config: BlockConfig }
+
+export const richText = {
+  inline(config: InlineConfig = {}): RichTextDefinition {
+    return { mode: "inline", config }
+  },
+  block(config: BlockConfig): RichTextDefinition {
+    return { mode: "block", config }
+  },
+}
+
+/** Shared compiler for editor creation and headless JSON import/export. */
+export function defineRichTextExtension(definition: RichTextDefinition): Extension {
+  const extensions: Extension[] = [
+    defineBaseKeymap(),
+    defineNodeSpec({
+      name: "doc",
+      content: definition.mode === "inline" ? "inlineBlock" : "block+",
+      topNode: true,
+    }),
+    defineText(),
+  ]
+
+  if (definition.mode === "inline") {
+    extensions.push(
+      defineNodeSpec({
+        name: "inlineBlock",
+        content: "inline*",
+        group: "block",
+        toDOM: () => ["span", { class: "inline-rich-text" }, 0],
+      }),
+    )
+  } else {
+    extensions.push(...defineBlockNodes(definition.config.blocks))
+  }
+
+  const marks = definition.config.marks
+  if (marks?.bold) extensions.push(defineBold())
+  if (marks?.italic) extensions.push(defineItalic())
+  if (marks?.gap) extensions.push(defineGap())
+
+  return union(extensions)
+}
+
+function defineBlockNodes(blocks: BlockConfig["blocks"]): Extension[] {
+  const extensions: Extension[] = [defineParagraph()]
+  const { heading, orderedList, bulletList } = blocks
+
+  if (heading) {
+    extensions.push(defineHeading(), defineNodeAttr({ type: "heading", attr: "level", default: 1 }))
+  }
+  if (orderedList || bulletList) {
+    extensions.push(
+      defineList(),
+      defineNodeAttr({
+        type: "list",
+        attr: "kind",
+        default: bulletList ? "bullet" : "ordered",
+      }),
+    )
+  }
+
+  return extensions
+}
+
+function defineGap(): Extension {
+  return union(
+    defineMarkSpec({
+      name: "gap",
+      attrs: { id: { default: null } },
+      parseDOM: [
+        {
+          tag: 'span[data-gap="true"]',
+          getAttrs: (element) => ({
+            id: element.getAttribute("data-gap-id") ?? crypto.randomUUID(),
+          }),
+        },
+      ],
+      toDOM: (mark) => [
+        "span",
+        { class: "gap-mark", "data-gap": "true", "data-gap-id": mark.attrs.id },
+        0,
+      ],
+    }),
+    defineCommands({
+      toggleGap: () => toggleMark({ type: "gap", attrs: { id: crypto.randomUUID() } }),
+    }),
+    defineKeymap({
+      "Mod-Alt-g": (state, dispatch, view) =>
+        toggleMark({ type: "gap", attrs: { id: crypto.randomUUID() } })(state, dispatch, view),
+    }),
+  )
+}
