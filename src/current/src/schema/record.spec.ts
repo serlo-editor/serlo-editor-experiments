@@ -1,6 +1,6 @@
 import { expect, test } from "bun:test"
 
-import { ReadonlyNodeStore, YjsNodeStore } from "@editor/storage"
+import { ReadonlyNodeStore, YjsNodeStore } from "@editor/store"
 import { describeWithStores } from "@editor/test-utils"
 import { Awareness } from "y-protocols/awareness"
 import * as Y from "yjs"

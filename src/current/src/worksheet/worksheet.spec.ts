@@ -1,7 +1,7 @@
 import { expect, test } from "bun:test"
 
 import { boolean, object, record, string } from "@editor/schema"
-import { FlatNodeStore } from "@editor/storage"
+import { FlatNodeStore } from "@editor/store"
 
 import { openWorksheet, WorksheetMode } from "./worksheet.ts"
 

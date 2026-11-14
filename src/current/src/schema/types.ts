@@ -1,4 +1,4 @@
-import type { NodeKind, NodeRefs, NodeStore } from "@editor/storage"
+import type { NodeKind, NodeRefs, NodeStore } from "@editor/store"
 import type { JSONValue } from "@editor/utils"
 
 /** Schema-bound access to stored data. Snapshot returns its current JSON representation. */

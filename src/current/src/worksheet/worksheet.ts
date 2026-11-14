@@ -7,7 +7,7 @@ import {
   openRoot,
   type TaggedObjectDefinition,
 } from "@editor/schema"
-import { ReadonlyNodeStore, type NodeRefs, type NodeStore } from "@editor/storage"
+import { ReadonlyNodeStore, type NodeRefs, type NodeStore } from "@editor/store"
 
 export enum WorksheetMode {
   EditingContent = "editing-content",

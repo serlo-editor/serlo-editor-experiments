@@ -1,4 +1,4 @@
-import type { NodeRefs, NodeStore } from "@editor/storage"
+import type { NodeRefs, NodeStore } from "@editor/store"
 
 import type { AnySchema, SnapshotOf, StoredValueOf } from "./types.ts"
 
