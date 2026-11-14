@@ -8,6 +8,7 @@ import {
   type TaggedObjectDefinition,
 } from "@editor/schema"
 import { ReadonlyNodeStore, type NodeRefs, type NodeStore } from "@editor/store"
+import { useCallback, useRef, useState, useSyncExternalStore } from "react"
 
 export enum WorksheetMode {
   EditingContent = "editing-content",
@@ -52,6 +53,62 @@ export interface Worksheet<
   getRevision(): number
   /** Releases stores opened by this worksheet, not caller-owned Y.Doc or awareness. */
   dispose(): void
+}
+
+export function useWorksheetSession<
+  ContentSchema extends AnySchema,
+  AnswersSchema extends AnySchema,
+  FeedbacksSchema extends AnySchema,
+  Refs extends NodeRefs,
+>(options: WorksheetOptions<ContentSchema, AnswersSchema, FeedbacksSchema, Refs>) {
+  type OpenWorksheet = ReturnType<
+    typeof openWorksheet<ContentSchema, AnswersSchema, FeedbacksSchema, Refs>
+  >
+  type Session = { worksheet: OpenWorksheet }
+
+  const open = useCallback(
+    (
+      mode: WorksheetMode,
+      initialSnapshot: WorksheetOptions<
+        ContentSchema,
+        AnswersSchema,
+        FeedbacksSchema,
+        Refs
+      >["initialSnapshot"],
+    ): Session => ({
+      worksheet: openWorksheet({ ...options, mode, initialSnapshot }),
+    }),
+    [options],
+  )
+  const sessionRef = useRef<Session | null>(null)
+  if (sessionRef.current === null) sessionRef.current = open(options.mode, options.initialSnapshot)
+  const [session, setSession] = useState(sessionRef.current)
+  const worksheet = session.worksheet
+
+  const revision = useSyncExternalStore(
+    worksheet.subscribe,
+    worksheet.getRevision,
+    worksheet.getRevision,
+  )
+
+  const switchMode = useCallback(
+    (nextMode: WorksheetMode) => {
+      const current = sessionRef.current
+      if (!current || current.worksheet.mode === nextMode) return
+
+      const next = open(nextMode, {
+        content: current.worksheet.content.snapshot(),
+        answers: current.worksheet.answers.snapshot(),
+        feedbacks: current.worksheet.feedbacks.snapshot(),
+      })
+      sessionRef.current = next
+      setSession(next)
+      current.worksheet.dispose()
+    },
+    [open],
+  )
+
+  return { worksheet, revision, switchMode }
 }
 
 export function openWorksheet<

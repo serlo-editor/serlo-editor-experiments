@@ -1,2 +1,2 @@
-export { WorksheetMode, openWorksheet, type Worksheet } from "./worksheet.ts"
-export { WorksheetContext, useWorksheet } from "./context.ts"
+export { WorksheetMode, openWorksheet, useWorksheetSession, type Worksheet } from "./worksheet.ts"
+export { WorksheetContext, WorksheetRevisionProvider, useWorksheet } from "./context.ts"
