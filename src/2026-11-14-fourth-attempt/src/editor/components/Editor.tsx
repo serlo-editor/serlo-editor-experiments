@@ -1,8 +1,8 @@
 import { useCallback, useState } from "react"
 
 import type { RootValue } from "../blocks"
+import { Answers, Feedback } from "../blocks/responses"
 import { OverallFeedback } from "../blocks/shared/feedback"
-import { Answers, Feedback } from "../responses"
 import type { RichTextEditor } from "../rich-text"
 import { BlockView } from "../schema"
 import type { StoredValueOf } from "../schema/types"

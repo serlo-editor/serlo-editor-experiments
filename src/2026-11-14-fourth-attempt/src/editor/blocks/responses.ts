@@ -1,6 +1,6 @@
-import { FillInTheGapExercise, MultipleChoiceExercise } from "./blocks"
-import { Overall, feedbackText, overallKey } from "./blocks/shared/feedback"
-import { discriminatedUnion, record } from "./schema"
+import { discriminatedUnion, record } from "../schema"
+import { FillInTheGapExercise, MultipleChoiceExercise } from "./index"
+import { Overall, feedbackText, overallKey } from "./shared/feedback"
 
 export const Answers = record(
   discriminatedUnion([FillInTheGapExercise.answer, MultipleChoiceExercise.answer]),

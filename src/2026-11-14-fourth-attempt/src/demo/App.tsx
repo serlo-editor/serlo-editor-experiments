@@ -1,8 +1,8 @@
 import { useState } from "react"
 
 import { Root, type RootSnapshot } from "../editor/blocks"
+import { Answers, Feedback, initialFeedback } from "../editor/blocks/responses"
 import { Editor, type EditorWorksheet } from "../editor/components/Editor"
-import { Answers, Feedback, initialFeedback } from "../editor/responses"
 import { FlatNodeStore } from "../editor/store"
 import { useStorage } from "../editor/store/use-storage"
 import { openWorksheet, WorksheetMode } from "../editor/worksheet"
