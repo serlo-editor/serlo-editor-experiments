@@ -140,10 +140,7 @@ test("feedback grades unanswered exercises without writing answers", async () =>
   await click(`${modes} button:nth-child(4)`)
   await expectPage('document.querySelectorAll(".feedback-card[data-result]").length', 2)
   await expectPage('document.querySelector(".preview-gap").disabled', true)
-  await expectPage('JSON.parse(document.querySelectorAll(".document-json pre")[1].textContent)', {
-    gaps: {},
-    choices: {},
-  })
+  await expectPage('JSON.parse(document.querySelectorAll(".document-json pre")[1].textContent)', {})
 }, 30_000)
 
 async function click(selector: string, clickCount: 1 | 2 | 3 = 1) {

@@ -1,7 +1,9 @@
 import type { TaggedObjectDefinition } from "./tagged-object.ts"
 import type { Schema, SnapshotOf, StoredValueOf } from "./types.ts"
 
-export function discriminatedUnion<const Definitions extends readonly TaggedObjectDefinition[]>(
+export function discriminatedUnion<
+  const Definitions extends readonly TaggedObjectDefinition<string, {}>[],
+>(
   definitions: Definitions,
 ): Schema<SnapshotOf<Definitions[number]>, StoredValueOf<Definitions[number]>, "map"> {
   const firstDefinition = definitions[0]

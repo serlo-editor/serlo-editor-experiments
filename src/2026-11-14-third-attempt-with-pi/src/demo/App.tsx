@@ -1,12 +1,11 @@
-import { useState } from "react"
+import { FlatNodeStore } from "@editor/store"
+import { openWorksheet, WorksheetMode } from "@editor/worksheet"
+import { useEffect, useState, useSyncExternalStore } from "react"
 
-import { Root, type RootSnapshot } from "../../editor/blocks"
-import { Editor, type EditorWorksheet } from "../../editor/components/Editor"
-import { Answers, Feedback, initialFeedback } from "../../editor/responses"
-import { FlatNodeStore } from "../../editor/storage"
-import { useStorage } from "../../editor/use-storage"
-import { openWorksheet, WorksheetMode } from "../../editor/worksheet"
 import { initialContent } from "./initial-content"
+import { Root, type RootSnapshot } from "./worksheet/blocks"
+import { Editor, type EditorWorksheet } from "./worksheet/components/Editor"
+import { Answers, Feedback, initialFeedback } from "./worksheet/responses"
 
 const modes = [
   { id: WorksheetMode.EditingContent, label: "1. Inhalt bearbeiten" },
@@ -20,20 +19,22 @@ type Snapshot = {
   answers: ReturnType<typeof Answers.defaultValue>
   feedback: ReturnType<typeof Feedback.defaultValue>
 }
-type Workspace = { worksheet: EditorWorksheet; store: FlatNodeStore; generation: number }
+type Workspace = { worksheet: EditorWorksheet; generation: number }
 
 function createWorkspace(mode: WorksheetMode, snapshot: Snapshot, generation: number): Workspace {
-  const store = new FlatNodeStore()
   return {
-    store,
     generation,
     worksheet: openWorksheet({
       mode,
-      store,
+      createStore: () => new FlatNodeStore(),
       contentSchema: Root,
       answersSchema: Answers,
-      feedbackSchema: Feedback,
-      initialSnapshot: snapshot,
+      feedbacksSchema: Feedback,
+      initialSnapshot: {
+        content: snapshot.content,
+        answers: snapshot.answers,
+        feedbacks: snapshot.feedback,
+      },
     }),
   }
 }
@@ -44,7 +45,7 @@ function nextSnapshot(worksheet: EditorWorksheet, mode: WorksheetMode): Snapshot
   const feedback =
     mode === WorksheetMode.EditingContent || mode === WorksheetMode.Answering
       ? initialFeedback()
-      : worksheet.feedback.snapshot()
+      : worksheet.feedbacks.snapshot()
   return { content, answers, feedback }
 }
 
@@ -60,7 +61,8 @@ export default function App() {
       0,
     ),
   )
-  const { worksheet, store, generation } = workspace
+  const { worksheet, generation } = workspace
+  useEffect(() => () => worksheet.dispose(), [worksheet])
   return (
     <main className="app">
       <header className="app__header">
@@ -84,18 +86,18 @@ export default function App() {
       </header>
       <div className="app__workspace">
         <section className="app__authoring" aria-label="Aktiver Arbeitsbereich">
-          <Editor key={generation} worksheet={worksheet} store={store} name="Editor 1" />
+          <Editor key={generation} worksheet={worksheet} name="Editor 1" />
         </section>
         <aside className="app__preview" aria-label="Dokumente">
-          <Documents key={generation} worksheet={worksheet} store={store} />
+          <Documents key={generation} worksheet={worksheet} />
         </aside>
       </div>
     </main>
   )
 }
 
-function Documents({ worksheet, store }: { worksheet: EditorWorksheet; store: FlatNodeStore }) {
-  useStorage(store)
+function Documents({ worksheet }: { worksheet: EditorWorksheet }) {
+  useSyncExternalStore(worksheet.subscribe, worksheet.getRevision, worksheet.getRevision)
   return (
     <section className="documents">
       <h2>Inhalt · Antworten · Feedback</h2>
@@ -114,7 +116,7 @@ function Documents({ worksheet, store }: { worksheet: EditorWorksheet; store: Fl
       </p>
       <DocumentJSON label="Inhalt" snapshot={worksheet.content.snapshot()} />
       <DocumentJSON label="Antworten" snapshot={worksheet.answers.snapshot()} />
-      <DocumentJSON label="Feedback" snapshot={worksheet.feedback.snapshot()} />
+      <DocumentJSON label="Feedback" snapshot={worksheet.feedbacks.snapshot()} />
       <p className="documents__note">
         Debug-Ansicht enthält auch Lösungen. Schreibschutz ist keine Zugriffskontrolle.
       </p>

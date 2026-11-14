@@ -1,8 +1,10 @@
+import { ReadonlyNodeStore } from "@editor/store"
 import { useWorksheet, WorksheetMode } from "@editor/worksheet"
 import { createElement, type ReactNode } from "react"
 
 import { block, type StoredBlock } from "./block.ts"
 import type { ObjectFields } from "./object.ts"
+import { openRoot } from "./root.ts"
 import {
   isTaggedObject,
   taggedObject,
@@ -71,23 +73,41 @@ export function exercise<
         })
       }
 
-      const answer = answers.getOrCreate(value.id, () => answerSchema.defaultValue())
-      if (!isTaggedObject(answerSchema, answer)) {
+      const savedAnswer =
+        mode === WorksheetMode.Answering
+          ? answers.getOrCreate(value.id, () => answerSchema.defaultValue())
+          : answers.get(value.id)
+      if (savedAnswer && !isTaggedObject(answerSchema, savedAnswer)) {
         throw new Error("Antwort passt nicht zur Aufgabe.")
       }
 
       if (mode === WorksheetMode.Answering) {
-        return createElement(render, { unit: value, mode, answer, feedback: undefined })
+        return createElement(render, {
+          unit: value,
+          mode,
+          answer:
+            savedAnswer ??
+            openRoot(new ReadonlyNodeStore(), answerSchema, answerSchema.defaultValue()),
+          feedback: undefined,
+        })
       }
 
-      const feedback = feedbacks.getOrCreate(
-        value.id,
-        () => grade(value, answer) ?? feedbackSchema.defaultValue(),
-      )
-      if (!isTaggedObject(feedbackSchema, feedback)) {
+      // Missing answers are read-only defaults; grading must not create an answer.
+      const answer =
+        savedAnswer ?? openRoot(new ReadonlyNodeStore(), answerSchema, answerSchema.defaultValue())
+      const savedFeedback =
+        mode === WorksheetMode.GivingFeedback
+          ? feedbacks.getOrCreate(
+              value.id,
+              () => grade(value, answer) ?? feedbackSchema.defaultValue(),
+            )
+          : feedbacks.get(value.id)
+      if (savedFeedback && !isTaggedObject(feedbackSchema, savedFeedback)) {
         throw new Error("Feedback passt nicht zur Aufgabe.")
       }
-
+      const feedback =
+        savedFeedback ??
+        openRoot(new ReadonlyNodeStore(), feedbackSchema, feedbackSchema.defaultValue())
       return createElement(render, { unit: value, mode, answer, feedback })
     },
   })
