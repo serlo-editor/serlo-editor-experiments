@@ -36,7 +36,7 @@ export function taggedObject<const Type extends string, Fields extends ObjectFie
   fields,
 }: {
   type: Type
-  fields: Fields & { type?: never }
+  fields: Fields & { type?: never; snapshot?: never }
 }): TaggedObjectDefinition<Type, Fields> {
   if (type.length === 0) throw new TypeError("Expected object type.")
 

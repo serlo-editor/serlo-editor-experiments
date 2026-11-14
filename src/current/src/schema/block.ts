@@ -40,7 +40,7 @@ export function block<const Type extends string, Fields extends ObjectFields>({
   render,
 }: {
   type: Type
-  fields: Fields & { id?: never; type?: never }
+  fields: Fields & { id?: never; type?: never; snapshot?: never }
   render: BlockDefinition<Type, Fields>["render"]
 }): BlockDefinition<Type, Fields> {
   if (type.length === 0) throw new TypeError("Expected block type.")
