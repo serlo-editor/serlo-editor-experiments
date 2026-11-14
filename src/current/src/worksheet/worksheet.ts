@@ -16,6 +16,24 @@ export enum WorksheetMode {
   ViewingFeedback = "viewing-feedback",
 }
 
+export interface WorksheetOptions<
+  ContentSchema extends AnySchema,
+  AnswersSchema extends AnySchema,
+  FeedbacksSchema extends AnySchema,
+  Refs extends NodeRefs,
+> {
+  mode: WorksheetMode
+  createStore: () => NodeStore<Refs>
+  contentSchema: ContentSchema
+  answersSchema: AnswersSchema
+  feedbacksSchema: FeedbacksSchema
+  initialSnapshot: {
+    content: SnapshotOf<ContentSchema>
+    answers: SnapshotOf<AnswersSchema>
+    feedbacks: SnapshotOf<FeedbacksSchema>
+  }
+}
+
 export interface Worksheet<
   Content extends StoredValue = StoredValue,
   Answers extends StoredRecord<TaggedObjectDefinition<string, {}>> = StoredRecord<
@@ -29,6 +47,8 @@ export interface Worksheet<
   content: Content
   answers: Answers
   feedbacks: Feedbacks
+  subscribe(listener: () => void): () => void
+  getRevision(): number
 }
 
 export function openWorksheet<
@@ -59,18 +79,45 @@ export function openWorksheet<
   StoredValueOf<AnswersSchema>,
   StoredValueOf<FeedbacksSchema>
 > {
-  const content =
-    mode === WorksheetMode.EditingContent
-      ? openRoot(createStore(), contentSchema, initialSnapshot.content)
-      : openRoot(new ReadonlyNodeStore(), contentSchema, initialSnapshot.content)
-  const answers =
-    mode === WorksheetMode.Answering
-      ? openRoot(createStore(), answersSchema, initialSnapshot.answers)
-      : openRoot(new ReadonlyNodeStore(), answersSchema, initialSnapshot.answers)
-  const feedbacks =
-    mode === WorksheetMode.GivingFeedback
-      ? openRoot(createStore(), feedbacksSchema, initialSnapshot.feedbacks)
-      : openRoot(new ReadonlyNodeStore(), feedbacksSchema, initialSnapshot.feedbacks)
+  const contentStore = mode === WorksheetMode.EditingContent ? createStore() : undefined
+  const answersStore = mode === WorksheetMode.Answering ? createStore() : undefined
+  const feedbacksStore = mode === WorksheetMode.GivingFeedback ? createStore() : undefined
+  const content = contentStore
+    ? openRoot(contentStore, contentSchema, initialSnapshot.content)
+    : openRoot(new ReadonlyNodeStore(), contentSchema, initialSnapshot.content)
+  const answers = answersStore
+    ? openRoot(answersStore, answersSchema, initialSnapshot.answers)
+    : openRoot(new ReadonlyNodeStore(), answersSchema, initialSnapshot.answers)
+  const feedbacks = feedbacksStore
+    ? openRoot(feedbacksStore, feedbacksSchema, initialSnapshot.feedbacks)
+    : openRoot(new ReadonlyNodeStore(), feedbacksSchema, initialSnapshot.feedbacks)
+  const stores = [contentStore, answersStore, feedbacksStore].filter(
+    (store): store is NodeStore<Refs> => store !== undefined,
+  )
+  const revisions = stores.map((store) => store.getRevision())
+  const listeners = new Set<() => void>()
+  stores.forEach((store) =>
+    store.subscribe(() => {
+      listeners.forEach((listener) => listener())
+    }),
+  )
 
-  return { mode, content, answers, feedbacks }
+  return {
+    mode,
+    content,
+    answers,
+    feedbacks,
+    subscribe(listener) {
+      listeners.add(listener)
+      return () => listeners.delete(listener)
+    },
+    getRevision() {
+      return stores.reduce((revision, store, index) => {
+        const current = store.getRevision()
+        const previous = revisions[index] ?? 0
+        revisions[index] = current
+        return revision + current - previous
+      }, 0)
+    },
+  }
 }

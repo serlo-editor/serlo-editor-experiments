@@ -36,12 +36,8 @@ export function useOpenWorksheet<
     setOpened(next)
   }, [])
 
-  const store = opened.store
-  const subscribe = useCallback(
-    (listener: () => void) => store?.subscribe(listener) ?? (() => {}),
-    [store],
-  )
-  const getRevision = useCallback(() => store?.getRevision() ?? 0, [store])
+  const subscribe = useCallback((listener: () => void) => opened.subscribe(listener), [opened])
+  const getRevision = useCallback(() => opened.getRevision(), [opened])
   const revision = useSyncExternalStore(subscribe, getRevision, getRevision)
 
   // New context value notifies memoized consumers without reopening bound values.
