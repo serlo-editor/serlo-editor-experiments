@@ -3,19 +3,35 @@ import type { Awareness } from "prosekit/extensions/yjs"
 import type { RichTextId } from "./types.ts"
 
 /** Shares presence transport while keeping each editor's cursor isolated. */
-export function createEditorSpecificAwareness(id: RichTextId, awareness: Awareness): Awareness {
+export function createEditorSpecificAwareness(
+  id: RichTextId,
+  namespace: string,
+  awareness: Awareness,
+): Awareness {
+  const matches = (state: object | null) =>
+    state !== null &&
+    "editorId" in state &&
+    state.editorId === id &&
+    "editorNamespace" in state &&
+    state.editorNamespace === namespace
+
   const getStates: Awareness["getStates"] = () =>
-    new Map([...awareness.getStates()].filter(([, state]) => hasEditorId(state, id)))
+    new Map([...awareness.getStates()].filter(([, state]) => matches(state)))
 
   const getLocalState: Awareness["getLocalState"] = () => {
     const state = awareness.getLocalState()
-    return hasEditorId(state, id) ? state : null
+    return matches(state) ? state : null
   }
 
   const setLocalStateField: Awareness["setLocalStateField"] = (field, value) => {
     const state = awareness.getLocalState()
-    if (value != null || hasEditorId(state, id)) {
-      awareness.setLocalState({ ...state, editorId: id, [field]: value })
+    if (value != null || matches(state)) {
+      awareness.setLocalState({
+        ...state,
+        editorId: id,
+        editorNamespace: namespace,
+        [field]: value,
+      })
     }
   }
 
@@ -33,8 +49,4 @@ export function createEditorSpecificAwareness(id: RichTextId, awareness: Awarene
       }
     },
   })
-}
-
-function hasEditorId(state: object | null, id: RichTextId): boolean {
-  return state !== null && "editorId" in state && state.editorId === id
 }

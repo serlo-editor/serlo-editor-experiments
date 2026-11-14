@@ -206,8 +206,16 @@ test("Yjs records reopen, observe remote edits, and converge after concurrent ad
   const firstAwareness = new Awareness(firstDoc)
   const secondAwareness = new Awareness(secondDoc)
   try {
-    const firstStore = new YjsNodeStore({ doc: firstDoc, awareness: firstAwareness })
-    const secondStore = new YjsNodeStore({ doc: secondDoc, awareness: secondAwareness })
+    const firstStore = new YjsNodeStore({
+      doc: firstDoc,
+      awareness: firstAwareness,
+      editorName: "test",
+    })
+    const secondStore = new YjsNodeStore({
+      doc: secondDoc,
+      awareness: secondAwareness,
+      editorName: "test",
+    })
     const schema = record(string())
     const first = openRoot(firstStore, schema, { answer: "Initial" })
     Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))

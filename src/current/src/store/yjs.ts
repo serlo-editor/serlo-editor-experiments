@@ -23,7 +23,8 @@ type YjsNodeRef = YjsNodeRefs[NodeKind]
 type YjsNodeStoreContract = NodeStore<YjsNodeRefs>
 
 export class YjsNodeStore implements YjsNodeStoreContract {
-  private readonly editorName: string
+  private readonly rootName: string
+  private readonly richTextPrefix: string
   private readonly doc: Y.Doc
   private readonly awareness: Awareness
   private readonly editors = new Map<RichTextId, RichTextEditor>()
@@ -32,8 +33,11 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     if (this.hasStorageChanges(transaction)) this.changes.publish()
   }
 
+  /** editorName identifies one logical store; shared Y.Doc still shares sync and access policy. */
   constructor(args: { awareness: Awareness; doc: Y.Doc; editorName: string }) {
-    this.editorName = args.editorName
+    const prefix = `storage:${JSON.stringify(args.editorName)}:`
+    this.rootName = `${prefix}root`
+    this.richTextPrefix = `${prefix}richText:`
     this.doc = args.doc
     this.awareness = args.awareness
 
@@ -88,7 +92,7 @@ export class YjsNodeStore implements YjsNodeStoreContract {
             defineYjs({
               doc: this.doc,
               fragment,
-              awareness: createEditorSpecificAwareness(id, this.awareness),
+              awareness: createEditorSpecificAwareness(id, this.rootName, this.awareness),
             }),
             defineSafeYjsTeardown(),
           ],
@@ -105,7 +109,7 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     getOrCreate: (create) =>
       this.transact(
         (write) =>
-          this.doc.getMap<YjsNodeRef>(this.editorName).get("value") ?? write.root.save(create()),
+          this.doc.getMap<YjsNodeRef>(this.rootName).get("value") ?? write.root.save(create()),
       ),
   }
 
@@ -148,7 +152,7 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     },
     root: {
       save: (ref) => {
-        const root = this.doc.getMap<YjsNodeRef>(this.editorName)
+        const root = this.doc.getMap<YjsNodeRef>(this.rootName)
         if (root.get("value") !== ref) root.set("value", ref)
         return ref
       },
@@ -156,13 +160,13 @@ export class YjsNodeStore implements YjsNodeStoreContract {
   }
 
   private fragmentName(id: RichTextId): string {
-    return `${this.editorName}:richText:${id}`
+    return `${this.richTextPrefix}${id}`
   }
 
   private hasStorageChanges(transaction: Y.Transaction): boolean {
     for (const [name, type] of this.doc.share) {
       if (
-        (name === this.editorName || name.startsWith(`${this.editorName}:richText:`)) &&
+        (name === this.rootName || name.startsWith(this.richTextPrefix)) &&
         (transaction.changed.has(type) || transaction.changedParentTypes.has(type))
       ) {
         return true

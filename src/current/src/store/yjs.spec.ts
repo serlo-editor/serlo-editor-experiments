@@ -1,5 +1,6 @@
 import { expect, test } from "bun:test"
 
+import { openRoot, string } from "@editor/schema"
 import type { JSONValue } from "@editor/utils"
 import { Awareness } from "y-protocols/awareness"
 import * as Y from "yjs"
@@ -8,7 +9,7 @@ import { YjsNodeStore } from "./index.ts"
 
 test("YjsNodeStore uses store origin and groups nested transactions", () => {
   const doc = new Y.Doc()
-  const store = new YjsNodeStore({ doc, awareness: new Awareness(doc) })
+  const store = new YjsNodeStore({ doc, awareness: new Awareness(doc), editorName: "test" })
   const ref = store.cell.create("Initial")
   store.transact((write) => write.root.save(ref))
   const updates: unknown[] = []
@@ -39,8 +40,8 @@ test("YjsNodeStore uses store origin and groups nested transactions", () => {
 test("YjsNodeStore syncs local edits between documents without echoing received updates", () => {
   const doc1 = new Y.Doc()
   const doc2 = new Y.Doc()
-  const store1 = new YjsNodeStore({ doc: doc1, awareness: new Awareness(doc1) })
-  const store2 = new YjsNodeStore({ doc: doc2, awareness: new Awareness(doc2) })
+  const store1 = new YjsNodeStore({ doc: doc1, awareness: new Awareness(doc1), editorName: "test" })
+  const store2 = new YjsNodeStore({ doc: doc2, awareness: new Awareness(doc2), editorName: "test" })
   let forwarded1 = 0
   let forwarded2 = 0
 
@@ -65,7 +66,9 @@ test("YjsNodeStore syncs local edits between documents without echoing received 
   const root1 = store1.map.create({ cell: cell1, array: array1, object: object1 })
   store1.transact((tx) => tx.root.save(root1))
 
-  const root2 = doc2.getMap("root").get("root") as ReturnType<typeof store2.map.create>
+  const root2 = doc2.getMap('storage:"test":root').get("value") as ReturnType<
+    typeof store2.map.create
+  >
   const cell2 = root2.get("cell") as ReturnType<typeof store2.cell.create>
   const array2 = root2.get("array") as ReturnType<typeof store2.array.create>
   const object2 = root2.get("object") as ReturnType<typeof store2.map.create>
@@ -125,8 +128,12 @@ test("YjsNodeStore revisions stay local and ignore unrelated, duplicate, and awa
   const secondDoc = new Y.Doc()
   const firstAwareness = new Awareness(firstDoc)
   const secondAwareness = new Awareness(secondDoc)
-  const first = new YjsNodeStore({ doc: firstDoc, awareness: firstAwareness })
-  const second = new YjsNodeStore({ doc: secondDoc, awareness: secondAwareness })
+  const first = new YjsNodeStore({ doc: firstDoc, awareness: firstAwareness, editorName: "test" })
+  const second = new YjsNodeStore({
+    doc: secondDoc,
+    awareness: secondAwareness,
+    editorName: "test",
+  })
   const observed: number[] = []
   const unsubscribe = second.subscribe(() => observed.push(second.getRevision()))
 
@@ -162,7 +169,11 @@ test("YjsNodeStore revisions stay local and ignore unrelated, duplicate, and awa
   expect(observed).toEqual([1, 2])
 
   const beforeOpening = Y.encodeStateVector(secondDoc)
-  const reopened = new YjsNodeStore({ doc: secondDoc, awareness: secondAwareness })
+  const reopened = new YjsNodeStore({
+    doc: secondDoc,
+    awareness: secondAwareness,
+    editorName: "test",
+  })
   expect(reopened.getRevision()).toBe(0)
   reopened.root.getOrCreate(() => {
     throw new Error("Missing root.")
@@ -175,9 +186,73 @@ test("YjsNodeStore revisions stay local and ignore unrelated, duplicate, and awa
   secondDoc.destroy()
 })
 
+test("namespaced stores share a Y.Doc without sharing roots or revisions", () => {
+  const doc = new Y.Doc()
+  const peer = new Y.Doc()
+  const awareness = new Awareness(doc)
+  const peerAwareness = new Awareness(peer)
+  const content = new YjsNodeStore({ doc, awareness, editorName: "worksheet:content" })
+  const answers = new YjsNodeStore({ doc, awareness, editorName: "worksheet:answers" })
+  const peerAnswers = new YjsNodeStore({
+    doc: peer,
+    awareness: peerAwareness,
+    editorName: "worksheet:answers",
+  })
+  try {
+    const contentRoot = content.cell.create("Question")
+    const answersRoot = answers.cell.create("Answer")
+    content.root.getOrCreate(() => contentRoot)
+    answers.root.getOrCreate(() => answersRoot)
+    expect(
+      content.root.getOrCreate(() => {
+        throw new Error("Reinitialized content")
+      }),
+    ).toBe(contentRoot)
+    expect(
+      answers.root.getOrCreate(() => {
+        throw new Error("Reinitialized answers")
+      }),
+    ).toBe(answersRoot)
+    expect(content.getRevision()).toBe(1)
+    expect(answers.getRevision()).toBe(1)
+
+    const contentEvents: number[] = []
+    content.subscribe(() => contentEvents.push(content.getRevision()))
+    answers.transact((write) => write.cell.set(answersRoot, "Edited"))
+    expect(contentEvents).toEqual([])
+    expect(content.getRevision()).toBe(1)
+    expect(answers.getRevision()).toBe(2)
+    Y.applyUpdate(peer, Y.encodeStateAsUpdate(doc))
+    expect(openRoot(peerAnswers, string(), "Ignored").snapshot()).toBe("Edited")
+    expect(peerAnswers.getRevision()).toBe(1)
+
+    // Arbitrary names must not make one store's root look like another's fragment.
+    const tricky = new YjsNodeStore({
+      doc,
+      awareness,
+      editorName: "worksheet:content:richText:other",
+    })
+    tricky.root.getOrCreate(() => tricky.cell.create("Independent"))
+    expect(content.getRevision()).toBe(1)
+    tricky.dispose()
+
+    content.dispose()
+    answers.transact((write) => write.cell.set(answersRoot, "Again"))
+    expect(contentEvents).toEqual([])
+  } finally {
+    content.dispose()
+    answers.dispose()
+    peerAnswers.dispose()
+    awareness.destroy()
+    peerAwareness.destroy()
+    doc.destroy()
+    peer.destroy()
+  }
+})
+
 test("YjsNodeStore rejects cells missing their value", () => {
   const doc = new Y.Doc()
-  const store = new YjsNodeStore({ doc, awareness: new Awareness(doc) })
+  const store = new YjsNodeStore({ doc, awareness: new Awareness(doc), editorName: "test" })
   const cellRef = store.cell.create("Draft")
   store.transact((tx) => tx.root.save(cellRef))
   store.transact(() => cellRef.delete("value"))
