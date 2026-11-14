@@ -23,6 +23,7 @@ type YjsNodeRef = YjsNodeRefs[NodeKind]
 type YjsNodeStoreContract = NodeStore<YjsNodeRefs>
 
 export class YjsNodeStore implements YjsNodeStoreContract {
+  private readonly editorName: string
   private readonly doc: Y.Doc
   private readonly awareness: Awareness
   private readonly editors = new Map<RichTextId, RichTextEditor>()
@@ -31,11 +32,13 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     if (this.hasStorageChanges(transaction)) this.changes.publish()
   }
 
-  constructor({ doc, awareness }: { awareness: Awareness; doc: Y.Doc }) {
-    this.doc = doc
-    this.awareness = awareness
+  constructor(args: { awareness: Awareness; doc: Y.Doc; editorName: string }) {
+    this.editorName = args.editorName
+    this.doc = args.doc
+    this.awareness = args.awareness
+
     // Store follows document lifetime; track local and remote changes without subscribers.
-    doc.on("afterTransaction", this.onAfterTransaction)
+    this.doc.on("afterTransaction", this.onAfterTransaction)
   }
 
   readonly cell: YjsNodeStoreContract["cell"] = {
@@ -101,7 +104,8 @@ export class YjsNodeStore implements YjsNodeStoreContract {
   readonly root: YjsNodeStoreContract["root"] = {
     getOrCreate: (create) =>
       this.transact(
-        (write) => this.doc.getMap<YjsNodeRef>("root").get("root") ?? write.root.save(create()),
+        (write) =>
+          this.doc.getMap<YjsNodeRef>(this.editorName).get("value") ?? write.root.save(create()),
       ),
   }
 
@@ -144,21 +148,21 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     },
     root: {
       save: (ref) => {
-        const root = this.doc.getMap<YjsNodeRef>("root")
-        if (root.get("root") !== ref) root.set("root", ref)
+        const root = this.doc.getMap<YjsNodeRef>(this.editorName)
+        if (root.get("value") !== ref) root.set("value", ref)
         return ref
       },
     },
   }
 
   private fragmentName(id: RichTextId): string {
-    return `storage:richText:${id}`
+    return `${this.editorName}:richText:${id}`
   }
 
   private hasStorageChanges(transaction: Y.Transaction): boolean {
     for (const [name, type] of this.doc.share) {
       if (
-        (name === "root" || name.startsWith("storage:richText:")) &&
+        (name === this.editorName || name.startsWith(`${this.editorName}:richText:`)) &&
         (transaction.changed.has(type) || transaction.changedParentTypes.has(type))
       ) {
         return true

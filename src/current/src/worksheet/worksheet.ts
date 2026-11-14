@@ -23,7 +23,7 @@ export interface WorksheetOptions<
   Refs extends NodeRefs,
 > {
   mode: WorksheetMode
-  createStore: () => NodeStore<Refs>
+  createStore: (kind: string) => NodeStore<Refs>
   contentSchema: ContentSchema
   answersSchema: AnswersSchema
   feedbacksSchema: FeedbacksSchema
@@ -63,25 +63,15 @@ export function openWorksheet<
   answersSchema,
   feedbacksSchema,
   initialSnapshot,
-}: {
-  mode: WorksheetMode
-  createStore: () => NodeStore<Refs>
-  contentSchema: ContentSchema
-  answersSchema: AnswersSchema
-  feedbacksSchema: FeedbacksSchema
-  initialSnapshot: {
-    content: SnapshotOf<ContentSchema>
-    answers: SnapshotOf<AnswersSchema>
-    feedbacks: SnapshotOf<FeedbacksSchema>
-  }
-}): Worksheet<
+}: WorksheetOptions<ContentSchema, AnswersSchema, FeedbacksSchema, Refs>): Worksheet<
   StoredValueOf<ContentSchema>,
   StoredValueOf<AnswersSchema>,
   StoredValueOf<FeedbacksSchema>
 > {
-  const contentStore = mode === WorksheetMode.EditingContent ? createStore() : undefined
-  const answersStore = mode === WorksheetMode.Answering ? createStore() : undefined
-  const feedbacksStore = mode === WorksheetMode.GivingFeedback ? createStore() : undefined
+  const contentStore = mode === WorksheetMode.EditingContent ? createStore("content") : undefined
+  const answersStore = mode === WorksheetMode.Answering ? createStore("answers") : undefined
+  const feedbacksStore =
+    mode === WorksheetMode.GivingFeedback ? createStore("feedbacks") : undefined
 
   const content = contentStore
     ? openRoot(contentStore, contentSchema, initialSnapshot.content)
