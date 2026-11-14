@@ -39,12 +39,21 @@ beforeEach(async () => {
 }, 30_000)
 
 test("switches stores via snapshots, grades, and resets downstream data", async () => {
-  const introduction = ".editor-content > .ProseMirror"
+  const introduction = ".exercise--text .ProseMirror"
   await click(introduction, 3)
   await view.type("Gemeinsam lernen.")
   await expectPage(
     `document.querySelector(${JSON.stringify(introduction)}).textContent`,
     "Gemeinsam lernen.",
+  )
+  await expectPage(
+    'Array.from(document.querySelectorAll(".toolbar button"), button => button.textContent)',
+    ["Fett", "Kursiv"],
+  )
+  await click(".exercise--fill-blank .ProseMirror")
+  await expectPage(
+    'Array.from(document.querySelectorAll(".toolbar button"), button => button.textContent)',
+    ["Fett", "Kursiv", "Gap"],
   )
   await click(".multiple-choice-options li:first-child input")
 
@@ -62,17 +71,37 @@ test("switches stores via snapshots, grades, and resets downstream data", async 
     'Array.from(document.querySelectorAll(".feedback-card[data-result]"), el => el.dataset.result)',
     ["correct", "correct"],
   )
-  await click(".exercise--fill-blank .ProseMirror")
+  await view.evaluate(`(() => {
+    const select = document.querySelector('.exercise--fill-blank select');
+    const setter = Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set;
+    setter.call(select, 'partial');
+    select.dispatchEvent(new Event('change', { bubbles: true }));
+  })()`)
+  await expectPage(
+    'document.querySelector(".exercise--fill-blank .feedback-card").dataset.result',
+    "partial",
+  )
+  await click(".exercise--fill-blank .feedback-card .ProseMirror")
   await view.type("Gut gemacht!")
   await click('[aria-label="Gesamtfeedback"] .ProseMirror')
   await view.type("Weiter so.")
   await click(`${modes} button:nth-child(4)`)
   await expectPage('document.querySelectorAll(".ProseMirror").length', 0)
   await expectPage(
-    'document.querySelector(".learner-content > .feedback-card").textContent.includes("Weiter so.")',
+    'document.querySelector(".worksheet > .feedback-card").textContent.includes("Weiter so.")',
     true,
   )
   await expectPage('document.querySelector(".preview-gap").disabled', true)
+  await expectPage('document.querySelector(".choice-card input").disabled', true)
+  await expectPage(
+    'document.querySelector(".exercise--fill-blank .feedback-card").dataset.result',
+    "partial",
+  )
+  const before = await view.evaluate(
+    'document.querySelectorAll(".document-json pre")[2].textContent',
+  )
+  await click(`${modes} button:nth-child(4)`)
+  await expectPage('document.querySelectorAll(".document-json pre")[2].textContent', before)
 
   await click(`${modes} button:nth-child(2)`)
   await expectPage('document.querySelector(".preview-gap").value', "Paris")
@@ -83,7 +112,7 @@ test("switches stores via snapshots, grades, and resets downstream data", async 
     "correct",
   )
   await expectPage(
-    'document.querySelector(".exercise--fill-blank .feedback-comment .ProseMirror").textContent',
+    'document.querySelector(".exercise--fill-blank .feedback-card .ProseMirror").textContent',
     "",
   )
 
@@ -108,7 +137,13 @@ test("feedback grades unanswered exercises without writing answers", async () =>
     'Array.from(document.querySelectorAll(".feedback-card[data-result]"), el => el.dataset.result)',
     ["incorrect", "incorrect"],
   )
-  await expectPage('JSON.parse(document.querySelectorAll(".document-json pre")[1].textContent)', {})
+  await click(`${modes} button:nth-child(4)`)
+  await expectPage('document.querySelectorAll(".feedback-card[data-result]").length', 2)
+  await expectPage('document.querySelector(".preview-gap").disabled', true)
+  await expectPage('JSON.parse(document.querySelectorAll(".document-json pre")[1].textContent)', {
+    gaps: {},
+    choices: {},
+  })
 }, 30_000)
 
 async function click(selector: string, clickCount: 1 | 2 | 3 = 1) {

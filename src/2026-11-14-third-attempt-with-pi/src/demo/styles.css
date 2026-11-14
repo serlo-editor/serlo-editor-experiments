@@ -1,3 +1,133 @@
+@font-face {
+  font-family: Inter;
+  src: url("../assets/inter.woff2");
+}
+:root {
+  font-family: Inter, sans-serif;
+  color: #25243b;
+  background: #fff;
+  --space-1: 0.5rem;
+  --space-2: 1rem;
+  --color-border: #d9d7e3;
+  --color-surface: #fff;
+  --color-surface-subtle: #f7f6fa;
+  --color-lavender: #efecfa;
+  --color-text-muted: #59566c;
+  --color-accent: #4830a4;
+  --radius-1: 0.4rem;
+  --radius-2: 0.7rem;
+  --shadow-1: 0 1px 3px #25243b22;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+select {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+.editor-card {
+  max-width: 52rem;
+  margin: auto;
+}
+.editor-card h2 {
+  margin-top: 0;
+}
+.exercise {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2);
+}
+.exercise h3 {
+  margin-top: 0;
+}
+.editor-content {
+  min-height: 1.5rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.editor-content:focus {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 3px;
+}
+.editor-content p,
+.preview-rich-text p {
+  margin: 0;
+}
+.gap-mark {
+  background: #ede5ff;
+  border-bottom: 2px solid var(--color-accent);
+}
+.preview-gap {
+  width: 8rem;
+  max-width: 100%;
+  padding: 0.25rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-1);
+}
+.multiple-choice-options {
+  padding: 0;
+  list-style: none;
+}
+.multiple-choice-options li {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin: 0.6rem 0;
+}
+.choice-card .editor-content {
+  flex: 1;
+}
+.choice-card label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.toolbar {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: var(--color-lavender);
+  border-radius: var(--radius-1);
+}
+.toolbar button,
+.feedback-card select {
+  padding: 0.4rem;
+  border: 1px solid var(--color-border);
+  background: white;
+  border-radius: var(--radius-1);
+}
+.toolbar button[aria-pressed="true"] {
+  background: #d5c6ff;
+}
+.feedback-card {
+  display: grid;
+  gap: 0.6rem;
+  margin: 1rem 0;
+  padding: 1rem;
+  background: var(--color-surface-subtle);
+  border-radius: var(--radius-1);
+}
+.feedback-card label {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.preview-rich-text ul,
+.preview-rich-text ol {
+  padding-left: 1.5rem;
+}
 .app {
   display: flex;
   flex-direction: column;
