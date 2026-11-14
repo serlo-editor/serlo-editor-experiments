@@ -4,14 +4,14 @@ export type StoredObject<Schemas extends ObjectFields> = StoredValue<ObjectSnaps
   readonly [Key in keyof Schemas]: StoredValueOf<Schemas[Key]>
 }
 
-export type ObjectFields = Readonly<Record<string, AnySchema>> & { snapshot?: never }
+export type ObjectFields = Readonly<Record<string, AnySchema>>
 
 export type ObjectSnapshot<Schemas extends ObjectFields> = {
   readonly [Key in keyof Schemas]: SnapshotOf<Schemas[Key]>
 }
 
 export function object<Schemas extends ObjectFields>(
-  schemas: Schemas,
+  schemas: Schemas & { snapshot?: never },
 ): Schema<ObjectSnapshot<Schemas>, StoredObject<Schemas>, "map"> {
   return {
     defaultValue() {
