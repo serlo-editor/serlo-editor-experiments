@@ -82,6 +82,7 @@ export function openWorksheet<
   const contentStore = mode === WorksheetMode.EditingContent ? createStore() : undefined
   const answersStore = mode === WorksheetMode.Answering ? createStore() : undefined
   const feedbacksStore = mode === WorksheetMode.GivingFeedback ? createStore() : undefined
+
   const content = contentStore
     ? openRoot(contentStore, contentSchema, initialSnapshot.content)
     : openRoot(new ReadonlyNodeStore(), contentSchema, initialSnapshot.content)
@@ -91,15 +92,13 @@ export function openWorksheet<
   const feedbacks = feedbacksStore
     ? openRoot(feedbacksStore, feedbacksSchema, initialSnapshot.feedbacks)
     : openRoot(new ReadonlyNodeStore(), feedbacksSchema, initialSnapshot.feedbacks)
-  const stores = [contentStore, answersStore, feedbacksStore].filter(
-    (store): store is NodeStore<Refs> => store !== undefined,
-  )
+
+  // Maximal one store is active at a time, so we can use the first non-null store for revision tracking and subscriptions.
+  const store = contentStore ?? answersStore ?? feedbacksStore
   const listeners = new Set<() => void>()
-  stores.forEach((store) =>
-    store.subscribe(() => {
-      listeners.forEach((listener) => listener())
-    }),
-  )
+  store?.subscribe(() => {
+    listeners.forEach((listener) => listener())
+  })
 
   return {
     mode,
@@ -111,7 +110,7 @@ export function openWorksheet<
       return () => listeners.delete(listener)
     },
     getRevision() {
-      return stores.reduce((revision, store) => revision + store.getRevision(), 0)
+      return store?.getRevision() ?? 0
     },
   }
 }
