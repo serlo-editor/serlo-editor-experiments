@@ -6,6 +6,22 @@ import type { JSONValue } from "@editor/utils"
 import { FlatNodeStore } from "./index.ts"
 
 describeWithStores("NodeStore", (getStore) => {
+  test("dispose is idempotent and stops notifications", () => {
+    const store = getStore()
+    const ref = store.cell.create("initial")
+    store.transact((write) => write.root.save(ref))
+    const revision = store.getRevision()
+    let notifications = 0
+    store.subscribe(() => notifications++)
+
+    store.dispose()
+    store.dispose()
+    store.transact((write) => write.cell.set(ref, "changed"))
+
+    expect(notifications).toBe(0)
+    expect(store.getRevision()).toBe(revision)
+  })
+
   test("increments revision after changes, even without subscribers", () => {
     const store = getStore()
     const ref = store.cell.create("Initial")

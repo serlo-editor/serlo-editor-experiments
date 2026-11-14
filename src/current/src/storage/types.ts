@@ -59,10 +59,10 @@ export interface NodeStore<Refs extends NodeRefs = NodeRefs> {
    * Writer is valid only during this synchronous callback, including nested transactions.
    * Errors propagate, but transaction changes are not rolled back.
    */
-  // TODO: Add idempotent dispose() to release editors and store-owned listeners without destroying caller-owned resources.
-  //
   // TODO: Because of this function a YjsStore is not assignable to a NodeStore which complicates the implementation => Find a solution to avoid this problem.
   transact<Result>(callback: (write: NodeWriter<Refs>) => Result): Result
+  /** Idempotently releases store-owned editors and listeners, not caller-owned resources. */
+  dispose(): void
 }
 
 export interface NodeWriter<Refs extends NodeRefs = NodeRefs> {

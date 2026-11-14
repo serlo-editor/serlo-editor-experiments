@@ -27,14 +27,15 @@ export class YjsNodeStore implements YjsNodeStoreContract {
   private readonly awareness: Awareness
   private readonly editors = new Map<RichTextId, RichTextEditor>()
   private readonly changes = new ChangeTracker()
+  private readonly onAfterTransaction = (transaction: Y.Transaction) => {
+    if (this.hasStorageChanges(transaction)) this.changes.publish()
+  }
 
   constructor({ doc, awareness }: { awareness: Awareness; doc: Y.Doc }) {
     this.doc = doc
     this.awareness = awareness
     // Store follows document lifetime; track local and remote changes without subscribers.
-    doc.on("afterTransaction", (transaction: Y.Transaction) => {
-      if (this.hasStorageChanges(transaction)) this.changes.publish()
-    })
+    doc.on("afterTransaction", this.onAfterTransaction)
   }
 
   readonly cell: YjsNodeStoreContract["cell"] = {
@@ -110,6 +111,13 @@ export class YjsNodeStore implements YjsNodeStoreContract {
 
   subscribe(listener: () => void): () => void {
     return this.changes.subscribe(listener)
+  }
+
+  dispose(): void {
+    this.doc.off("afterTransaction", this.onAfterTransaction)
+    for (const editor of this.editors.values()) editor.unmount()
+    this.editors.clear()
+    this.changes.dispose()
   }
 
   transact<T>(callback: (write: NodeWriter<YjsNodeRefs>) => T): T {

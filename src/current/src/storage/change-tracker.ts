@@ -3,14 +3,22 @@ export class ChangeTracker {
   private revision = 0
   private depth = 0
   private pending = false
+  private disposed = false
 
   getRevision(): number {
     return this.revision
   }
 
   subscribe(listener: () => void): () => void {
+    if (this.disposed) return () => {}
     this.listeners.add(listener)
     return () => this.listeners.delete(listener)
+  }
+
+  dispose(): void {
+    this.disposed = true
+    this.pending = false
+    this.listeners.clear()
   }
 
   batch<Result>(callback: () => Result): Result {
@@ -24,6 +32,7 @@ export class ChangeTracker {
   }
 
   publish(): void {
+    if (this.disposed) return
     this.pending = true
     this.flush()
   }

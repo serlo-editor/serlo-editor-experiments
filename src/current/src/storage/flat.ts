@@ -117,6 +117,12 @@ export class FlatNodeStore implements FlatNodeStoreContract {
     return this.changes.subscribe(listener)
   }
 
+  dispose(): void {
+    this.changes.dispose()
+    for (const editor of this.editors.values()) editor.unmount()
+    this.editors.clear()
+  }
+
   transact<T>(callback: (write: NodeWriter<FlatNodeRefs>) => T): T {
     return this.changes.batch(() => withWriter(this.writer, callback))
   }

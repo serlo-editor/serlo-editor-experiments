@@ -78,6 +78,11 @@ export class ReadonlyNodeStore implements ReadonlyNodeStoreContract {
     return () => {}
   }
 
+  dispose(): void {
+    for (const editor of this.editors.values()) editor.unmount()
+    this.editors.clear()
+  }
+
   transact<Result>(_callback: (write: NodeWriter<ReadonlyNodeRefs>) => Result): Result {
     return readOnlyError()
   }
