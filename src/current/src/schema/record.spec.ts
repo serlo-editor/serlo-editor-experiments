@@ -180,7 +180,6 @@ test("read-only records initialize but reject writes before child creation", () 
   expect(Object.hasOwn(document.snapshot(), "constructor")).toBe(false)
   const beforeWrite = calls
   expect(document.getOrCreate("tags", () => ["Changed"]).snapshot()).toEqual(["tag"])
-  expect(() => document.getOrCreate("missing", () => ["New"])).toThrow("Storage is read-only.")
   expect(() => document.set("tags", ["Changed"])).toThrow("Storage is read-only.")
   expect(() => document.remove("tags")).toThrow("Storage is read-only.")
   expect(calls).toBe(beforeWrite)

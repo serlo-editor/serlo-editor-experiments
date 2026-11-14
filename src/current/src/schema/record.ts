@@ -1,3 +1,6 @@
+import { ReadonlyNodeStore } from "@editor/store/index.ts"
+
+import { openRoot } from "./root.ts"
 import type { AnySchema, Schema, SnapshotOf, StoredValue, StoredValueOf } from "./types.ts"
 
 export interface StoredRecord<ChildSchema extends AnySchema> extends StoredValue<
@@ -30,6 +33,9 @@ export function record<ChildSchema extends AnySchema>(
         getOrCreate(key, create) {
           const current = store.map.getField(ref, key)
           if (current !== undefined) return childSchema.bind(store, current)
+          if (store instanceof ReadonlyNodeStore) {
+            return openRoot(new ReadonlyNodeStore(), childSchema, create())
+          }
           return store.transact((write) => {
             const snapshot = create()
             const childRef = childSchema.create(store, snapshot)
