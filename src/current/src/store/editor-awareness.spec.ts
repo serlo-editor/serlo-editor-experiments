@@ -12,13 +12,12 @@ test("scoped awareness filters peers, forwards events, and preserves unrelated p
   const local = new Awareness(localDoc)
   const remote = new Awareness(remoteDoc)
   try {
-    const first = createEditorSpecificAwareness("rich-text:first", "worksheet:content", local)
-    const second = createEditorSpecificAwareness("rich-text:second", "worksheet:content", local)
-    const otherNamespace = createEditorSpecificAwareness(
-      "rich-text:first",
-      "worksheet:answers",
-      local,
-    )
+    const firstId = 'storage:"worksheet:content":root:rich-text:first'
+    const secondId = 'storage:"worksheet:content":root:rich-text:second'
+    const otherId = 'storage:"worksheet:answers":root:rich-text:first'
+    const first = createEditorSpecificAwareness(firstId, local)
+    const second = createEditorSpecificAwareness(secondId, local)
+    const otherNamespace = createEditorSpecificAwareness(otherId, local)
     local.setLocalStateField("user", { name: "Local" })
     expect(first.getLocalState()).toBeNull()
     expect(second.getLocalState()).toBeNull()
@@ -28,8 +27,7 @@ test("scoped awareness filters peers, forwards events, and preserves unrelated p
     first.setLocalStateField("cursor", { anchor: 1, head: 1 })
     expect(first.getLocalState()).toEqual({
       user: { name: "Local" },
-      editorId: "rich-text:first",
-      editorNamespace: "worksheet:content",
+      editorId: firstId,
       cursor: { anchor: 1, head: 1 },
     })
     expect(second.getLocalState()).toBeNull()
@@ -41,8 +39,7 @@ test("scoped awareness filters peers, forwards events, and preserves unrelated p
     }
     first.on("change", listener)
     remote.setLocalState({
-      editorId: "rich-text:first",
-      editorNamespace: "worksheet:content",
+      editorId: firstId,
       user: { name: "Remote" },
     })
     applyAwarenessUpdate(local, encodeAwarenessUpdate(remote, [remote.clientID]), "remote")
@@ -53,8 +50,7 @@ test("scoped awareness filters peers, forwards events, and preserves unrelated p
 
     first.off("change", listener)
     remote.setLocalState({
-      editorId: "rich-text:first",
-      editorNamespace: "worksheet:answers",
+      editorId: otherId,
       user: { name: "Remote" },
     })
     applyAwarenessUpdate(local, encodeAwarenessUpdate(remote, [remote.clientID]), "remote")
@@ -67,8 +63,7 @@ test("scoped awareness filters peers, forwards events, and preserves unrelated p
     first.setLocalStateField("cursor", null)
     expect(local.getLocalState()).toEqual({
       user: { name: "Local" },
-      editorId: "rich-text:second",
-      editorNamespace: "worksheet:content",
+      editorId: secondId,
       cursor: { anchor: 2, head: 2 },
     })
     second.setLocalStateField("cursor", null)

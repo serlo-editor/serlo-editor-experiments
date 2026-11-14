@@ -379,7 +379,7 @@ describe("stored rich-text editors", () => {
     firstEditor.view.dispatch(
       firstEditor.state.tr.setSelection(TextSelection.create(firstEditor.state.doc, 2)),
     )
-    expect(awareness.getLocalState()?.editorId).toBe(first.id)
+    expect(awareness.getLocalState()?.editorId).toBe(`storage:"test":root:${first.id}`)
     expect(awareness.getLocalState()?.cursor).toBeTruthy()
 
     secondEditor.focus()
@@ -387,11 +387,11 @@ describe("stored rich-text editors", () => {
       secondEditor.state.tr.setSelection(TextSelection.create(secondEditor.state.doc, 2)),
     )
     const secondCursor = awareness.getLocalState()?.cursor
-    expect(awareness.getLocalState()?.editorId).toBe(second.id)
+    expect(awareness.getLocalState()?.editorId).toBe(`storage:"test":root:${second.id}`)
     expect(secondCursor).toBeTruthy()
 
     firstEditor.unmount()
-    expect(awareness.getLocalState()?.editorId).toBe(second.id)
+    expect(awareness.getLocalState()?.editorId).toBe(`storage:"test":root:${second.id}`)
     expect(awareness.getLocalState()?.cursor).toEqual(secondCursor)
     expect(awareness.getLocalState()?.user).toEqual({ name: "Local" })
     secondEditor.unmount()

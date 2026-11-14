@@ -92,7 +92,7 @@ export class YjsNodeStore implements YjsNodeStoreContract {
             defineYjs({
               doc: this.doc,
               fragment,
-              awareness: createEditorSpecificAwareness(id, this.rootName, this.awareness),
+              awareness: createEditorSpecificAwareness(`${this.rootName}:${id}`, this.awareness),
             }),
             defineSafeYjsTeardown(),
           ],
