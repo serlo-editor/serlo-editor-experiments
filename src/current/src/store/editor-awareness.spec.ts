@@ -12,9 +12,9 @@ test("scoped awareness filters peers, forwards events, and preserves unrelated p
   const local = new Awareness(localDoc)
   const remote = new Awareness(remoteDoc)
   try {
-    const firstId = 'storage:"worksheet:content":root:rich-text:first'
-    const secondId = 'storage:"worksheet:content":root:rich-text:second'
-    const otherId = 'storage:"worksheet:answers":root:rich-text:first'
+    const firstId = "worksheet:content:root:rich-text:first"
+    const secondId = "worksheet:content:root:rich-text:second"
+    const otherId = "worksheet:answers:root:rich-text:first"
     const first = createEditorSpecificAwareness(firstId, local)
     const second = createEditorSpecificAwareness(secondId, local)
     const otherNamespace = createEditorSpecificAwareness(otherId, local)

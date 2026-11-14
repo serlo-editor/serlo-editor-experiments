@@ -16,8 +16,6 @@ export enum WorksheetMode {
   ViewingFeedback = "viewing-feedback",
 }
 
-export type WorksheetDocumentKind = "content" | "answers" | "feedbacks"
-
 export interface WorksheetOptions<
   ContentSchema extends AnySchema,
   AnswersSchema extends AnySchema,
@@ -26,7 +24,7 @@ export interface WorksheetOptions<
 > {
   mode: WorksheetMode
   /** Application selects backend and, for shared Y.Doc, combines editor identity with kind. */
-  createStore: (kind: WorksheetDocumentKind) => NodeStore<Refs>
+  createStore: (kind: "content" | "answers" | "feedbacks") => NodeStore<Refs>
   contentSchema: ContentSchema
   answersSchema: AnswersSchema
   feedbacksSchema: FeedbacksSchema
@@ -78,18 +76,15 @@ export function openWorksheet<
   const feedbacksStore =
     mode === WorksheetMode.GivingFeedback ? createStore("feedbacks") : undefined
 
-  const readonlyContent = new ReadonlyNodeStore()
-  const readonlyAnswers = new ReadonlyNodeStore()
-  const readonlyFeedbacks = new ReadonlyNodeStore()
   const content = contentStore
     ? openRoot(contentStore, contentSchema, initialSnapshot.content)
-    : openRoot(readonlyContent, contentSchema, initialSnapshot.content)
+    : openRoot(new ReadonlyNodeStore(), contentSchema, initialSnapshot.content)
   const answers = answersStore
     ? openRoot(answersStore, answersSchema, initialSnapshot.answers)
-    : openRoot(readonlyAnswers, answersSchema, initialSnapshot.answers)
+    : openRoot(new ReadonlyNodeStore(), answersSchema, initialSnapshot.answers)
   const feedbacks = feedbacksStore
     ? openRoot(feedbacksStore, feedbacksSchema, initialSnapshot.feedbacks)
-    : openRoot(readonlyFeedbacks, feedbacksSchema, initialSnapshot.feedbacks)
+    : openRoot(new ReadonlyNodeStore(), feedbacksSchema, initialSnapshot.feedbacks)
 
   // Maximal one store is active at a time, so we can use the first non-null store for revision tracking and subscriptions.
   const store = contentStore ?? answersStore ?? feedbacksStore
@@ -114,9 +109,6 @@ export function openWorksheet<
       unsubscribe?.()
       listeners.clear()
       store?.dispose()
-      readonlyContent.dispose()
-      readonlyAnswers.dispose()
-      readonlyFeedbacks.dispose()
     },
   }
 }

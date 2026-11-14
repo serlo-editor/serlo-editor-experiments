@@ -210,8 +210,8 @@ describe("stored rich-text editors", () => {
     const second = openRoot(secondStore, schema, content("Ignored"))
 
     expect(second.id).toBe(first.id)
-    expect(secondDoc.getMap('storage:"test":root').get("value")).not.toBe(
-      firstDoc.getMap('storage:"test":root').get("value"),
+    expect(secondDoc.getMap("test:root").get("value")).not.toBe(
+      firstDoc.getMap("test:root").get("value"),
     )
     expect(second.getEditor()).not.toBe(first.getEditor())
     const beforeLookup = Y.encodeStateVector(secondDoc)
@@ -329,7 +329,7 @@ describe("stored rich-text editors", () => {
     const doc = createDoc()
     const store = createYjsStore(doc)
     const document = openRoot(store, richText(options), content("Initial"))
-    const fragment = doc.getXmlFragment(`storage:"test":richText:${document.id}`)
+    const fragment = doc.getXmlFragment(`test:rich-text:${document.id}`)
     fragment.delete(0, fragment.length)
     const beforeLookup = Y.encodeStateVector(doc)
     expect(document.snapshot()).toEqual({ type: "doc", content: [{ type: "inlineBlock" }] })
@@ -341,17 +341,17 @@ describe("stored rich-text editors", () => {
     const doc = createDoc()
     const awareness = new Awareness(doc)
     awarenessInstances.push(awareness)
-    const firstStore = new YjsNodeStore({ doc, awareness, editorName: "worksheet:content" })
-    const secondStore = new YjsNodeStore({ doc, awareness, editorName: "worksheet:answers" })
+    const firstStore = new YjsNodeStore({ doc, awareness, storeName: "worksheet:content" })
+    const secondStore = new YjsNodeStore({ doc, awareness, storeName: "worksheet:answers" })
     const first = openRoot(firstStore, richText(options), content("Question"))
     const second = openRoot(secondStore, richText(options), content("Answer"))
 
     expect(first.snapshot()).toEqual(content("Question"))
     expect(second.snapshot()).toEqual(content("Answer"))
-    expect(doc.share.has(`storage:"worksheet:content":richText:${first.id}`)).toBe(true)
-    expect(doc.share.has(`storage:"worksheet:answers":richText:${second.id}`)).toBe(true)
+    expect(doc.share.has(`worksheet:content:rich-text:${first.id}`)).toBe(true)
+    expect(doc.share.has(`worksheet:answers:rich-text:${second.id}`)).toBe(true)
     const secondRevision = secondStore.getRevision()
-    const fragment = doc.getXmlFragment(`storage:"worksheet:content":richText:${first.id}`)
+    const fragment = doc.getXmlFragment(`worksheet:content:rich-text:${first.id}`)
     fragment.delete(0, fragment.length)
     expect(first.snapshot()).toEqual({ type: "doc", content: [{ type: "inlineBlock" }] })
     expect(second.snapshot()).toEqual(content("Answer"))
@@ -363,7 +363,7 @@ describe("stored rich-text editors", () => {
   test("Yjs awareness publishes stable IDs and isolates sibling cursor cleanup", async () => {
     const doc = createDoc()
     const awareness = new Awareness(doc)
-    const store = new YjsNodeStore({ doc, awareness, editorName: "test" })
+    const store = new YjsNodeStore({ doc, awareness, storeName: "test" })
     awarenessInstances.push(awareness)
     awareness.setLocalStateField("user", { name: "Local" })
     const document = openRoot(store, array(richText(options)), [
@@ -379,7 +379,7 @@ describe("stored rich-text editors", () => {
     firstEditor.view.dispatch(
       firstEditor.state.tr.setSelection(TextSelection.create(firstEditor.state.doc, 2)),
     )
-    expect(awareness.getLocalState()?.editorId).toBe(`storage:"test":root:${first.id}`)
+    expect(awareness.getLocalState()?.editorId).toBe(`test:root:${first.id}`)
     expect(awareness.getLocalState()?.cursor).toBeTruthy()
 
     secondEditor.focus()
@@ -387,11 +387,11 @@ describe("stored rich-text editors", () => {
       secondEditor.state.tr.setSelection(TextSelection.create(secondEditor.state.doc, 2)),
     )
     const secondCursor = awareness.getLocalState()?.cursor
-    expect(awareness.getLocalState()?.editorId).toBe(`storage:"test":root:${second.id}`)
+    expect(awareness.getLocalState()?.editorId).toBe(`test:root:${second.id}`)
     expect(secondCursor).toBeTruthy()
 
     firstEditor.unmount()
-    expect(awareness.getLocalState()?.editorId).toBe(`storage:"test":root:${second.id}`)
+    expect(awareness.getLocalState()?.editorId).toBe(`test:root:${second.id}`)
     expect(awareness.getLocalState()?.cursor).toEqual(secondCursor)
     expect(awareness.getLocalState()?.user).toEqual({ name: "Local" })
     secondEditor.unmount()
@@ -408,12 +408,12 @@ describe("stored rich-text editors", () => {
     const sourceStore = new YjsNodeStore({
       doc: sourceDoc,
       awareness: sourceAwareness,
-      editorName: "test",
+      storeName: "test",
     })
     const targetStore = new YjsNodeStore({
       doc: targetDoc,
       awareness: targetAwareness,
-      editorName: "test",
+      storeName: "test",
     })
     awarenessInstances.push(sourceAwareness, targetAwareness)
     const schema = array(richText(options))
@@ -444,7 +444,7 @@ describe("stored rich-text editors", () => {
   function createYjsStore(doc: Y.Doc): YjsNodeStore {
     const awareness = new Awareness(doc)
     awarenessInstances.push(awareness)
-    return new YjsNodeStore({ doc, awareness, editorName: "test" })
+    return new YjsNodeStore({ doc, awareness, storeName: "test" })
   }
 
   function createDoc(): Y.Doc {

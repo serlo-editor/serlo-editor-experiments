@@ -25,7 +25,7 @@ export function describeWithStores(
 
       beforeEach(() => {
         doc = new Y.Doc()
-        store = new YjsNodeStore({ doc, awareness: new Awareness(doc), editorName: "test" })
+        store = new YjsNodeStore({ doc, awareness: new Awareness(doc), storeName: "test" })
       })
       afterEach(() => doc.destroy())
       callback(() => store)

@@ -209,12 +209,12 @@ test("Yjs records reopen, observe remote edits, and converge after concurrent ad
     const firstStore = new YjsNodeStore({
       doc: firstDoc,
       awareness: firstAwareness,
-      editorName: "test",
+      storeName: "test",
     })
     const secondStore = new YjsNodeStore({
       doc: secondDoc,
       awareness: secondAwareness,
-      editorName: "test",
+      storeName: "test",
     })
     const schema = record(string())
     const first = openRoot(firstStore, schema, { answer: "Initial" })

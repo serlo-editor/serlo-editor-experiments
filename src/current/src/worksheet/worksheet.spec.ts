@@ -56,7 +56,7 @@ test("worksheet factory composes stable editor identity and document kind for sh
     initialSnapshot: { content: "Initial", answers: { task: "A" }, feedbacks: {} },
     createStore: (kind: "content" | "answers" | "feedbacks") => {
       kinds.push(kind)
-      return new YjsNodeStore({ doc, awareness, editorName: JSON.stringify(["worksheet-1", kind]) })
+      return new YjsNodeStore({ doc, awareness, storeName: JSON.stringify(["worksheet-1", kind]) })
     },
   }
   try {

@@ -33,11 +33,10 @@ export class YjsNodeStore implements YjsNodeStoreContract {
     if (this.hasStorageChanges(transaction)) this.changes.publish()
   }
 
-  /** editorName identifies one logical store; shared Y.Doc still shares sync and access policy. */
-  constructor(args: { awareness: Awareness; doc: Y.Doc; editorName: string }) {
-    const prefix = `storage:${JSON.stringify(args.editorName)}:`
-    this.rootName = `${prefix}root`
-    this.richTextPrefix = `${prefix}richText:`
+  /** storeName identifies one logical store; shared Y.Doc still shares sync and access policy. */
+  constructor(args: { awareness: Awareness; doc: Y.Doc; storeName: string }) {
+    this.rootName = `${args.storeName}:root`
+    this.richTextPrefix = `${args.storeName}:rich-text:`
     this.doc = args.doc
     this.awareness = args.awareness
 

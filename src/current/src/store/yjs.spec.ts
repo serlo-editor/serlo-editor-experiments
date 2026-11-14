@@ -9,7 +9,7 @@ import { YjsNodeStore } from "./index.ts"
 
 test("YjsNodeStore uses store origin and groups nested transactions", () => {
   const doc = new Y.Doc()
-  const store = new YjsNodeStore({ doc, awareness: new Awareness(doc), editorName: "test" })
+  const store = new YjsNodeStore({ doc, awareness: new Awareness(doc), storeName: "test" })
   const ref = store.cell.create("Initial")
   store.transact((write) => write.root.save(ref))
   const updates: unknown[] = []
@@ -40,8 +40,8 @@ test("YjsNodeStore uses store origin and groups nested transactions", () => {
 test("YjsNodeStore syncs local edits between documents without echoing received updates", () => {
   const doc1 = new Y.Doc()
   const doc2 = new Y.Doc()
-  const store1 = new YjsNodeStore({ doc: doc1, awareness: new Awareness(doc1), editorName: "test" })
-  const store2 = new YjsNodeStore({ doc: doc2, awareness: new Awareness(doc2), editorName: "test" })
+  const store1 = new YjsNodeStore({ doc: doc1, awareness: new Awareness(doc1), storeName: "test" })
+  const store2 = new YjsNodeStore({ doc: doc2, awareness: new Awareness(doc2), storeName: "test" })
   let forwarded1 = 0
   let forwarded2 = 0
 
@@ -66,9 +66,7 @@ test("YjsNodeStore syncs local edits between documents without echoing received 
   const root1 = store1.map.create({ cell: cell1, array: array1, object: object1 })
   store1.transact((tx) => tx.root.save(root1))
 
-  const root2 = doc2.getMap('storage:"test":root').get("value") as ReturnType<
-    typeof store2.map.create
-  >
+  const root2 = doc2.getMap("test:root").get("value") as ReturnType<typeof store2.map.create>
   const cell2 = root2.get("cell") as ReturnType<typeof store2.cell.create>
   const array2 = root2.get("array") as ReturnType<typeof store2.array.create>
   const object2 = root2.get("object") as ReturnType<typeof store2.map.create>
@@ -128,11 +126,11 @@ test("YjsNodeStore revisions stay local and ignore unrelated, duplicate, and awa
   const secondDoc = new Y.Doc()
   const firstAwareness = new Awareness(firstDoc)
   const secondAwareness = new Awareness(secondDoc)
-  const first = new YjsNodeStore({ doc: firstDoc, awareness: firstAwareness, editorName: "test" })
+  const first = new YjsNodeStore({ doc: firstDoc, awareness: firstAwareness, storeName: "test" })
   const second = new YjsNodeStore({
     doc: secondDoc,
     awareness: secondAwareness,
-    editorName: "test",
+    storeName: "test",
   })
   const observed: number[] = []
   const unsubscribe = second.subscribe(() => observed.push(second.getRevision()))
@@ -172,7 +170,7 @@ test("YjsNodeStore revisions stay local and ignore unrelated, duplicate, and awa
   const reopened = new YjsNodeStore({
     doc: secondDoc,
     awareness: secondAwareness,
-    editorName: "test",
+    storeName: "test",
   })
   expect(reopened.getRevision()).toBe(0)
   reopened.root.getOrCreate(() => {
@@ -191,12 +189,12 @@ test("namespaced stores share a Y.Doc without sharing roots or revisions", () =>
   const peer = new Y.Doc()
   const awareness = new Awareness(doc)
   const peerAwareness = new Awareness(peer)
-  const content = new YjsNodeStore({ doc, awareness, editorName: "worksheet:content" })
-  const answers = new YjsNodeStore({ doc, awareness, editorName: "worksheet:answers" })
+  const content = new YjsNodeStore({ doc, awareness, storeName: "worksheet:content" })
+  const answers = new YjsNodeStore({ doc, awareness, storeName: "worksheet:answers" })
   const peerAnswers = new YjsNodeStore({
     doc: peer,
     awareness: peerAwareness,
-    editorName: "worksheet:answers",
+    storeName: "worksheet:answers",
   })
   try {
     const contentRoot = content.cell.create("Question")
@@ -226,11 +224,11 @@ test("namespaced stores share a Y.Doc without sharing roots or revisions", () =>
     expect(openRoot(peerAnswers, string(), "Ignored").snapshot()).toBe("Edited")
     expect(peerAnswers.getRevision()).toBe(1)
 
-    // Arbitrary names must not make one store's root look like another's fragment.
+    // Another store's root must not change content revision.
     const tricky = new YjsNodeStore({
       doc,
       awareness,
-      editorName: "worksheet:content:richText:other",
+      storeName: "worksheet:other",
     })
     tricky.root.getOrCreate(() => tricky.cell.create("Independent"))
     expect(content.getRevision()).toBe(1)
@@ -252,7 +250,7 @@ test("namespaced stores share a Y.Doc without sharing roots or revisions", () =>
 
 test("YjsNodeStore rejects cells missing their value", () => {
   const doc = new Y.Doc()
-  const store = new YjsNodeStore({ doc, awareness: new Awareness(doc), editorName: "test" })
+  const store = new YjsNodeStore({ doc, awareness: new Awareness(doc), storeName: "test" })
   const cellRef = store.cell.create("Draft")
   store.transact((tx) => tx.root.save(cellRef))
   store.transact(() => cellRef.delete("value"))
