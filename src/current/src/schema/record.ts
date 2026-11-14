@@ -33,7 +33,7 @@ export function record<ChildSchema extends AnySchema>(
         getOrCreate(key, create) {
           const current = store.map.getField(ref, key)
           if (current !== undefined) return childSchema.bind(store, current)
-          // TODO: Remove workaround when read-only stores can initialize missing records locally.
+          // TODO: This is a workaround for the fact that ReadonlyNodeStore does not support transactions. We should consider refactoring the store API to allow for a more elegant solution.
           if (store instanceof ReadonlyNodeStore) {
             return openRoot(new ReadonlyNodeStore(), childSchema, create())
           }
