@@ -94,7 +94,6 @@ export function openWorksheet<
   const stores = [contentStore, answersStore, feedbacksStore].filter(
     (store): store is NodeStore<Refs> => store !== undefined,
   )
-  const revisions = stores.map((store) => store.getRevision())
   const listeners = new Set<() => void>()
   stores.forEach((store) =>
     store.subscribe(() => {
@@ -112,12 +111,7 @@ export function openWorksheet<
       return () => listeners.delete(listener)
     },
     getRevision() {
-      return stores.reduce((revision, store, index) => {
-        const current = store.getRevision()
-        const previous = revisions[index] ?? 0
-        revisions[index] = current
-        return revision + current - previous
-      }, 0)
+      return stores.reduce((revision, store) => revision + store.getRevision(), 0)
     },
   }
 }
