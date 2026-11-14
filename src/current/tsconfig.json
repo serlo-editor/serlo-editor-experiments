@@ -4,9 +4,7 @@
   "compilerOptions": {
     "lib": ["esnext", "dom", "dom.iterable"],
     "exactOptionalPropertyTypes": true,
-    "paths": {
-      "@editor/*": ["./src/*"]
-    }
+    "paths": { "@editor/*": ["./src/*"] }
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

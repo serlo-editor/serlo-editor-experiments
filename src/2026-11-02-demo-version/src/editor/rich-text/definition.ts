@@ -100,11 +100,7 @@ export function defineRichTextExtension(definition: RichTextDefinition): Extensi
     if (orderedList || bulletList) {
       extensions.push(
         defineList(),
-        defineNodeAttr({
-          type: "list",
-          attr: "kind",
-          default: bulletList ? "bullet" : "ordered",
-        }),
+        defineNodeAttr({ type: "list", attr: "kind", default: bulletList ? "bullet" : "ordered" }),
       )
     }
     if (blocks.codeBlock) extensions.push(defineCodeBlock())

@@ -4,10 +4,7 @@ import test from "node:test"
 import { array, boolean, FlatStorageAdapter, object, Storage, string } from "./schema/index.ts"
 
 test("stores and binds boolean and string values", () => {
-  const schema = object({
-    enabled: boolean(),
-    title: string(),
-  })
+  const schema = object({ enabled: boolean(), title: string() })
   const storage = new Storage(new FlatStorageAdapter())
   const reference = storage.save(schema, { enabled: true, title: "Draft" })
   const value = storage.bind(schema, reference)
@@ -18,10 +15,7 @@ test("stores and binds boolean and string values", () => {
   value.enabled.set(false)
   value.title.set("Published")
 
-  assert.deepEqual(storage.load(schema, reference), {
-    enabled: false,
-    title: "Published",
-  })
+  assert.deepEqual(storage.load(schema, reference), { enabled: false, title: "Published" })
 })
 
 test("stores and binds arrays", () => {
@@ -44,10 +38,7 @@ test("stores and binds arrays", () => {
 
 test("stores nested object and array values", () => {
   const schema = object({
-    profile: object({
-      active: boolean(),
-      name: string(),
-    }),
+    profile: object({ active: boolean(), name: string() }),
     tags: array(string()),
   })
   const storage = new Storage(new FlatStorageAdapter())

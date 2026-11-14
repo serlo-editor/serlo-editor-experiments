@@ -11,15 +11,7 @@ import xml from "highlight.js/lib/languages/xml"
  * plaintext has to be registered as well, unregistered languages make lowlight
  * fall back to auto-detection.
  */
-export const CODE_GRAMMARS = {
-  c,
-  css,
-  javascript,
-  plaintext,
-  python,
-  typescript,
-  xml,
-}
+export const CODE_GRAMMARS = { c, css, javascript, plaintext, python, typescript, xml }
 
 export const CODE_LANGUAGES = [
   { value: "plaintext", label: "Klartext" },

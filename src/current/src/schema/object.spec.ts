@@ -9,12 +9,7 @@ import type { SnapshotOf } from "./types.ts"
 
 describeWithStores("object schemas", (getStore) => {
   test("reads typed fields and snapshots child edits", () => {
-    const initial = {
-      name: "Ada",
-      active: false,
-      tags: ["math"],
-      profile: { bio: "Hello" },
-    }
+    const initial = { name: "Ada", active: false, tags: ["math"], profile: { bio: "Hello" } }
     const root = openRoot(
       getStore(),
       object({
@@ -68,11 +63,7 @@ describeWithStores("object schemas", (getStore) => {
   })
 
   test("supports prototype field names without inherited properties", () => {
-    const schema = object({
-      ["__proto__"]: string(),
-      constructor: string(),
-      toString: string(),
-    })
+    const schema = object({ ["__proto__"]: string(), constructor: string(), toString: string() })
     const initial = { ["__proto__"]: "proto", constructor: "ctor", toString: "text" }
     const root = openRoot(getStore(), schema, initial)
     expect(root.snapshot()).toEqual(initial)

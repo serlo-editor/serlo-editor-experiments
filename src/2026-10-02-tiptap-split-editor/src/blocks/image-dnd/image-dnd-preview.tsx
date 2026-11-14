@@ -72,15 +72,9 @@ export function ImageDndPreview({
   const chips = useMemo<Chip[]>(() => {
     const all = [
       ...state.zones.flatMap((zone) =>
-        zone.answers.map((text, index) => ({
-          id: `zone:${zone.id}:${index}`,
-          text,
-        })),
+        zone.answers.map((text, index) => ({ id: `zone:${zone.id}:${index}`, text })),
       ),
-      ...state.extraAnswers.map((text, index) => ({
-        id: `extra:${index}`,
-        text,
-      })),
+      ...state.extraAnswers.map((text, index) => ({ id: `extra:${index}`, text })),
     ]
     return shuffle(all, seed)
   }, [state.zones, state.extraAnswers, seed])
@@ -368,11 +362,7 @@ export function ImageDndPreview({
         createPortal(
           <span
             aria-hidden
-            style={{
-              left: drag.x - drag.offsetX,
-              top: drag.y - drag.offsetY,
-              width: drag.width,
-            }}
+            style={{ left: drag.x - drag.offsetX, top: drag.y - drag.offsetY, width: drag.width }}
             className={cn(
               chipStyle,
               "pointer-events-none fixed z-50 rotate-2 justify-center bg-white shadow-xl",

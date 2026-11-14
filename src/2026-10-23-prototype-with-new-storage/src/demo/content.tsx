@@ -90,10 +90,7 @@ function createMultipleChoiceUnit() {
   })
   return unit({
     type: "multiple-choice",
-    fields: {
-      question: inline,
-      options: array(object({ isCorrect: boolean(), text: inline })),
-    },
+    fields: { question: inline, options: array(object({ isCorrect: boolean(), text: inline })) },
     render: function MultipleChoiceView({ handle }) {
       return (
         <section className="exercise exercise--multiple-choice">

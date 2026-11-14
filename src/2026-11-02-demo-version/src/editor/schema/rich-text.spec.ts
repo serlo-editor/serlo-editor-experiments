@@ -10,10 +10,7 @@ import { array, object, optional, richText } from "./index.ts"
 const options = { definition: definition.inline({ marks: { bold: true } }) }
 
 function content(text: string): RichTextJSON {
-  return {
-    type: "doc",
-    content: [{ type: "inlineBlock", content: [{ type: "text", text }] }],
-  }
+  return { type: "doc", content: [{ type: "inlineBlock", content: [{ type: "text", text }] }] }
 }
 
 describeWithStores("rich-text schemas", (getStore) => {
@@ -68,10 +65,7 @@ describeWithStores("rich-text schemas", (getStore) => {
 
   test("supports arrays, optional fields, and stable identities through sibling edits", () => {
     const store = getStore()
-    const schema = object({
-      items: array(richText(options)),
-      note: optional(richText(options)),
-    })
+    const schema = object({ items: array(richText(options)), note: optional(richText(options)) })
     const document = createDocument(store, schema, { items: [content("Kept")] })
     const items = document.root.field("items")
     const original = items.children()[0]!

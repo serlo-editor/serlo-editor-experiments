@@ -42,9 +42,7 @@ export interface NodeStore<Refs extends NodeRefs = NodeRefs> {
 }
 
 export interface NodeWriter<Refs extends NodeRefs = NodeRefs> {
-  readonly cell: {
-    set(ref: Refs["cell"], value: JSONValue): void
-  }
+  readonly cell: { set(ref: Refs["cell"], value: JSONValue): void }
   readonly array: {
     remove(ref: Refs["array"], index: number): void
     insert(ref: Refs["array"], index: number, item: Refs[NodeKind]): void
@@ -53,9 +51,7 @@ export interface NodeWriter<Refs extends NodeRefs = NodeRefs> {
     set(ref: Refs["map"], field: string, item: Refs[NodeKind]): void
     remove(ref: Refs["map"], field: string): void
   }
-  readonly root: {
-    save(ref: Refs[NodeKind]): Refs[NodeKind]
-  }
+  readonly root: { save(ref: Refs[NodeKind]): Refs[NodeKind] }
 }
 
 export function isRichTextId(value: unknown): value is RichTextId {

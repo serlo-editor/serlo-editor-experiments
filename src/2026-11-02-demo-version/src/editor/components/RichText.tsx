@@ -42,10 +42,7 @@ export function RichText({
   inline = false,
   onEnter,
   onDeleteEmpty,
-}: {
-  handle: RichTextHandle
-  inline?: boolean
-} & ItemKeys) {
+}: { handle: RichTextHandle; inline?: boolean } & ItemKeys) {
   return (
     <ProseKit editor={handle.getEditor()}>
       <RichTextHost
@@ -63,10 +60,7 @@ function RichTextHost({
   inline,
   onEnter,
   onDeleteEmpty,
-}: {
-  handle: RichTextHandle
-  inline: boolean
-} & ItemKeys) {
+}: { handle: RichTextHandle; inline: boolean } & ItemKeys) {
   const editor = handle.getEditor()
   const host = useRef<HTMLElement>(null)
   const setHost = useCallback((element: HTMLElement | null) => {

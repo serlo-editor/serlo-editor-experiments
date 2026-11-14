@@ -100,11 +100,7 @@ const EnterAsTightParagraph = Extension.create({
         () => chain().splitBlock().updateAttributes("paragraph", { tight }).run(),
       ])
 
-    return {
-      Enter: split(true),
-      "Shift-Enter": split(true),
-      "Mod-Enter": split(false),
-    }
+    return { Enter: split(true), "Shift-Enter": split(true), "Mod-Enter": split(false) }
   },
 })
 
@@ -216,10 +212,7 @@ export const RichTextEditor = forwardRef<
     if (value !== current) editor.commands.setContent(value)
   }, [editor, value])
 
-  const isFocused = useEditorState({
-    editor,
-    selector: ({ editor }) => editor?.isFocused ?? false,
-  })
+  const isFocused = useEditorState({ editor, selector: ({ editor }) => editor?.isFocused ?? false })
 
   const [isTableMenuOpen, setIsTableMenuOpen] = useState(false)
   // editing a formula moves the focus into its math field, which leaves the
@@ -471,10 +464,7 @@ function TableCellMenu({
   isOpen: boolean
   onOpenChange: (isOpen: boolean) => void
 }) {
-  const cell = useEditorState({
-    editor,
-    selector: ({ editor }) => activeTableCell(editor),
-  })
+  const cell = useEditorState({ editor, selector: ({ editor }) => activeTableCell(editor) })
   const [offset, setOffset] = useState<{ top: number; left: number } | null>(null)
 
   // (re)position after every transaction, cell sizes change while typing

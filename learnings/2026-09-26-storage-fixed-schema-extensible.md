@@ -62,11 +62,7 @@ A `number` schema stores a scalar and creates a number handle. An educational-un
 Schema composition remains possible through schema helpers:
 
 ```ts
-const unit = educationalUnit({
-  id: string(),
-  type: string(),
-  content: richText(),
-})
+const unit = educationalUnit({ id: string(), type: string(), content: richText() })
 ```
 
 The storage dependency direction is:

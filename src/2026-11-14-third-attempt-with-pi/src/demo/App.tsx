@@ -53,11 +53,7 @@ export default function App() {
   const [workspace, setWorkspace] = useState(() =>
     createWorkspace(
       WorksheetMode.EditingContent,
-      {
-        content: initialContent,
-        answers: {},
-        feedback: initialFeedback(),
-      },
+      { content: initialContent, answers: {}, feedback: initialFeedback() },
       0,
     ),
   )

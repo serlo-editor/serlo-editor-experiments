@@ -17,10 +17,7 @@ import { text } from "./text.tsx"
 
 export const worksheet = educationalUnit({
   type: "worksheet",
-  schema: object({
-    title: string(),
-    units: array(child(text, multipleChoice, freeText)),
-  }),
+  schema: object({ title: string(), units: array(child(text, multipleChoice, freeText)) }),
   render(unit, context: ViewContext): ReactNode {
     return (
       <article className="worksheet">

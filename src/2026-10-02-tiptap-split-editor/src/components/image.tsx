@@ -109,9 +109,7 @@ export const Image = TiptapImage.extend({
     if (sources.length < 2)
       return [
         "img",
-        mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, {
-          src: sources[0] ?? "",
-        }),
+        mergeAttributes(this.options.HTMLAttributes, HTMLAttributes, { src: sources[0] ?? "" }),
       ]
 
     const images: DOMOutputSpec[] = sources.map((src) => [

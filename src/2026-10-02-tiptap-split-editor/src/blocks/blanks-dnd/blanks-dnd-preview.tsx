@@ -97,10 +97,7 @@ export function BlanksDndPreview({
       ...slots
         .filter((slot) => slot.answer)
         .map((slot) => ({ id: `blank:${slot.id}`, text: slot.answer })),
-      ...state.extraAnswers.map((text, index) => ({
-        id: `extra:${index}`,
-        text,
-      })),
+      ...state.extraAnswers.map((text, index) => ({ id: `extra:${index}`, text })),
     ]
     return shuffle(all, seed)
   }, [slots, state.extraAnswers, seed])
@@ -360,11 +357,7 @@ export function BlanksDndPreview({
         createPortal(
           <span
             aria-hidden
-            style={{
-              left: drag.x - drag.offsetX,
-              top: drag.y - drag.offsetY,
-              width: drag.width,
-            }}
+            style={{ left: drag.x - drag.offsetX, top: drag.y - drag.offsetY, width: drag.width }}
             className={cn(
               chipStyle,
               "pointer-events-none fixed z-50 rotate-2 justify-center bg-white shadow-xl",

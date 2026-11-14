@@ -127,11 +127,7 @@ test("YjsNodeStore revisions stay local and ignore unrelated, duplicate, and awa
   const firstAwareness = new Awareness(firstDoc)
   const secondAwareness = new Awareness(secondDoc)
   const first = new YjsNodeStore({ doc: firstDoc, awareness: firstAwareness, storeName: "test" })
-  const second = new YjsNodeStore({
-    doc: secondDoc,
-    awareness: secondAwareness,
-    storeName: "test",
-  })
+  const second = new YjsNodeStore({ doc: secondDoc, awareness: secondAwareness, storeName: "test" })
   const observed: number[] = []
   const unsubscribe = second.subscribe(() => observed.push(second.getRevision()))
 
@@ -225,11 +221,7 @@ test("namespaced stores share a Y.Doc without sharing roots or revisions", () =>
     expect(peerAnswers.getRevision()).toBe(1)
 
     // Another store's root must not change content revision.
-    const tricky = new YjsNodeStore({
-      doc,
-      awareness,
-      storeName: "worksheet:other",
-    })
+    const tricky = new YjsNodeStore({ doc, awareness, storeName: "worksheet:other" })
     tricky.root.getOrCreate(() => tricky.cell.create("Independent"))
     expect(content.getRevision()).toBe(1)
     tricky.dispose()

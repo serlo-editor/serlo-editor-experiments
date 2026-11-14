@@ -70,9 +70,7 @@ export const DndBlank = Node.create({
       answer: {
         default: "",
         parseHTML: readAnswer,
-        renderHTML: (attributes) => ({
-          [ANSWER_ATTRIBUTE]: attributes.answer,
-        }),
+        renderHTML: (attributes) => ({ [ANSWER_ATTRIBUTE]: attributes.answer }),
       },
     }
   },
@@ -140,10 +138,7 @@ export const DndBlank = Node.create({
               return
             }
             tr ??= newState.tr
-            tr.setNodeMarkup(pos, undefined, {
-              ...node.attrs,
-              id: createSimpleUID(),
-            })
+            tr.setNodeMarkup(pos, undefined, { ...node.attrs, id: createSimpleUID() })
           })
           return tr
         },

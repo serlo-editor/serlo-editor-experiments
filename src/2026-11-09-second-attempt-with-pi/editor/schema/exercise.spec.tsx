@@ -126,10 +126,7 @@ describeWithStores("exercise renderer", (getStore) => {
     const worksheet = openExercise({ mode: WorksheetMode.Answering })
     await mountExercise(worksheet, (host) => {
       expect(host.textContent).toBe("What? /  /  / answering / task")
-      expect(worksheet.answers.get("task")?.snapshot()).toEqual({
-        type: "question",
-        response: "",
-      })
+      expect(worksheet.answers.get("task")?.snapshot()).toEqual({ type: "question", response: "" })
       worksheet.answers.get("task")!.response.set("42")
       expect(worksheet.answers.get("task")?.response.get()).toBe("42")
       expect(worksheet.feedback.snapshot()).toEqual({})
@@ -166,17 +163,12 @@ describeWithStores("exercise renderer", (getStore) => {
     })
     await mountExercise(worksheet, (host) => {
       expect(host.textContent).toBe("What? / Other /  / giving-feedback / task")
-      expect(worksheet.feedback.get("task")?.snapshot()).toEqual({
-        type: "question",
-        comment: "",
-      })
+      expect(worksheet.feedback.get("task")?.snapshot()).toEqual({ type: "question", comment: "" })
     })
   })
 
   test("viewing feedback uses a read-only default without persisting it", () => {
-    const worksheet = openExercise({
-      answers: { task: { type: "question", response: "42" } },
-    })
+    const worksheet = openExercise({ answers: { task: { type: "question", response: "42" } } })
     expect(renderToStaticMarkup(view(worksheet))).toBe(
       "<p>What? / 42 /  / viewing-feedback / task</p>",
     )

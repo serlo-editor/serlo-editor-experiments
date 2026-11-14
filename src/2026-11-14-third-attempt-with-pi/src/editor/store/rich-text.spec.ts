@@ -18,10 +18,7 @@ import { FlatNodeStore, ReadonlyNodeStore, YjsNodeStore } from "./index.ts"
 const options = { definition: definition.inline({ marks: { bold: true } }) }
 
 function content(text: string): RichTextJSON {
-  return {
-    type: "doc",
-    content: [{ type: "inlineBlock", content: [{ type: "text", text }] }],
-  }
+  return { type: "doc", content: [{ type: "inlineBlock", content: [{ type: "text", text }] }] }
 }
 
 describe("stored rich-text editors", () => {

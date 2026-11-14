@@ -198,9 +198,7 @@ describeWithStores("exercise renderer", (getStore) => {
     })
     await mountExercise(worksheet, (host) => {
       expect(host.textContent).toBe("What? / Other /  / giving-feedback / task")
-      expect(worksheet.feedbacks.snapshot()).toEqual({
-        task: { type: "question", comment: "" },
-      })
+      expect(worksheet.feedbacks.snapshot()).toEqual({ task: { type: "question", comment: "" } })
     })
   })
 

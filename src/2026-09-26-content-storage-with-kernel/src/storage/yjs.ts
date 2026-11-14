@@ -6,11 +6,7 @@ import type { NodeKind, NodeStore, Ref, RootRef } from "./types.ts"
 type YArray = Y.Array<YjsNodeRef>
 type YMap = Y.Map<YjsNodeRef>
 
-type YjsNodeRefs = {
-  cell: Y.Map<JSONValue> & Ref
-  array: YArray & Ref
-  map: YMap & Ref
-}
+type YjsNodeRefs = { cell: Y.Map<JSONValue> & Ref; array: YArray & Ref; map: YMap & Ref }
 type YjsNodeRef = YjsNodeRefs[NodeKind]
 
 type YjsNodeStoreContract = NodeStore<YjsNodeRefs, Y.Transaction>

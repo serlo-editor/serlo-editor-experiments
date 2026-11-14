@@ -38,12 +38,7 @@ export const initialContent: JSONValue<Root> = [
     type: ContentType.MultipleChoice,
     question: {
       type: "doc",
-      content: [
-        {
-          type: "inlineBlock",
-          content: [{ type: "text", text: "What is 2 + 2?" }],
-        },
-      ],
+      content: [{ type: "inlineBlock", content: [{ type: "text", text: "What is 2 + 2?" }] }],
     },
     options: [
       {

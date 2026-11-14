@@ -65,8 +65,4 @@ export function FreeTextEditor({ unit, onChange, onDelete }: EditorProps) {
   )
 }
 
-type EditorProps = {
-  unit: FreeTextUnit
-  onChange(): void
-  onDelete(): void
-}
+type EditorProps = { unit: FreeTextUnit; onChange(): void; onDelete(): void }

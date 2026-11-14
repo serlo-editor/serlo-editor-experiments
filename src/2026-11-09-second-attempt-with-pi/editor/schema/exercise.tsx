@@ -18,9 +18,7 @@ type ExerciseRenderProps<
   UnitFields extends BlockFields,
   AnswerFields extends TaggedFields,
   FeedbackFields extends TaggedFields,
-> = {
-  unit: StoredBlock<UnitType, UnitFields>
-} & (
+> = { unit: StoredBlock<UnitType, UnitFields> } & (
   | { mode: WorksheetMode.EditingContent; answer: undefined; feedback: undefined }
   | {
       mode: WorksheetMode.Answering
@@ -91,12 +89,7 @@ export function exercise<
       }
 
       if (mode === WorksheetMode.EditingContent) {
-        return createElement(render, {
-          unit: value,
-          mode,
-          answer: undefined,
-          feedback: undefined,
-        })
+        return createElement(render, { unit: value, mode, answer: undefined, feedback: undefined })
       }
 
       if (mode === WorksheetMode.Answering) {

@@ -42,8 +42,4 @@ export function TextEditor({ unit, onChange, onDelete }: EditorProps) {
   )
 }
 
-type EditorProps = {
-  unit: TextUnit
-  onChange(): void
-  onDelete(): void
-}
+type EditorProps = { unit: TextUnit; onChange(): void; onDelete(): void }

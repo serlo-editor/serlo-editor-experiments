@@ -101,10 +101,7 @@ function validateName(nameArg: string | undefined) {
 function installDependencies() {
   const child = spawn(bunCommand, ["install"], {
     cwd: repoRoot,
-    env: {
-      ...process.env,
-      CI: "1",
-    },
+    env: { ...process.env, CI: "1" },
     stdio: ["ignore", "pipe", "pipe"],
   })
 

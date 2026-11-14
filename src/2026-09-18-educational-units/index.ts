@@ -355,11 +355,7 @@ export class EducationalUnitStorage<Ref, Definitions extends readonly AnyUnitDef
     return unit
   }
 
-  private metadata(reference: Ref): {
-    id: string
-    type: string
-    definition: AnyUnitDefinition
-  } {
+  private metadata(reference: Ref): { id: string; type: string; definition: AnyUnitDefinition } {
     const { id, type } = load(unitHeader, this.storage, reference)
     return { id, type, definition: this.definition(type) }
   }
@@ -449,11 +445,7 @@ const image = educationalUnit({
 
 const exercise = educationalUnit({
   type: "exercise",
-  schema: object({
-    title: string(),
-    question: child(text),
-    answer: child(text, image),
-  }),
+  schema: object({ title: string(), question: child(text), answer: child(text, image) }),
   render(unit, context: DemoContext) {
     return `${context.prefix}exercise:${unit.value.title.get()} [${unit.value.question.render()}] [${unit.value.answer.render()}]`
   },
@@ -468,10 +460,7 @@ const exerciseJSON = {
 }
 
 const runExample = <Ref>(storage: StorageAdapter<Ref>) => {
-  const units = createEducationalUnitStorage({
-    storage,
-    units: [text, image, exercise],
-  })
+  const units = createEducationalUnitStorage({ storage, units: [text, image, exercise] })
   const reference = units.save(exerciseJSON)
   const rendered = units.bind(reference, { prefix: "render " }).render()
   const loaded = units.load(reference)

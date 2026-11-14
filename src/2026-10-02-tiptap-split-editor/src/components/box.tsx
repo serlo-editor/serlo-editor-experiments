@@ -27,11 +27,7 @@ declare module "@tiptap/core" {
   }
 }
 
-const NAMES: TitledBlockNames = {
-  wrapper: "box",
-  title: "boxTitle",
-  content: "boxContent",
-}
+const NAMES: TitledBlockNames = { wrapper: "box", title: "boxTitle", content: "boxContent" }
 
 function BoxView({ node, updateAttributes, editor }: NodeViewProps) {
   const type = resolveBoxType(node.attrs.type as string | null)

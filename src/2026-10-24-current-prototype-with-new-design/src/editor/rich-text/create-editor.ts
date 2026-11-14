@@ -113,12 +113,8 @@ function defineGap(): Extension {
         return ["span", { class: "gap-mark", "data-gap": "true" }, 0]
       },
     }),
-    defineCommands({
-      toggleGap: () => toggleMark({ type: "gap" }),
-    }),
-    defineKeymap({
-      "Mod-Alt-g": toggleMark({ type: "gap" }),
-    }),
+    defineCommands({ toggleGap: () => toggleMark({ type: "gap" }) }),
+    defineKeymap({ "Mod-Alt-g": toggleMark({ type: "gap" }) }),
   )
 }
 

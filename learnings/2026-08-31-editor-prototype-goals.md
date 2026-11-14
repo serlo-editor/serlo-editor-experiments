@@ -22,10 +22,7 @@ Educational content requires stronger semantic structures and invariants.
 Example:
 
 ```ts
-type Exercise = {
-  question: QuestionNode
-  answer: AnswerNode
-}
+type Exercise = { question: QuestionNode; answer: AnswerNode }
 ```
 
 Editor must eventually support exact tuples, named child slots, arrays, optional children, unions, wrappers, and domain-specific constraints—not only arbitrary lists of blocks.

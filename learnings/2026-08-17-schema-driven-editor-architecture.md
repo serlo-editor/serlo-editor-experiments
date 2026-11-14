@@ -55,13 +55,9 @@ The store reference remains hidden and may be:
 ```ts
 type FlatRef = { key: string }
 
-type NestedRef = {
-  path: readonly PathSegment[]
-}
+type NestedRef = { path: readonly PathSegment[] }
 
-type YjsRef = {
-  value: Y.AbstractType<unknown>
-}
+type YjsRef = { value: Y.AbstractType<unknown> }
 ```
 
 Renderers remain independent of the store implementation.

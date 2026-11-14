@@ -56,10 +56,7 @@ export function TextInputEditor({
 
   function removeAnswer(id: string) {
     inputRefs.current.delete(id)
-    onChange({
-      ...state,
-      answers: state.answers.filter((answer) => answer.id !== id),
-    })
+    onChange({ ...state, answers: state.answers.filter((answer) => answer.id !== id) })
   }
 
   function focusNeighbour(id: string, offset: -1 | 1) {

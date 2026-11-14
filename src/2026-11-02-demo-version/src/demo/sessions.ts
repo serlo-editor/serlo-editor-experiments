@@ -27,10 +27,7 @@ const names = [
 ]
 // y-prosemirror needs 6-digit hex colors; it appends an alpha suffix for the selection highlight.
 const colors = ["#2563eb", "#b45309", "#15803d", "#be185d", "#7c3aed", "#0e7490"]
-const user = {
-  name: pickRandom(names) ?? "Eifrige Eule",
-  color: pickRandom(colors) ?? "#2563eb",
-}
+const user = { name: pickRandom(names) ?? "Eifrige Eule", color: pickRandom(colors) ?? "#2563eb" }
 
 /** Long enough for a slow first connect, short enough to not stare at "Loading..." offline. */
 const syncTimeoutMs = 8000

@@ -62,9 +62,7 @@ export const Blank = Node.create({
       answers: {
         default: [],
         parseHTML: readAnswers,
-        renderHTML: (attributes) => ({
-          [ANSWERS_ATTRIBUTE]: JSON.stringify(attributes.answers),
-        }),
+        renderHTML: (attributes) => ({ [ANSWERS_ATTRIBUTE]: JSON.stringify(attributes.answers) }),
       },
     }
   },
@@ -131,10 +129,7 @@ export const Blank = Node.create({
               return
             }
             tr ??= newState.tr
-            tr.setNodeMarkup(pos, undefined, {
-              ...node.attrs,
-              id: createSimpleUID(),
-            })
+            tr.setNodeMarkup(pos, undefined, { ...node.attrs, id: createSimpleUID() })
           })
           return tr
         },

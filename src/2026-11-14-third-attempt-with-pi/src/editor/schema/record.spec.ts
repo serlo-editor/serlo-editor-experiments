@@ -54,23 +54,15 @@ describeWithStores("record schemas", (getStore) => {
   })
 
   test("infers object child snapshots and stored values", () => {
-    const child = object({
-      text: string(),
-      selected: array(string()),
-      active: boolean(),
-    })
+    const child = object({ text: string(), selected: array(string()), active: boolean() })
     const schema = record(child)
-    const initial = {
-      answer: { text: "", selected: [], active: false },
-    }
+    const initial = { answer: { text: "", selected: [], active: false } }
     const root = openRoot(getStore(), schema, initial)
     expect(root.snapshot()).toEqual(initial)
 
     const answer = root.getOrCreate("answer", () => ({ text: "", selected: [], active: false }))
     answer.selected.insert(0, "option-a")
-    expect(root.snapshot()).toEqual({
-      answer: { text: "", selected: ["option-a"], active: false },
-    })
+    expect(root.snapshot()).toEqual({ answer: { text: "", selected: ["option-a"], active: false } })
     root.set("another", { text: "Other", selected: [], active: true })
     expect(
       root.getOrCreate("another", () => ({ text: "", selected: [], active: false })).active.get(),

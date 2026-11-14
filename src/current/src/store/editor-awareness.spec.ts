@@ -38,10 +38,7 @@ test("scoped awareness filters peers, forwards events, and preserves unrelated p
       events++
     }
     first.on("change", listener)
-    remote.setLocalState({
-      editorId: firstId,
-      user: { name: "Remote" },
-    })
+    remote.setLocalState({ editorId: firstId, user: { name: "Remote" } })
     applyAwarenessUpdate(local, encodeAwarenessUpdate(remote, [remote.clientID]), "remote")
     expect(events).toBe(1)
     expect([...first.getStates().keys()]).toEqual([local.clientID, remote.clientID])
@@ -49,10 +46,7 @@ test("scoped awareness filters peers, forwards events, and preserves unrelated p
     expect(otherNamespace.getStates().size).toBe(0)
 
     first.off("change", listener)
-    remote.setLocalState({
-      editorId: otherId,
-      user: { name: "Remote" },
-    })
+    remote.setLocalState({ editorId: otherId, user: { name: "Remote" } })
     applyAwarenessUpdate(local, encodeAwarenessUpdate(remote, [remote.clientID]), "remote")
     expect(events).toBe(1)
     expect([...first.getStates().keys()]).toEqual([local.clientID])

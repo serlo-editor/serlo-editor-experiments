@@ -124,9 +124,7 @@ export class FlatNodeStore implements FlatNodeStoreContract {
   }
 
   private readonly writer: NodeWriter<FlatNodeRefs> = {
-    cell: {
-      set: (ref, value) => this.cellTable.applyUpdate(ref, () => value),
-    },
+    cell: { set: (ref, value) => this.cellTable.applyUpdate(ref, () => value) },
     array: {
       remove: (ref, index) => {
         this.arrayTable.applyUpdate(ref, (items) => [

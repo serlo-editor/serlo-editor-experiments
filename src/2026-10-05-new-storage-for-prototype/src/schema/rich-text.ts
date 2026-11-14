@@ -22,11 +22,7 @@ export function richText(
       const id = readRichTextId(store.cell.get(ref))
       const getEditor = () => store.getEditor(id, config)
 
-      return {
-        id,
-        getEditor,
-        snapshot: () => getEditor().getDocJSON() as RichTextJSON,
-      }
+      return { id, getEditor, snapshot: () => getEditor().getDocJSON() as RichTextJSON }
     },
   }
 }

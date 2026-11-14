@@ -49,11 +49,7 @@ describeWithStores("block schemas", (getStore) => {
     expect(value.question.get() satisfies string).toBe("Which answer?")
     expect(value.explanation.get()).toBe("Because")
     value.question.set("Updated")
-    expect(document.snapshot()).toEqual({
-      ...initial,
-      question: "Updated",
-      explanation: "Because",
-    })
+    expect(document.snapshot()).toEqual({ ...initial, question: "Updated", explanation: "Because" })
     expect(value.id).toBe(initial.id)
     expect(Object.keys(document.snapshot()).sort()).toEqual([
       "answers",

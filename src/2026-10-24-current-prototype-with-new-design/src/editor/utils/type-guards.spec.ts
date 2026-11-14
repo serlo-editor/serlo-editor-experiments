@@ -106,10 +106,7 @@ test("arrayOf", () => {
 })
 
 test("shape", () => {
-  const person = shape({
-    name: isString,
-    active: isBoolean,
-  })
+  const person = shape({ name: isString, active: isBoolean })
 
   expectTypeOf(person).toEqualTypeOf<
     TypeGuard<{ readonly name: string; readonly active: boolean }>

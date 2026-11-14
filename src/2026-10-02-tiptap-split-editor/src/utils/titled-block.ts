@@ -7,11 +7,7 @@ import type { ChainedCommands, Editor } from "@tiptap/react"
  * (the spoiler and the box): a `wrapper` node holding a `title` and a
  * `content` node.
  */
-export type TitledBlockNames = {
-  wrapper: string
-  title: string
-  content: string
-}
+export type TitledBlockNames = { wrapper: string; title: string; content: string }
 
 /** the depth of the closest ancestor of `$pos` with the given node type */
 export function findDepth($pos: ResolvedPos, typeName: string) {

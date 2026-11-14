@@ -316,9 +316,7 @@ export const Math = Node.create({
   },
 
   addKeyboardShortcuts() {
-    return {
-      "Mod-Shift-m": () => this.editor.commands.insertMath(),
-    }
+    return { "Mod-Shift-m": () => this.editor.commands.insertMath() }
   },
 
   addInputRules() {

@@ -35,12 +35,7 @@ export const initialContent: RootSnapshot = [
   MultipleChoice.createUnit({
     question: {
       type: "doc",
-      content: [
-        {
-          type: "inlineBlock",
-          content: [{ type: "text", text: "What is 2 + 2?" }],
-        },
-      ],
+      content: [{ type: "inlineBlock", content: [{ type: "text", text: "What is 2 + 2?" }] }],
     },
     options: [
       {

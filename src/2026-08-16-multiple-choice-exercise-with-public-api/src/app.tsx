@@ -11,30 +11,15 @@ type Choice = {
   readonly correct: boolean
 }
 
-type ModeInfo = {
-  readonly id: EditorMode
-  readonly title: string
-  readonly description: string
-}
+type ModeInfo = { readonly id: EditorMode; readonly title: string; readonly description: string }
 
 type ChoiceListLayout = "editable" | "selectable" | "review"
 
-const documentType = {
-  id: "multiple-choice-exercise",
-  label: "Multiple choice exercise",
-} as const
+const documentType = { id: "multiple-choice-exercise", label: "Multiple choice exercise" } as const
 
 const modes: readonly ModeInfo[] = [
-  {
-    id: "authoring",
-    title: "Authoring",
-    description: "Edit the question and answer options.",
-  },
-  {
-    id: "learning",
-    title: "Learning",
-    description: "Let the learner pick one answer.",
-  },
+  { id: "authoring", title: "Authoring", description: "Edit the question and answer options." },
+  { id: "learning", title: "Learning", description: "Let the learner pick one answer." },
   {
     id: "feedback-authoring",
     title: "Feedback authoring",

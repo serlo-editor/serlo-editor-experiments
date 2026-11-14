@@ -32,10 +32,7 @@ export function FreeTextEditor({
   function setMinLength(value: string) {
     // an empty field means no minimum
     const minLength = Number.parseInt(value, 10)
-    onChange({
-      ...state,
-      minLength: Number.isNaN(minLength) ? 0 : Math.max(0, minLength),
-    })
+    onChange({ ...state, minLength: Number.isNaN(minLength) ? 0 : Math.max(0, minLength) })
   }
 
   return (

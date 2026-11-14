@@ -10,10 +10,7 @@ import { openRoot } from "./root.ts"
 const options = { definition: definition.inline({ marks: { bold: true } }) }
 
 function content(text: string): RichTextJSON {
-  return {
-    type: "doc",
-    content: [{ type: "inlineBlock", content: [{ type: "text", text }] }],
-  }
+  return { type: "doc", content: [{ type: "inlineBlock", content: [{ type: "text", text }] }] }
 }
 
 describeWithStores("rich-text schemas", (getStore) => {

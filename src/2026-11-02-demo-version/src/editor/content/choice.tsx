@@ -18,10 +18,7 @@ import {
 export const choiceFields = {
   task: richText({ definition: taskDefinition }),
   options: array(
-    object({
-      isCorrect: boolean(),
-      text: richText({ definition: optionDefinition }),
-    }),
+    object({ isCorrect: boolean(), text: richText({ definition: optionDefinition }) }),
   ),
 }
 

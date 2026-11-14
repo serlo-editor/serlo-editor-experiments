@@ -31,11 +31,7 @@ const image = educationalUnit({
 
 const exercise = educationalUnit({
   type: "exercise",
-  schema: object({
-    title: string(),
-    question: child(text),
-    answer: child(text, image),
-  }),
+  schema: object({ title: string(), question: child(text), answer: child(text, image) }),
   render(unit, context: RenderContext) {
     return `${context.prefix}exercise:${unit.value.title.get()} [${unit.value.question.render()}] [${unit.value.answer.render()}]`
   },

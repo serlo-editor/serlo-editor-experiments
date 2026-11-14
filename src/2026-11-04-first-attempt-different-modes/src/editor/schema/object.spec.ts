@@ -12,12 +12,7 @@ import type { SnapshotOf, StoredValueOf } from "./types.ts"
 
 describeWithStores("object schemas", (getStore) => {
   test("reads typed fields and snapshots child edits", () => {
-    const initial = {
-      name: "Ada",
-      active: false,
-      tags: ["math"],
-      profile: { bio: "Hello" },
-    }
+    const initial = { name: "Ada", active: false, tags: ["math"], profile: { bio: "Hello" } }
     const { root } = createDocument(
       getStore(),
       object({

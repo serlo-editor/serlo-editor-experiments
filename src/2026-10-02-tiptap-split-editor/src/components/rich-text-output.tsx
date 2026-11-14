@@ -11,12 +11,7 @@ import { renderMathFields } from "@/utils/render-math"
  */
 export const RichTextOutput = forwardRef<
   HTMLDivElement,
-  {
-    html: string
-    placeholder: string
-    onClick?: () => void
-    className?: string
-  }
+  { html: string; placeholder: string; onClick?: () => void; className?: string }
 >(function RichTextOutput({ html, placeholder, onClick, className }, ref) {
   const shared = "-mx-2 rounded-lg px-2 py-1"
 

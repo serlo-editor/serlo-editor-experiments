@@ -80,9 +80,7 @@ export function ImageDndEditor({
   const update = (patch: Partial<ImageDndState>) => onChange({ ...state, ...patch })
 
   function updateZone(id: string, patch: Partial<DropZone>) {
-    update({
-      zones: state.zones.map((zone) => (zone.id === id ? { ...zone, ...patch } : zone)),
-    })
+    update({ zones: state.zones.map((zone) => (zone.id === id ? { ...zone, ...patch } : zone)) })
   }
 
   function removeZone(id: string) {
@@ -118,10 +116,7 @@ export function ImageDndEditor({
     const onMove = (move: PointerEvent) => {
       const point = pointOf(move)
       if (current.kind === "draw") {
-        current = {
-          ...current,
-          rect: spanRect(current.startX, current.startY, point.x, point.y),
-        }
+        current = { ...current, rect: spanRect(current.startX, current.startY, point.x, point.y) }
         setGesture(current)
       } else if (current.kind === "move") {
         const { start } = current
@@ -165,12 +160,7 @@ export function ImageDndEditor({
   function onCanvasPointerDown(event: React.PointerEvent<HTMLDivElement>) {
     onFocus({ type: "canvas" })
     const { x, y } = pointOf(event)
-    startGesture(event, {
-      kind: "draw",
-      startX: x,
-      startY: y,
-      rect: { x, y, width: 0, height: 0 },
-    })
+    startGesture(event, { kind: "draw", startX: x, startY: y, rect: { x, y, width: 0, height: 0 } })
   }
 
   function onZonePointerDown(event: React.PointerEvent<HTMLElement>, zone: DropZone) {

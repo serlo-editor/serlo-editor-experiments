@@ -1,9 +1,6 @@
 {
   "$schema": "https://www.schemastore.org/tsconfig",
   "extends": "@tsconfig/bun/tsconfig.json",
-  "compilerOptions": {
-    "lib": ["esnext", "dom"],
-    "types": ["bun"]
-  },
+  "compilerOptions": { "lib": ["esnext", "dom"], "types": ["bun"] },
   "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

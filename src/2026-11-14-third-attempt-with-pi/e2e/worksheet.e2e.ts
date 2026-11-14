@@ -27,11 +27,7 @@ beforeEach(async () => {
     backend:
       process.platform === "darwin"
         ? "webkit"
-        : {
-            type: "chrome",
-            url: false,
-            argv: ["--no-sandbox", "--disable-dev-shm-usage"],
-          },
+        : { type: "chrome", url: false, argv: ["--no-sandbox", "--disable-dev-shm-usage"] },
     console,
   })
   await view.navigate(pathToFileURL(join(directory, "index.html")).href)

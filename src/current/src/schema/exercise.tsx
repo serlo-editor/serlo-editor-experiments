@@ -15,9 +15,7 @@ type ExerciseRenderProps<
   UnitFields extends ObjectFields,
   AnswerFields extends ObjectFields,
   FeedbackFields extends ObjectFields,
-> = {
-  unit: StoredBlock<UnitType, UnitFields>
-} & (
+> = { unit: StoredBlock<UnitType, UnitFields> } & (
   | { mode: WorksheetMode.EditingContent; answer: undefined; feedback: undefined }
   | {
       mode: WorksheetMode.Answering
@@ -63,12 +61,7 @@ export function exercise<
       const { mode, answers, feedbacks } = useWorksheet()
 
       if (mode === WorksheetMode.EditingContent) {
-        return createElement(render, {
-          unit: value,
-          mode,
-          answer: undefined,
-          feedback: undefined,
-        })
+        return createElement(render, { unit: value, mode, answer: undefined, feedback: undefined })
       }
 
       const answer = answers.getOrCreate(value.id, () => answerSchema.defaultValue())

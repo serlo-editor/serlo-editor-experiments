@@ -27,8 +27,4 @@ export function ChildUnitEditor({ unit, onChange, onDelete }: EditorProps) {
   )
 }
 
-type EditorProps = {
-  unit: EditableChildUnit
-  onChange(): void
-  onDelete(): void
-}
+type EditorProps = { unit: EditableChildUnit; onChange(): void; onDelete(): void }

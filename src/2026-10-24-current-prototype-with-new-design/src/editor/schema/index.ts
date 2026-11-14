@@ -28,11 +28,7 @@ export interface RichTextSchema extends Schema<{
 
 export interface LiteralSchema<
   T extends string | number | boolean = string | number | boolean,
-> extends Schema<{
-  kind: "literal"
-  FlatValue: T
-  JSONValue: T
-}> {
+> extends Schema<{ kind: "literal"; FlatValue: T; JSONValue: T }> {
   readonly value: T
 }
 
@@ -91,11 +87,7 @@ export function createBoolean(args: FactoryArguments<BooleanSchema>): BooleanSch
 }
 
 export function createRichText(args: FactoryArguments<RichTextSchema>): RichTextSchema {
-  return {
-    kind: "richText",
-    isFlatValue: T.isNull,
-    ...args,
-  }
+  return { kind: "richText", isFlatValue: T.isNull, ...args }
 }
 
 export function createLiteral<Value extends string | number | boolean>(

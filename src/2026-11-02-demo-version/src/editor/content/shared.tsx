@@ -58,10 +58,7 @@ export function AnswerRow({
   onRemove,
   onEnter,
   onDeleteEmpty,
-}: {
-  handle: RichTextHandle
-  onRemove: () => void
-} & ItemKeys) {
+}: { handle: RichTextHandle; onRemove: () => void } & ItemKeys) {
   return (
     <div className="answer-input">
       <RichText handle={handle} inline onEnter={onEnter} onDeleteEmpty={onDeleteEmpty} />

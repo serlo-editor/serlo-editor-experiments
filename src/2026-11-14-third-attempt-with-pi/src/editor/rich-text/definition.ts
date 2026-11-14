@@ -93,11 +93,7 @@ function defineBlockNodes(blocks: BlockConfig["blocks"]): Extension[] {
   if (orderedList || bulletList) {
     extensions.push(
       defineList(),
-      defineNodeAttr({
-        type: "list",
-        attr: "kind",
-        default: bulletList ? "bullet" : "ordered",
-      }),
+      defineNodeAttr({ type: "list", attr: "kind", default: bulletList ? "bullet" : "ordered" }),
     )
   }
 

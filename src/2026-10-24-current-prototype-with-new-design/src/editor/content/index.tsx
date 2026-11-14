@@ -63,19 +63,13 @@ const FillInTheBlankExercise = S.createWrapper({
 const MultipleChoiceExercise = S.createObject({
   name: "MultipleChoiceExercise",
   properties: {
-    type: S.createLiteral({
-      name: "MultipleChoiceType",
-      value: ContentType.MultipleChoice,
-    }),
+    type: S.createLiteral({ name: "MultipleChoiceType", value: ContentType.MultipleChoice }),
     question: InlineRichText,
     options: S.createArray({
       name: "MultipleChoiceOptions",
       itemSchema: S.createObject({
         name: "MultipleChoiceOption",
-        properties: {
-          isCorrect: BooleanSchema,
-          text: InlineRichText,
-        },
+        properties: { isCorrect: BooleanSchema, text: InlineRichText },
         keyOrder: ["isCorrect", "text"],
         htmlTag: "li",
         customBehavior: {

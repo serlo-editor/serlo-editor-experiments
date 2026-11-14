@@ -117,11 +117,7 @@ export function BlanksDndEditor({
 
 const ExtraAnswersPanel = forwardRef<
   HTMLDivElement,
-  {
-    answers: string[]
-    onChange: (answers: string[]) => void
-    className?: string
-  }
+  { answers: string[]; onChange: (answers: string[]) => void; className?: string }
 >(function ExtraAnswersPanel({ answers, onChange, className }, ref) {
   const [draft, setDraft] = useState("")
 

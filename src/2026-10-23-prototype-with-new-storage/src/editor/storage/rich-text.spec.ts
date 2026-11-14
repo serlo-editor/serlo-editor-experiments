@@ -22,10 +22,7 @@ import { FlatNodeStore, YjsNodeStore } from "./index.ts"
 const options = { definition: definition.inline({ marks: { bold: true } }) }
 
 function content(text: string): RichTextJSON {
-  return {
-    type: "doc",
-    content: [{ type: "inlineBlock", content: [{ type: "text", text }] }],
-  }
+  return { type: "doc", content: [{ type: "inlineBlock", content: [{ type: "text", text }] }] }
 }
 
 describe("stored rich-text editors", () => {
@@ -350,14 +347,8 @@ describe("stored rich-text editors", () => {
     const targetDoc = createDoc()
     const sourceAwareness = new Awareness(sourceDoc)
     const targetAwareness = new Awareness(targetDoc)
-    const sourceStore = new YjsNodeStore({
-      doc: sourceDoc,
-      awareness: sourceAwareness,
-    })
-    const targetStore = new YjsNodeStore({
-      doc: targetDoc,
-      awareness: targetAwareness,
-    })
+    const sourceStore = new YjsNodeStore({ doc: sourceDoc, awareness: sourceAwareness })
+    const targetStore = new YjsNodeStore({ doc: targetDoc, awareness: targetAwareness })
     awarenessInstances.push(sourceAwareness, targetAwareness)
     const schema = array(richText(options))
     const source = createDocument(sourceStore, schema, [content("First"), content("Second")])

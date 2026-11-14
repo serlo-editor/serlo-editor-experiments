@@ -42,10 +42,7 @@ export interface ArraySchema<C extends Schema> extends Schema<
   readonly element: C
 }
 
-export const array = <C extends Schema>(element: C): ArraySchema<C> => ({
-  kind: "array",
-  element,
-})
+export const array = <C extends Schema>(element: C): ArraySchema<C> => ({ kind: "array", element })
 
 // Store adapter
 

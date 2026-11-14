@@ -125,8 +125,4 @@ export function MultipleChoiceEditor({ unit, onChange, onDelete }: EditorProps) 
   )
 }
 
-type EditorProps = {
-  unit: MultipleChoiceUnit
-  onChange(): void
-  onDelete(): void
-}
+type EditorProps = { unit: MultipleChoiceUnit; onChange(): void; onDelete(): void }

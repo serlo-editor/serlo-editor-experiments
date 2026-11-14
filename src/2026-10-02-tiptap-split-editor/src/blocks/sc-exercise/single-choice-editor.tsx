@@ -55,20 +55,14 @@ export function SingleChoiceEditor({
   function markCorrect(id: string) {
     onChange({
       ...state,
-      answers: state.answers.map((answer) => ({
-        ...answer,
-        isCorrect: answer.id === id,
-      })),
+      answers: state.answers.map((answer) => ({ ...answer, isCorrect: answer.id === id })),
     })
   }
 
   function removeAnswer(id: string) {
     inputRefs.current.delete(id)
     cardRefs.current.delete(id)
-    onChange({
-      ...state,
-      answers: state.answers.filter((answer) => answer.id !== id),
-    })
+    onChange({ ...state, answers: state.answers.filter((answer) => answer.id !== id) })
   }
 
   return (

@@ -75,9 +75,7 @@ export function useWorksheetSession<
         FeedbacksSchema,
         Refs
       >["initialSnapshot"],
-    ): Session => ({
-      worksheet: openWorksheet({ ...options, mode, initialSnapshot }),
-    }),
+    ): Session => ({ worksheet: openWorksheet({ ...options, mode, initialSnapshot }) }),
     [options],
   )
   const sessionRef = useRef<Session | null>(null)

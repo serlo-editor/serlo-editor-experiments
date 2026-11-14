@@ -34,9 +34,7 @@ export class FlatNodeStore implements FlatNodeStoreContract {
     get: (ref) => this.cellTable.get(ref),
     edit: (ref, tx) => {
       this.assertActiveTransaction(tx)
-      return {
-        set: (value) => this.cellTable.applyUpdate(ref, () => value),
-      }
+      return { set: (value) => this.cellTable.applyUpdate(ref, () => value) }
     },
   }
 
@@ -70,10 +68,7 @@ export class FlatNodeStore implements FlatNodeStoreContract {
       this.assertActiveTransaction(tx)
       return {
         set: (field, item) => {
-          this.mapTable.applyUpdate(ref, (previousFields) => ({
-            ...previousFields,
-            [field]: item,
-          }))
+          this.mapTable.applyUpdate(ref, (previousFields) => ({ ...previousFields, [field]: item }))
         },
         remove: (field) => {
           this.mapTable.applyUpdate(ref, (previousFields) => {

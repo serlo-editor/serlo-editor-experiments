@@ -38,10 +38,7 @@ export const MultipleChoice = unit({
   fields: {
     question: richText({ definition: inlineDefinition }),
     options: array(
-      object({
-        isCorrect: boolean(),
-        text: richText({ definition: inlineDefinition }),
-      }),
+      object({ isCorrect: boolean(), text: richText({ definition: inlineDefinition }) }),
     ),
   },
   render: ({ handle }) => (

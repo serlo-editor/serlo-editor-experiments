@@ -74,9 +74,7 @@ External snapshots contain ProseMirror JSON, not internal IDs.
 import { richText as definition } from "./src/rich-text/index.ts"
 import { richText } from "./src/schema/index.ts"
 
-const schema = richText({
-  definition: definition.inline({ marks: { bold: true } }),
-})
+const schema = richText({ definition: definition.inline({ marks: { bold: true } }) })
 // Bound stored value: value.id, value.getEditor(), value.snapshot().
 ```
 

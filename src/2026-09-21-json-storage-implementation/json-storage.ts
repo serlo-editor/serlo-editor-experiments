@@ -161,19 +161,11 @@ function createYValue(value: JSONValue): YStoredValue {
 
 function bindYValue(value: YStoredValue, update: (newValue: YStoredValue) => void): AnyValue {
   if (typeof value === "boolean") {
-    return {
-      type: "boolean",
-      get: () => value,
-      set: (nextValue) => update(nextValue),
-    }
+    return { type: "boolean", get: () => value, set: (nextValue) => update(nextValue) }
   }
 
   if (typeof value === "string") {
-    return {
-      type: "string",
-      get: () => value,
-      set: (nextValue) => update(nextValue),
-    }
+    return { type: "string", get: () => value, set: (nextValue) => update(nextValue) }
   }
 
   if (value instanceof Y.Array) {

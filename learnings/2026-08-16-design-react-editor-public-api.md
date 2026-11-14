@@ -65,21 +65,13 @@ Each mode defines which document regions may be changed by local UI and API oper
 
 ```ts
 const modePermissions = {
-  authoring: {
-    writableRegions: ["document-type", "content"],
-  },
+  authoring: { writableRegions: ["document-type", "content"] },
 
-  learning: {
-    writableRegions: ["response"],
-  },
+  learning: { writableRegions: ["response"] },
 
-  "feedback-authoring": {
-    writableRegions: ["feedback"],
-  },
+  "feedback-authoring": { writableRegions: ["feedback"] },
 
-  "feedback-viewing": {
-    writableRegions: [],
-  },
+  "feedback-viewing": { writableRegions: [] },
 }
 ```
 
@@ -310,10 +302,7 @@ The following round trip must preserve the canonical document:
 ```ts
 const document = editor.getDocument()
 
-const secondEditor = useSerloEditor({
-  mode: "authoring",
-  initialDocument: document,
-})
+const secondEditor = useSerloEditor({ mode: "authoring", initialDocument: document })
 ```
 
 The document is deeply immutable in the TypeScript API. Implementations may use structural sharing and must not guarantee reference identity between calls.
@@ -326,9 +315,7 @@ export type DeepReadonly<T> = T extends (...args: never[]) => unknown
   : T extends readonly (infer Item)[]
     ? readonly DeepReadonly<Item>[]
     : T extends object
-      ? {
-          readonly [Key in keyof T]: DeepReadonly<T[Key]>
-        }
+      ? { readonly [Key in keyof T]: DeepReadonly<T[Key]> }
       : T
 ```
 
@@ -377,19 +364,11 @@ Example:
   "content": {
     "question": "Which numbers are prime?",
     "answers": [
-      {
-        "id": "answer-1",
-        "text": "2"
-      },
-      {
-        "id": "answer-2",
-        "text": "4"
-      }
+      { "id": "answer-1", "text": "2" },
+      { "id": "answer-2", "text": "4" }
     ]
   },
-  "response": {
-    "selectedAnswerIds": ["answer-1"]
-  },
+  "response": { "selectedAnswerIds": ["answer-1"] },
   "feedback": []
 }
 ```
@@ -425,10 +404,7 @@ import { articleDocumentType, exerciseDocumentType, defaultDocumentTypes } from 
 ```
 
 ```ts
-useSerloEditor({
-  mode: "authoring",
-  types: defaultDocumentTypes,
-})
+useSerloEditor({ mode: "authoring", types: defaultDocumentTypes })
 ```
 
 Omitting `types` is equivalent to using `defaultDocumentTypes`.
@@ -522,19 +498,8 @@ Operations with meaningful runtime failures return `EditorResult`.
 
 ```ts
 export type EditorResult<Value, Failure extends EditorError = EditorError> = Value extends void
-  ? | { readonly ok: true }
-    | {
-        readonly ok: false
-        readonly error: Failure
-      }
-  : | {
-        readonly ok: true
-        readonly value: Value
-      }
-    | {
-        readonly ok: false
-        readonly error: Failure
-      }
+  ? { readonly ok: true } | { readonly ok: false; readonly error: Failure }
+  : { readonly ok: true; readonly value: Value } | { readonly ok: false; readonly error: Failure }
 ```
 
 Example:
@@ -830,10 +795,7 @@ Only events corresponding to operations that actually occurred are emitted.
 interface DocumentMigratedEvent extends LifecycleEvent {
   readonly subtype: "document-migrated"
 
-  readonly data: {
-    readonly fromVersion: number
-    readonly toVersion: number
-  }
+  readonly data: { readonly fromVersion: number; readonly toVersion: number }
 }
 ```
 
@@ -888,10 +850,7 @@ Forward-compatible preservation of unknown fields—and, where the editor state 
 Older supported versions are migrated automatically.
 
 ```ts
-const editor = useSerloEditor({
-  mode: "authoring",
-  initialDocument: oldDocument,
-})
+const editor = useSerloEditor({ mode: "authoring", initialDocument: oldDocument })
 ```
 
 After initialization:
@@ -1072,10 +1031,7 @@ const editor = useSerloEditor({
 
 ```tsx
 function Page() {
-  const editor = useSerloEditor({
-    mode: "authoring",
-    initialDocument,
-  })
+  const editor = useSerloEditor({ mode: "authoring", initialDocument })
 
   function save() {
     const document = editor.getDocument()
@@ -1125,11 +1081,7 @@ const editor = useSerloEditor({
 
   initialDocument: learnerDocument,
 
-  identity: {
-    documentId: activityId,
-    userId,
-    sessionId,
-  },
+  identity: { documentId: activityId, userId, sessionId },
 
   onDocumentChange(event) {
     saveLearnerResponse(event.document)
@@ -1157,10 +1109,7 @@ const editor = useSerloEditor({
 
   initialDocument: submissionDocument,
 
-  identity: {
-    documentId,
-    userId: teacherId,
-  },
+  identity: { documentId, userId: teacherId },
 
   onDocumentChange(event) {
     if (event.changed.includes("feedback")) {
@@ -1174,19 +1123,9 @@ The long-term feedback target should support:
 
 ```ts
 export type FeedbackTarget =
-  | {
-      readonly type: "document"
-    }
-  | {
-      readonly type: "node"
-      readonly nodeId: string
-      readonly path?: NodePath
-    }
-  | {
-      readonly type: "range"
-      readonly nodeId: string
-      readonly range: unknown
-    }
+  | { readonly type: "document" }
+  | { readonly type: "node"; readonly nodeId: string; readonly path?: NodePath }
+  | { readonly type: "range"; readonly nodeId: string; readonly range: unknown }
 ```
 
 The initial implementation may support only a subset without changing the union shape.

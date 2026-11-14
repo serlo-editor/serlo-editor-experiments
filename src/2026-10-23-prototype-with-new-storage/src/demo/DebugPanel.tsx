@@ -74,19 +74,23 @@ function describeStructure(session: PrototypeSession) {
   return {
     id: root.id,
     type: root.type,
-    items: root.field("items").map((item) => ({
-      id: item.id,
-      type: item.type,
-      fields:
-        item.type === "multiple-choice"
-          ? {
-              question: { editorId: item.field("question").id },
-              options: item.field("options").map((option) => ({
-                isCorrect: option.field("isCorrect").get(),
-                text: { editorId: option.field("text").id },
-              })),
-            }
-          : { content: { editorId: item.field("content").id } },
-    })),
+    items: root
+      .field("items")
+      .map((item) => ({
+        id: item.id,
+        type: item.type,
+        fields:
+          item.type === "multiple-choice"
+            ? {
+                question: { editorId: item.field("question").id },
+                options: item
+                  .field("options")
+                  .map((option) => ({
+                    isCorrect: option.field("isCorrect").get(),
+                    text: { editorId: option.field("text").id },
+                  })),
+              }
+            : { content: { editorId: item.field("content").id } },
+      })),
   }
 }
