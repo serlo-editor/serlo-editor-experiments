@@ -1,11 +1,11 @@
 import { useState } from "react"
 
-import { Root, type RootSnapshot } from "../../editor/blocks"
-import { Editor, type EditorWorksheet } from "../../editor/components/Editor"
-import { Answers, Feedback, initialFeedback } from "../../editor/responses"
-import { FlatNodeStore } from "../../editor/storage"
-import { useStorage } from "../../editor/use-storage"
-import { openWorksheet, WorksheetMode } from "../../editor/worksheet"
+import { Root, type RootSnapshot } from "../editor/blocks"
+import { Editor, type EditorWorksheet } from "../editor/components/Editor"
+import { Answers, Feedback, initialFeedback } from "../editor/responses"
+import { FlatNodeStore } from "../editor/store"
+import { useStorage } from "../editor/store/use-storage"
+import { openWorksheet, WorksheetMode } from "../editor/worksheet"
 import { initialContent } from "./initial-content"
 
 const modes = [
@@ -18,7 +18,7 @@ const modes = [
 type Snapshot = {
   content: RootSnapshot
   answers: ReturnType<typeof Answers.defaultValue>
-  feedback: ReturnType<typeof Feedback.defaultValue>
+  feedbacks: ReturnType<typeof Feedback.defaultValue>
 }
 type Workspace = { worksheet: EditorWorksheet; store: FlatNodeStore; generation: number }
 
@@ -29,10 +29,10 @@ function createWorkspace(mode: WorksheetMode, snapshot: Snapshot, generation: nu
     generation,
     worksheet: openWorksheet({
       mode,
-      store,
+      createStore: () => store,
       contentSchema: Root,
       answersSchema: Answers,
-      feedbackSchema: Feedback,
+      feedbacksSchema: Feedback,
       initialSnapshot: snapshot,
     }),
   }
@@ -41,18 +41,18 @@ function createWorkspace(mode: WorksheetMode, snapshot: Snapshot, generation: nu
 function nextSnapshot(worksheet: EditorWorksheet, mode: WorksheetMode): Snapshot {
   const content = worksheet.content.snapshot()
   const answers = mode === WorksheetMode.EditingContent ? {} : worksheet.answers.snapshot()
-  const feedback =
+  const feedbacks =
     mode === WorksheetMode.EditingContent || mode === WorksheetMode.Answering
       ? initialFeedback()
-      : worksheet.feedback.snapshot()
-  return { content, answers, feedback }
+      : worksheet.feedbacks.snapshot()
+  return { content, answers, feedbacks }
 }
 
 export default function App() {
   const [workspace, setWorkspace] = useState(() =>
     createWorkspace(
       WorksheetMode.EditingContent,
-      { content: initialContent, answers: {}, feedback: initialFeedback() },
+      { content: initialContent, answers: {}, feedbacks: initialFeedback() },
       0,
     ),
   )
@@ -70,7 +70,9 @@ export default function App() {
               onClick={() => {
                 if (item.id === worksheet.mode) return
                 const snapshot = nextSnapshot(worksheet, item.id)
-                setWorkspace(createWorkspace(item.id, snapshot, generation + 1))
+                const next = createWorkspace(item.id, snapshot, generation + 1)
+                setWorkspace(next)
+                worksheet.dispose()
               }}
             >
               {item.label}
@@ -110,7 +112,7 @@ function Documents({ worksheet, store }: { worksheet: EditorWorksheet; store: Fl
       </p>
       <DocumentJSON label="Inhalt" snapshot={worksheet.content.snapshot()} />
       <DocumentJSON label="Antworten" snapshot={worksheet.answers.snapshot()} />
-      <DocumentJSON label="Feedback" snapshot={worksheet.feedback.snapshot()} />
+      <DocumentJSON label="Feedback" snapshot={worksheet.feedbacks.snapshot()} />
       <p className="documents__note">
         Debug-Ansicht enthält auch Lösungen. Schreibschutz ist keine Zugriffskontrolle.
       </p>

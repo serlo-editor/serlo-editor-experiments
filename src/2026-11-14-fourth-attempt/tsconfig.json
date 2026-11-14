@@ -4,6 +4,7 @@
   "compilerOptions": {
     "lib": ["dom", "dom.iterable", "esnext"],
     "exactOptionalPropertyTypes": true,
+    "paths": { "@editor/*": ["./src/editor/*"] },
     "types": ["bun"]
   }
 }
