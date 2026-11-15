@@ -139,12 +139,11 @@ function gradeGap(
   })
   if (!solutions.size) return "unassessed"
   const values = answer.values.snapshot()
-  return [...solutions].every(([id, solution]) => {
-    const text = values[id] ?? ""
-    return normalize(text) !== "" && normalize(text) === normalize(solution)
-  })
-    ? "correct"
-    : "incorrect"
+  for (const [id, solution] of solutions) {
+    const response = normalize(values[id] ?? "")
+    if (!response || response !== normalize(solution)) return "incorrect"
+  }
+  return "correct"
 }
 
 function normalize(text: string) {

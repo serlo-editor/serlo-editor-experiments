@@ -44,6 +44,7 @@ function ChoiceView({
   feedback: StoredTaggedObject<"multiple-choice", typeof feedbackFields> | undefined
   mode: WorksheetMode
 }) {
+  const selected = answer?.selected.snapshot()
   return (
     <section className={styles.exercise} aria-label="Multiple Choice">
       <ExerciseBadge label="Multiple Choice" help="Mehrere Antworten können richtig sein." />
@@ -55,27 +56,28 @@ function ChoiceView({
           </div>
           <h3 className={styles.fieldLabel}>Antworten</h3>
           <ul className={styles.options}>
-            {unit.options.map((option) => (
-              <li key={option.optionId.get()}>
-                <div className={styles.answerInput}>
-                  <RichText value={option.text} inline />
-                </div>
-                <label
-                  className={
-                    option.isCorrect.get()
-                      ? `${styles.correctness} ${styles.correct}`
-                      : styles.correctness
-                  }
-                >
-                  <input
-                    type="checkbox"
-                    checked={option.isCorrect.get()}
-                    onChange={(event) => option.isCorrect.set(event.currentTarget.checked)}
-                  />
-                  {option.isCorrect.get() ? "Richtig" : "Falsch"}
-                </label>
-              </li>
-            ))}
+            {unit.options.map((option) => {
+              const isCorrect = option.isCorrect.get()
+              return (
+                <li key={option.optionId.get()}>
+                  <div className={styles.answerInput}>
+                    <RichText value={option.text} inline />
+                  </div>
+                  <label
+                    className={
+                      isCorrect ? `${styles.correctness} ${styles.correct}` : styles.correctness
+                    }
+                  >
+                    <input
+                      type="checkbox"
+                      checked={isCorrect}
+                      onChange={(event) => option.isCorrect.set(event.currentTarget.checked)}
+                    />
+                    {isCorrect ? "Richtig" : "Falsch"}
+                  </label>
+                </li>
+              )
+            })}
           </ul>
         </>
       ) : (
@@ -91,7 +93,7 @@ function ChoiceView({
                   <StaticRichText value={option.text} inline />
                   <input
                     type="checkbox"
-                    checked={answer?.selected.snapshot()[optionId] ?? false}
+                    checked={selected?.[optionId] ?? false}
                     disabled={mode !== WorksheetMode.Answering}
                     onChange={(event) => {
                       if (mode === WorksheetMode.Answering)
