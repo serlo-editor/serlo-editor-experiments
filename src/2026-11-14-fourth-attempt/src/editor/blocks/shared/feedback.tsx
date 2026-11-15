@@ -1,4 +1,4 @@
-import { RichText, StaticRichText } from "@editor/components"
+import { RichText, StaticRichText } from "@editor/blocks/shared/rich-text"
 import { richText as definition } from "@editor/rich-text"
 import { richText, string } from "@editor/schema"
 import type { StoredRichText, StoredTaggedObject } from "@editor/schema"

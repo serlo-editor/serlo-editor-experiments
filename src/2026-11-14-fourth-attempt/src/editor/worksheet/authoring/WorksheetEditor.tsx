@@ -6,10 +6,10 @@ import { useStorage, type NodeStore, type NodeRefs, type RichTextId } from "@edi
 import { WorksheetMode, WorksheetRevisionProvider, type Worksheet } from "@editor/worksheet"
 import { useCallback, useState } from "react"
 
-import { FocusContext } from "./RichText"
+import { FocusContext } from "../../blocks/shared/rich-text/RichText"
 import { Toolbar } from "./Toolbar"
 
-import styles from "./Editor.module.css"
+import styles from "./WorksheetEditor.module.css"
 
 export type EditorWorksheet = Worksheet<
   RootValue,
@@ -17,7 +17,7 @@ export type EditorWorksheet = Worksheet<
   StoredValueOf<typeof Feedback>
 >
 
-export function Editor({
+export function WorksheetEditor({
   worksheet,
   store,
   name,

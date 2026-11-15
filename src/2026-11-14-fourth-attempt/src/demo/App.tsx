@@ -2,10 +2,13 @@ import { useState } from "react"
 
 import { Root, type RootSnapshot } from "../editor/blocks"
 import { Answers, Feedback } from "../editor/blocks/responses"
-import { Editor, type EditorWorksheet } from "../editor/components/Editor"
 import { FlatNodeStore } from "../editor/store"
 import { useStorage } from "../editor/store/use-storage"
 import { openWorksheet, WorksheetMode } from "../editor/worksheet"
+import {
+  WorksheetEditor,
+  type EditorWorksheet,
+} from "../editor/worksheet/authoring/WorksheetEditor"
 import { initialContent } from "./initial-content"
 
 import styles from "./App.module.css"
@@ -84,7 +87,7 @@ export default function App() {
       </header>
       <div className={styles.workspace}>
         <section className={styles.authoring} aria-label="Aktiver Arbeitsbereich">
-          <Editor key={generation} worksheet={worksheet} store={store} name="Editor 1" />
+          <WorksheetEditor key={generation} worksheet={worksheet} store={store} name="Editor 1" />
         </section>
         <aside className={styles.preview} aria-label="Dokumente">
           <Documents key={generation} worksheet={worksheet} store={store} />

@@ -1,4 +1,4 @@
-import { RichText, StaticRichText } from "@editor/components"
+import { RichText, StaticRichText } from "@editor/blocks/shared/rich-text"
 import { block, richText } from "@editor/schema"
 import type { StoredBlock } from "@editor/schema"
 import { WorksheetMode, useWorksheet } from "@editor/worksheet"

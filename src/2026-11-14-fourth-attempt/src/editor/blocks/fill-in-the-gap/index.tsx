@@ -1,6 +1,6 @@
 import { ExerciseBadge } from "@editor/blocks/shared/ExerciseBadge"
 import { ExerciseFeedback, feedbackFields } from "@editor/blocks/shared/feedback"
-import { RichText, serializeContent } from "@editor/components"
+import { RichText, serializeContent } from "@editor/blocks/shared/rich-text"
 import { richText as definition } from "@editor/rich-text"
 import { exercise, record, richText, string } from "@editor/schema"
 import type { StoredBlock, StoredRichText, StoredTaggedObject } from "@editor/schema"

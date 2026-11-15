@@ -1,6 +1,6 @@
 import { ExerciseBadge } from "@editor/blocks/shared/ExerciseBadge"
 import { ExerciseFeedback, feedbackFields } from "@editor/blocks/shared/feedback"
-import { RichText, StaticRichText } from "@editor/components"
+import { RichText, StaticRichText } from "@editor/blocks/shared/rich-text"
 import { array, boolean, exercise, object, record, richText, string } from "@editor/schema"
 import type { StoredBlock, StoredTaggedObject } from "@editor/schema"
 import { WorksheetMode } from "@editor/worksheet"
