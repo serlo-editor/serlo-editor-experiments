@@ -3,7 +3,7 @@
   overflow-wrap: anywhere;
 }
 
-.root :global(.ProseMirror) {
+:global(.ProseMirror) {
   padding: 0;
   outline: none;
 }
