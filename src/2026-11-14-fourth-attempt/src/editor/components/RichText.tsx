@@ -1,10 +1,9 @@
+import type { RichTextEditor } from "@editor/rich-text"
+import type { StoredRichText } from "@editor/schema/rich-text"
+import type { RichTextId } from "@editor/store/types"
 import { defineFocusChangeHandler, defineUpdateHandler, union } from "prosekit/core"
 import { ProseKit } from "prosekit/react"
 import { createContext, useCallback, useContext, useLayoutEffect, useRef } from "react"
-
-import type { RichTextEditor } from "../rich-text"
-import type { StoredRichText } from "../schema/rich-text"
-import type { RichTextId } from "../store/types"
 
 import styles from "./RichText.module.css"
 

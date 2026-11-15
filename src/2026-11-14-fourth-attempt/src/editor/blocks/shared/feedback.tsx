@@ -1,10 +1,10 @@
-import { RichText } from "../../components/RichText"
-import { StaticRichText } from "../../components/StaticRichText"
-import { richText as definition } from "../../rich-text"
-import { richText, string } from "../../schema"
-import type { StoredRichText } from "../../schema/rich-text"
-import type { StoredTaggedObject } from "../../schema/tagged-object"
-import { WorksheetMode } from "../../worksheet"
+import { RichText } from "@editor/components/RichText"
+import { StaticRichText } from "@editor/components/StaticRichText"
+import { richText as definition } from "@editor/rich-text"
+import { richText, string } from "@editor/schema"
+import type { StoredRichText } from "@editor/schema/rich-text"
+import type { StoredTaggedObject } from "@editor/schema/tagged-object"
+import { WorksheetMode } from "@editor/worksheet"
 
 import styles from "./feedback.module.css"
 

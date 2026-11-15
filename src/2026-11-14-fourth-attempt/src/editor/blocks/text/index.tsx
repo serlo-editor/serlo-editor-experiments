@@ -1,9 +1,8 @@
-import { RichText } from "../../components/RichText"
-import { StaticRichText } from "../../components/StaticRichText"
-import { richText as definition } from "../../rich-text"
-import { block, richText } from "../../schema"
-import { WorksheetMode } from "../../worksheet"
-import { useWorksheet } from "../../worksheet"
+import { RichText } from "@editor/components/RichText"
+import { StaticRichText } from "@editor/components/StaticRichText"
+import { richText as definition } from "@editor/rich-text"
+import { block, richText } from "@editor/schema"
+import { WorksheetMode, useWorksheet } from "@editor/worksheet"
 
 const textDefinition = definition.block({
   marks: { bold: true, italic: true },

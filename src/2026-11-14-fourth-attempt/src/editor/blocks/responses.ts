@@ -1,4 +1,5 @@
-import { discriminatedUnion, record } from "../schema"
+import { discriminatedUnion, record } from "@editor/schema"
+
 import { FillInTheGapExercise, MultipleChoiceExercise } from "./index"
 
 export const Answers = record(

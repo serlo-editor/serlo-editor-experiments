@@ -1,5 +1,6 @@
-import { array, discriminatedUnion } from "../schema"
-import type { SnapshotOf, StoredValueOf } from "../schema/types"
+import { array, discriminatedUnion } from "@editor/schema"
+import type { SnapshotOf, StoredValueOf } from "@editor/schema/types"
+
 import { FillInTheGapExercise } from "./fill-in-the-gap"
 import { MultipleChoiceExercise } from "./multiple-choice"
 import { TextContent } from "./text"
