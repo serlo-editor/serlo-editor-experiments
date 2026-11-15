@@ -11,6 +11,8 @@ const gap = '[aria-label="Lücke 1"]'
 const fill = '[aria-label="Lückentext"]'
 const choice = '[aria-label="Multiple Choice"]'
 const introduction = '[aria-label="Editor 1"] .ProseMirror'
+const secondIntroduction = '[aria-label="Editor 2"] .ProseMirror'
+const rightPane = '[aria-label="Rechter Bereich"]'
 let view: Bun.WebView
 
 beforeAll(async () => {
@@ -58,7 +60,7 @@ test("switches stores via snapshots, grades, and resets downstream data", async 
 
   await click(`${modes} button:nth-child(3)`)
   await expectPage(
-    'Array.from(document.querySelectorAll("[data-result]"), el => el.dataset.result)',
+    `Array.from(document.querySelectorAll(${JSON.stringify('[aria-label="Editor 1"] [data-result]')}), el => el.dataset.result)`,
     ["correct", "correct"],
   )
   await click(`${fill} .ProseMirror`)
@@ -73,7 +75,10 @@ test("switches stores via snapshots, grades, and resets downstream data", async 
 
   await click(`${modes} button:nth-child(2)`)
   await expectPage(`document.querySelector(${JSON.stringify(gap)}).value`, "Paris")
-  await expectPage('document.querySelectorAll("[data-result]").length', 0)
+  await expectPage(
+    `document.querySelectorAll(${JSON.stringify('[aria-label="Editor 1"] [data-result]')}).length`,
+    0,
+  )
   await click(`${modes} button:nth-child(3)`)
   await expectPage(
     `document.querySelector(${JSON.stringify(`${fill} [data-result]`)}).dataset.result`,
@@ -97,7 +102,7 @@ test("switches stores via snapshots, grades, and resets downstream data", async 
   )
   await click(`${modes} button:nth-child(3)`)
   await expectPage(
-    'Array.from(document.querySelectorAll("[data-result]"), el => el.dataset.result)',
+    `Array.from(document.querySelectorAll(${JSON.stringify('[aria-label="Editor 1"] [data-result]')}), el => el.dataset.result)`,
     ["incorrect", "incorrect"],
   )
 }, 30_000)
@@ -105,13 +110,47 @@ test("switches stores via snapshots, grades, and resets downstream data", async 
 test("feedback grades unanswered exercises without writing answers", async () => {
   await click(`${modes} button:nth-child(3)`)
   await expectPage(
-    'Array.from(document.querySelectorAll("[data-result]"), el => el.dataset.result)',
+    `Array.from(document.querySelectorAll(${JSON.stringify('[aria-label="Editor 1"] [data-result]')}), el => el.dataset.result)`,
     ["incorrect", "incorrect"],
   )
+  await click(`${rightPane} button:first-child`)
   await expectPage(
-    "JSON.parse(document.querySelectorAll('[aria-label=\"Dokumente\"] details pre')[1].textContent)",
+    "JSON.parse(document.querySelectorAll('[aria-label=\"Zusammenarbeit und Dokumente\"] details pre')[1].textContent)",
     {},
   )
+}, 30_000)
+
+test("syncs both editors and keeps document toggle and mode resets working", async () => {
+  await click(introduction, 3)
+  await view.type("Gemeinsam")
+  await expectPage(
+    `document.querySelector(${JSON.stringify(secondIntroduction)}).textContent.includes("Gemeinsam")`,
+    true,
+  )
+  await click(secondIntroduction)
+  await view.type("Zusammen")
+  await expectPage(
+    `document.querySelector(${JSON.stringify(introduction)}).textContent.includes("Zusammen")`,
+    true,
+  )
+
+  await click(`${rightPane} button:first-child`)
+  await expectPage(
+    `document.querySelector(${JSON.stringify('[aria-label="Editor 2"]')}).closest("[hidden]") !== null`,
+    true,
+  )
+  await click(`${rightPane} button:nth-child(2)`)
+  await click(`${modes} button:nth-child(2)`)
+  await click('[aria-label="Editor 2"] [aria-label="Lücke 1"]')
+  await view.type("Paris")
+  await expectPage(`document.querySelector(${JSON.stringify(gap)}).value`, "Paris")
+  await click(`${modes} button:first-child`)
+  await expectPage(
+    `document.querySelector(${JSON.stringify(secondIntroduction)}).textContent`,
+    "GemeinsamZusammen",
+  )
+  await click(`${modes} button:nth-child(2)`)
+  await expectPage(`document.querySelector(${JSON.stringify(gap)}).value`, "")
 }, 30_000)
 
 async function click(selector: string, clickCount: 1 | 2 | 3 = 1) {

@@ -1,8 +1,10 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { Awareness } from "y-protocols/awareness"
+import * as Y from "yjs"
 
 import { Root, type RootSnapshot } from "../editor/blocks"
 import { Answers, Feedback } from "../editor/blocks/responses"
-import { FlatNodeStore } from "../editor/store"
+import { YjsNodeStore } from "../editor/store"
 import { useStorage } from "../editor/store/use-storage"
 import { openWorksheet, WorksheetMode } from "../editor/worksheet"
 import {
@@ -10,6 +12,7 @@ import {
   type EditorWorksheet,
 } from "../editor/worksheet/authoring/WorksheetEditor"
 import { initialContent } from "./initial-content"
+import { syncPeers } from "./sync-peers"
 
 import styles from "./App.module.css"
 
@@ -25,21 +28,78 @@ type Snapshot = {
   answers: ReturnType<typeof Answers.defaultValue>
   feedbacks: ReturnType<typeof Feedback.defaultValue>
 }
-type Workspace = { worksheet: EditorWorksheet; store: FlatNodeStore; generation: number }
+type Peer = {
+  doc: Y.Doc
+  awareness: Awareness
+  store: YjsNodeStore
+  worksheet: EditorWorksheet
+  destroy(): void
+}
+type Workspace = { first: Peer; second: Peer; generation: number; destroy(): void }
 
 function createWorkspace(mode: WorksheetMode, snapshot: Snapshot, generation: number): Workspace {
-  const store = new FlatNodeStore()
-  return {
-    store,
-    generation,
-    worksheet: openWorksheet({
+  const first = createPeer(mode, snapshot, "Editor 1", "#2563eb")
+  try {
+    const second = createPeer(
+      mode,
+      snapshot,
+      "Editor 2",
+      "#b45309",
+      Y.encodeStateAsUpdate(first.doc),
+    )
+    const disconnect = syncPeers(first, second)
+    return {
+      first,
+      second,
+      generation,
+      destroy() {
+        disconnect()
+        first.destroy()
+        second.destroy()
+      },
+    }
+  } catch (error) {
+    first.destroy()
+    throw error
+  }
+}
+
+function createPeer(
+  mode: WorksheetMode,
+  snapshot: Snapshot,
+  name: string,
+  color: string,
+  state?: Uint8Array,
+): Peer {
+  const doc = new Y.Doc()
+  const awareness = new Awareness(doc)
+  try {
+    if (state) Y.applyUpdate(doc, state)
+    awareness.setLocalStateField("user", { name, color })
+    const store = new YjsNodeStore({ doc, awareness, storeName: mode })
+    const worksheet = openWorksheet({
       mode,
       createStore: () => store,
       contentSchema: Root,
       answersSchema: Answers,
       feedbacksSchema: Feedback,
       initialSnapshot: snapshot,
-    }),
+    })
+    return {
+      doc,
+      awareness,
+      store,
+      worksheet,
+      destroy() {
+        worksheet.dispose()
+        awareness.destroy()
+        doc.destroy()
+      },
+    }
+  } catch (error) {
+    awareness.destroy()
+    doc.destroy()
+    throw error
   }
 }
 
@@ -61,48 +121,88 @@ export default function App() {
       0,
     ),
   )
-  const { worksheet, store, generation } = workspace
+  const [rightPane, setRightPane] = useState<"documents" | "collaboration">("collaboration")
+  useEffect(() => () => workspace.destroy(), [workspace])
+  const { first, second, generation } = workspace
+  const { worksheet, store } = first
   return (
     <main className={styles.app}>
       <header className={styles.header}>
         <h1>Ein Arbeitsblatt · drei Dokumente</h1>
-        <nav className={styles.viewSwitch} aria-label="Arbeitsmodus">
-          {modes.map((item) => (
+        <div className={styles.headerControls}>
+          <nav className={styles.viewSwitch} aria-label="Arbeitsmodus">
+            {modes.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                aria-pressed={worksheet.mode === item.id}
+                onClick={() => {
+                  if (item.id === worksheet.mode) return
+                  setWorkspace(
+                    createWorkspace(item.id, nextSnapshot(worksheet, item.id), generation + 1),
+                  )
+                }}
+              >
+                {item.label}
+              </button>
+            ))}
+          </nav>
+          <div className={styles.viewSwitch} role="group" aria-label="Rechter Bereich">
             <button
-              key={item.id}
               type="button"
-              aria-pressed={worksheet.mode === item.id}
-              onClick={() => {
-                if (item.id === worksheet.mode) return
-                const snapshot = nextSnapshot(worksheet, item.id)
-                const next = createWorkspace(item.id, snapshot, generation + 1)
-                setWorkspace(next)
-                worksheet.dispose()
-              }}
+              aria-pressed={rightPane === "documents"}
+              onClick={() => setRightPane("documents")}
             >
-              {item.label}
+              Dokument
             </button>
-          ))}
-        </nav>
+            <button
+              type="button"
+              aria-pressed={rightPane === "collaboration"}
+              onClick={() => setRightPane("collaboration")}
+            >
+              Zusammenarbeit
+            </button>
+          </div>
+        </div>
       </header>
       <div className={styles.workspace}>
         <section className={styles.authoring} aria-label="Aktiver Arbeitsbereich">
-          <WorksheetEditor key={generation} worksheet={worksheet} store={store} name="Editor 1" />
+          <WorksheetEditor
+            key={generation}
+            worksheet={worksheet}
+            store={store}
+            name="Editor 1"
+            color="#2563eb"
+          />
         </section>
-        <aside className={styles.preview} aria-label="Dokumente">
-          <Documents key={generation} worksheet={worksheet} store={store} />
+        <aside
+          className={`${styles.preview} ${rightPane === "collaboration" ? styles.collaboration : ""}`}
+          aria-label="Zusammenarbeit und Dokumente"
+        >
+          <div hidden={rightPane !== "collaboration"}>
+            <WorksheetEditor
+              key={generation}
+              worksheet={second.worksheet}
+              store={second.store}
+              name="Editor 2"
+              color="#b45309"
+            />
+          </div>
+          <div hidden={rightPane !== "documents"}>
+            <Documents key={generation} worksheet={worksheet} store={store} />
+          </div>
         </aside>
       </div>
     </main>
   )
 }
 
-function Documents({ worksheet, store }: { worksheet: EditorWorksheet; store: FlatNodeStore }) {
+function Documents({ worksheet, store }: { worksheet: EditorWorksheet; store: YjsNodeStore }) {
   useStorage(store)
   return (
     <section className={styles.documents}>
       <h2>Inhalt · Antworten · Feedback</h2>
-      <p>Beim Moduswechsel: Snapshot → neuer Store → neues Arbeitsblatt → neuer Editor.</p>
+      <p>Beim Moduswechsel: Snapshot → neue Yjs-Dokumente → neue Editoren.</p>
       <dl className={styles.status}>
         <dt>Inhalt</dt>
         <dd>{documentStatus(worksheet.mode === WorksheetMode.EditingContent)}</dd>

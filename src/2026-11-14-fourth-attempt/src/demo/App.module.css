@@ -19,6 +19,13 @@
   font-size: 1.1rem;
 }
 
+.headerControls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  align-items: center;
+}
+
 .workspace {
   display: grid;
   flex: 1;
@@ -34,6 +41,10 @@
 .preview {
   background: var(--color-surface-subtle);
   box-shadow: inset 1px 0 0 var(--color-border);
+}
+
+.collaboration {
+  background: var(--color-surface);
 }
 
 .viewSwitch {
