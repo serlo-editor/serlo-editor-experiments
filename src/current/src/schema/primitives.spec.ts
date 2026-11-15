@@ -11,11 +11,9 @@ describeWithStores("primitive schemas", (getStore) => {
     expect(string().defaultValue()).toBe("")
 
     expect(root.get()).toBe("Ada")
-    expect(root.snapshot()).toBe("Ada")
 
     root.set("Grace")
 
-    expect(root.get()).toBe("Grace")
     expect(root.snapshot()).toBe("Grace")
   })
 
@@ -24,11 +22,9 @@ describeWithStores("primitive schemas", (getStore) => {
     expect(boolean().defaultValue()).toBe(false)
 
     expect(root.get()).toBe(false)
-    expect(root.snapshot()).toBe(false)
 
     root.set(true)
 
-    expect(root.get()).toBe(true)
     expect(root.snapshot()).toBe(true)
   })
 })

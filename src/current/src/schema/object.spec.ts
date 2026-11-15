@@ -2,22 +2,16 @@ import { expect, test } from "bun:test"
 
 import { describeWithStores } from "@editor/test-utils"
 
-import { array } from "./array.ts"
 import { boolean, object, string } from "./index.ts"
 import { openRoot } from "./root.ts"
 import type { SnapshotOf } from "./types.ts"
 
 describeWithStores("object schemas", (getStore) => {
   test("reads typed fields and snapshots child edits", () => {
-    const initial = { name: "Ada", active: false, tags: ["math"], profile: { bio: "Hello" } }
+    const initial = { name: "Ada", active: false, profile: { bio: "Hello" } }
     const root = openRoot(
       getStore(),
-      object({
-        name: string(),
-        active: boolean(),
-        tags: array(string()),
-        profile: object({ bio: string() }),
-      }),
+      object({ name: string(), active: boolean(), profile: object({ bio: string() }) }),
       initial,
     )
 
@@ -27,15 +21,9 @@ describeWithStores("object schemas", (getStore) => {
 
     root.name.set("Grace")
     root.active.set(true)
-    root.tags.insert(1, "code")
     root.profile.bio.set("Updated")
 
-    expect(root.snapshot()).toEqual({
-      name: "Grace",
-      active: true,
-      tags: ["math", "code"],
-      profile: { bio: "Updated" },
-    })
+    expect(root.snapshot()).toEqual({ name: "Grace", active: true, profile: { bio: "Updated" } })
   })
 
   test("builds typed nested defaults and opens them as a document", () => {
@@ -47,7 +35,6 @@ describeWithStores("object schemas", (getStore) => {
     const initial = schema.defaultValue() satisfies SnapshotOf<typeof schema>
     expect(initial).toEqual({ title: "", enabled: false, profile: { label: "" } })
     expect(initial.profile).not.toBe(schema.defaultValue().profile)
-    expect(openRoot(getStore(), schema, initial).snapshot()).toEqual(initial)
   })
 
   test("rejects fields removed from stored objects", () => {

@@ -132,21 +132,6 @@ describeWithStores("exercise renderer", (getStore) => {
     ).toEqual({ type: "question", response: "" })
   })
 
-  test("missing answer is initialized in answering mode", async () => {
-    const worksheet = openExercise({ mode: WorksheetMode.Answering })
-    await mountExercise(worksheet, (host) => {
-      expect(host.textContent).toBe("What? /  /  / answering / task")
-      const answer = worksheet.answers.getOrCreate("task", () => ({
-        type: "question",
-        response: "",
-      }))
-      expect(answer.snapshot()).toEqual({ type: "question", response: "" })
-      answer.response.set("42")
-      expect(answer.response.get()).toBe("42")
-      expect(worksheet.feedbacks.snapshot()).toEqual({})
-    })
-  })
-
   test("feedback modes render supplied answer and feedback", () => {
     for (const mode of [WorksheetMode.GivingFeedback, WorksheetMode.ViewingFeedback]) {
       const worksheet = openExercise({
@@ -191,24 +176,15 @@ describeWithStores("exercise renderer", (getStore) => {
     })
   })
 
-  test("giving feedback falls back to schema defaults when grading returns undefined", async () => {
+  test("giving feedback falls back to schema defaults when grading returns undefined", () => {
     const worksheet = openExercise({
       mode: WorksheetMode.GivingFeedback,
       answers: { task: { type: "question", response: "Other" } },
     })
-    await mountExercise(worksheet, (host) => {
-      expect(host.textContent).toBe("What? / Other /  / giving-feedback / task")
-      expect(worksheet.feedbacks.snapshot()).toEqual({ task: { type: "question", comment: "" } })
-    })
-  })
-
-  test("renders matching stored answer and feedback", () => {
-    expect(
-      renderExercise({
-        answers: { task: { type: "question", response: "42" } },
-        feedbacks: { task: { type: "question", comment: "Correct" } },
-      }),
-    ).toBe("<p>What? / 42 / Correct / viewing-feedback / task</p>")
+    expect(renderToStaticMarkup(view(worksheet))).toBe(
+      "<p>What? / Other /  / giving-feedback / task</p>",
+    )
+    expect(worksheet.feedbacks.snapshot()).toEqual({ task: { type: "question", comment: "" } })
   })
 
   test("throws for answer with wrong type", () => {

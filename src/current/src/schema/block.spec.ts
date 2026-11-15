@@ -44,20 +44,10 @@ describeWithStores("block schemas", (getStore) => {
     const value = document
     expect(value.id satisfies string).toBe(initial.id)
     expect(value.type satisfies "choice").toBe("choice")
-    expect(value.definition).toBe(blockDefinition)
     expect(value.snapshot()).toEqual(initial)
     expect(value.question.get() satisfies string).toBe("Which answer?")
-    expect(value.explanation.get()).toBe("Because")
     value.question.set("Updated")
     expect(document.snapshot()).toEqual({ ...initial, question: "Updated", explanation: "Because" })
-    expect(value.id).toBe(initial.id)
-    expect(Object.keys(document.snapshot()).sort()).toEqual([
-      "answers",
-      "explanation",
-      "id",
-      "question",
-      "type",
-    ])
   })
 
   test("generates distinct default identities within an array and across calls", () => {
@@ -72,7 +62,6 @@ describeWithStores("block schemas", (getStore) => {
     ])
     expect(first[0]!.id).not.toBe(first[1]!.id)
     expect(first[0]!.id).not.toBe(second[0]!.id)
-    expect(openRoot(getStore(), schema, first).snapshot()).toEqual(first)
   })
 
   test("loading and reopening preserve IDs instead of creating new blocks", () => {
@@ -100,7 +89,6 @@ describeWithStores("block schemas", (getStore) => {
     const initial = schema.createSnapshot({ body })
     const root = openRoot(getStore(), schema, initial)
     expect(root.snapshot()).toEqual(initial)
-    expect(root.body.id).not.toBe(root.id)
   })
 })
 

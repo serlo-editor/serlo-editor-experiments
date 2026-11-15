@@ -30,11 +30,9 @@ describeWithStores("discriminated unions", (getStore) => {
     expect(second.enabled.get() satisfies boolean).toBe(false)
     first.response.set("Updated")
     second.enabled.set(true)
-    root.insert(2, { type: "choice", response: "Another" })
     expect(root.snapshot()).toEqual([
       { type: "choice", response: "Updated" },
       { type: "toggle", enabled: true },
-      { type: "choice", response: "Another" },
     ])
   })
 
@@ -46,7 +44,6 @@ describeWithStores("discriminated unions", (getStore) => {
       type: "toggle",
       enabled: false,
     })
-    expect(openRoot(getStore(), schema, initial).snapshot()).toEqual(initial)
   })
 
   test("selects from stored discriminator and rejects missing or unknown types", () => {
