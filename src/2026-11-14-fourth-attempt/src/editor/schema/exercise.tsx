@@ -1,38 +1,20 @@
 import { useWorksheet, WorksheetMode } from "@editor/worksheet"
 import { createElement, type ReactNode } from "react"
 
-import { block, type BlockDefinition, type StoredBlock } from "./block.ts"
+import { block, type StoredBlock } from "./block.ts"
 import type { ObjectFields } from "./object.ts"
 import {
   isTaggedObject,
   taggedObject,
   type StoredTaggedObject,
-  type TaggedObjectDefinition,
   type TaggedSnapshot,
 } from "./tagged-object.ts"
 
-export type ExerciseSchema<
-  UnitType extends string,
-  UnitFields extends ObjectFields,
-  AnswerFields extends ObjectFields,
-  FeedbackFields extends ObjectFields,
-> = BlockDefinition<UnitType, UnitFields> & {
-  answer: TaggedObjectDefinition<UnitType, AnswerFields>
-  feedback: TaggedObjectDefinition<UnitType, FeedbackFields>
-  renderExercise: (
-    props: ExerciseRenderProps<UnitType, UnitFields, AnswerFields, FeedbackFields>,
-  ) => ReactNode
+export type ExerciseRenderPropsOf<Definition> = Definition extends {
+  readonly renderExercise: (props: infer Props) => ReactNode
 }
-
-export type ExerciseRenderPropsOf<Definition> =
-  Definition extends ExerciseSchema<
-    infer UnitType,
-    infer UnitFields,
-    infer AnswerFields,
-    infer FeedbackFields
-  >
-    ? ExerciseRenderProps<UnitType, UnitFields, AnswerFields, FeedbackFields>
-    : never
+  ? Props
+  : never
 
 export type ExerciseRenderProps<
   UnitType extends string,
@@ -76,7 +58,7 @@ export function exercise<
   render: (
     props: ExerciseRenderProps<UnitType, UnitFields, AnswerFields, FeedbackFields>,
   ) => ReactNode
-}): ExerciseSchema<UnitType, UnitFields, AnswerFields, FeedbackFields> {
+}) {
   const answerSchema = taggedObject({ ...answer, type: unit.type })
   const feedbackSchema = taggedObject({ ...feedback, type: unit.type })
   const unitBlock = block({
