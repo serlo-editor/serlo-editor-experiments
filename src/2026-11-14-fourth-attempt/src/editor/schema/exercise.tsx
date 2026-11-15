@@ -10,7 +10,13 @@ import {
   type TaggedSnapshot,
 } from "./tagged-object.ts"
 
-type ExerciseRenderProps<
+export type ExerciseRenderPropsOf<Definition> = Definition extends {
+  readonly renderExercise: (props: infer Props) => ReactNode
+}
+  ? Props
+  : never
+
+export type ExerciseRenderProps<
   UnitType extends string,
   UnitFields extends ObjectFields,
   AnswerFields extends ObjectFields,
@@ -84,5 +90,9 @@ export function exercise<
       return createElement(render, { unit: value, mode, answer, feedback })
     },
   })
-  return Object.assign(unitBlock, { answer: answerSchema, feedback: feedbackSchema })
+  return Object.assign(unitBlock, {
+    answer: answerSchema,
+    feedback: feedbackSchema,
+    renderExercise: render,
+  })
 }

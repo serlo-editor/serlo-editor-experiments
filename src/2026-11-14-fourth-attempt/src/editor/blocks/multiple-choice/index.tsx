@@ -2,7 +2,7 @@ import { ExerciseBadge } from "@editor/blocks/shared/ExerciseBadge"
 import { ExerciseFeedback, feedbackFields } from "@editor/blocks/shared/feedback"
 import { RichText, StaticRichText } from "@editor/blocks/shared/rich-text"
 import { array, boolean, exercise, object, record, richText, string } from "@editor/schema"
-import type { StoredBlock, StoredTaggedObject } from "@editor/schema"
+import type { ExerciseRenderProps, StoredBlock, StoredTaggedObject } from "@editor/schema"
 import { WorksheetMode } from "@editor/worksheet"
 
 import { inlineRichTextDefinition } from "../text/definitions.ts"
@@ -38,12 +38,12 @@ function ChoiceView({
   answer,
   feedback,
   mode,
-}: {
-  unit: StoredBlock<"multiple-choice", typeof choiceUnitFields>
-  answer: StoredTaggedObject<"multiple-choice", typeof choiceAnswerFields> | undefined
-  feedback: StoredTaggedObject<"multiple-choice", typeof feedbackFields> | undefined
-  mode: WorksheetMode
-}) {
+}: ExerciseRenderProps<
+  "multiple-choice",
+  typeof choiceUnitFields,
+  typeof choiceAnswerFields,
+  typeof feedbackFields
+>) {
   return (
     <section className={styles.exercise} aria-label="Multiple Choice">
       <ExerciseBadge label="Multiple Choice" help="Mehrere Antworten können richtig sein." />
