@@ -1,5 +1,7 @@
 import ReactDOM from "react-dom/client"
 
+import "./editor/styles.css"
+
 import App from "./demo/App"
 
 const rootEl = document.getElementById("root")

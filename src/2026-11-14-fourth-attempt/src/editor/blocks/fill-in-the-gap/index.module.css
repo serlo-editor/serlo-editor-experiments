@@ -1,8 +1,13 @@
-.exercise--fill-blank > .editor-rich-text {
+.exercise {
+  min-width: 0;
+  line-height: 1.5;
+}
+
+.exercise > div:first-of-type {
   margin-top: var(--space-3);
 }
 
-.ProseMirror .gap-mark {
+.exercise :global(.ProseMirror .gap-mark) {
   display: inline-block;
   min-width: 3rem;
   padding: 0.15rem 0.5rem;
@@ -13,11 +18,24 @@
   border-radius: var(--radius-1);
 }
 
-.exercise__instructions {
+.instructions {
   margin: 1.5rem 0;
 }
 
-.preview-gap {
+.previewText :global(p) {
+  margin: 0;
+}
+
+.previewText :global(p + p) {
+  margin-top: var(--space-2);
+}
+
+.previewText :global(ul),
+.previewText :global(ol) {
+  padding-left: 1.5rem;
+}
+
+.previewGap {
   width: 8rem;
   max-width: 100%;
   min-height: 2.5rem;
@@ -30,7 +48,7 @@
   border-radius: var(--radius-2);
   box-shadow: var(--shadow-1);
 }
-.preview-gap:disabled {
+.previewGap:disabled {
   opacity: 1;
   color: var(--color-text);
   background: var(--color-surface-subtle);

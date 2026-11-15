@@ -6,6 +6,8 @@ import type { RichTextEditor } from "../rich-text"
 import type { StoredRichText } from "../schema/rich-text"
 import type { RichTextId } from "../store/types"
 
+import styles from "./RichText.module.css"
+
 export const FocusContext = createContext<
   (id: RichTextId, editor: RichTextEditor, focused: boolean) => void
 >(() => {})
@@ -39,10 +41,7 @@ export function RichText({ value, inline = false }: { value: StoredRichText; inl
 
   return (
     <ProseKit editor={editor}>
-      <HTMLTag
-        ref={setHost}
-        className={inline ? "editor-rich-text editor-rich-text--inline" : "editor-rich-text"}
-      />
+      <HTMLTag ref={setHost} className={inline ? `${styles.root} ${styles.inline}` : styles.root} />
     </ProseKit>
   )
 }

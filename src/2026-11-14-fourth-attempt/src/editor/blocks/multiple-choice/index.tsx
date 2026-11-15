@@ -8,6 +8,8 @@ import type { StoredTaggedObject } from "../../schema/tagged-object"
 import { WorksheetMode } from "../../worksheet"
 import { ExerciseFeedback, feedbackFields } from "../shared/feedback"
 
+import styles from "./index.module.css"
+
 const inlineDefinition = definition.inline({ marks: { bold: true, italic: true } })
 const choiceUnitFields = {
   question: richText({ definition: inlineDefinition }),
@@ -46,24 +48,26 @@ function ChoiceView({
   mode: WorksheetMode
 }) {
   return (
-    <section className="exercise exercise--multiple-choice">
+    <section className={styles.exercise} aria-label="Multiple Choice">
       <ExerciseBadge label="Multiple Choice" help="Mehrere Antworten können richtig sein." />
       {mode === WorksheetMode.EditingContent ? (
         <>
-          <h3 className="exercise__field-label">Aufgabenstellung</h3>
-          <div className="answer-input exercise__question">
+          <h3 className={styles.fieldLabel}>Aufgabenstellung</h3>
+          <div className={`${styles.answerInput} ${styles.question}`}>
             <RichText value={unit.question} inline />
           </div>
-          <h3 className="exercise__field-label">Antworten</h3>
-          <ul className="multiple-choice-options">
+          <h3 className={styles.fieldLabel}>Antworten</h3>
+          <ul className={styles.options}>
             {unit.options.map((option) => (
               <li key={option.optionId.get()}>
-                <div className="answer-input">
+                <div className={styles.answerInput}>
                   <RichText value={option.text} inline />
                 </div>
                 <label
                   className={
-                    option.isCorrect.get() ? "correctness correctness--correct" : "correctness"
+                    option.isCorrect.get()
+                      ? `${styles.correctness} ${styles.correct}`
+                      : styles.correctness
                   }
                 >
                   <input
@@ -79,14 +83,14 @@ function ChoiceView({
         </>
       ) : (
         <>
-          <div className="exercise__prompt">
+          <div className={styles.prompt}>
             <StaticRichText value={unit.question} inline />
           </div>
-          <div className="choice-options">
+          <div className={styles.choiceOptions}>
             {unit.options.map((option) => {
               const optionId = option.optionId.get()
               return (
-                <label key={optionId} className="choice-card">
+                <label key={optionId} className={styles.choiceCard}>
                   <StaticRichText value={option.text} inline />
                   <input
                     type="checkbox"

@@ -3,6 +3,8 @@ import { useCallback, useLayoutEffect, useRef } from "react"
 
 import type { StoredRichText } from "../schema/rich-text"
 
+import styles from "./StaticRichText.module.css"
+
 /** Serialize content without mounting another ProseMirror view. */
 export function StaticRichText({
   value,
@@ -21,7 +23,7 @@ export function StaticRichText({
   useLayoutEffect(() => {
     host.current?.replaceChildren(serializeContent(schema, content))
   }, [content, schema])
-  return <Tag ref={setHost} className="preview-rich-text" />
+  return <Tag ref={setHost} className={styles.root} />
 }
 
 export function serializeContent(schema: Schema, content: string) {

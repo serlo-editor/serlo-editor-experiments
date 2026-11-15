@@ -11,6 +11,8 @@ import { WorksheetMode, WorksheetRevisionProvider, type Worksheet } from "../wor
 import { FocusContext } from "./RichText"
 import { Toolbar } from "./Toolbar"
 
+import styles from "./Editor.module.css"
+
 export type EditorWorksheet = Worksheet<
   RootValue,
   StoredValueOf<typeof Answers>,
@@ -35,35 +37,21 @@ export function Editor({
   }, [])
 
   return (
-    <form
-      className="editor-card panel"
-      aria-label={name}
-      onSubmit={(event) => event.preventDefault()}
-    >
-      <h2 className="editor-card__title">
-        <span
-          className="editor-card__accent"
-          style={{ backgroundColor: color }}
-          aria-hidden="true"
-        />
+    <form className={styles.card} aria-label={name} onSubmit={(event) => event.preventDefault()}>
+      <h2 className={styles.title}>
+        <span className={styles.accent} style={{ backgroundColor: color }} aria-hidden="true" />
         {name}
       </h2>
-      <section className="editor-frame surface">
+      <section className={styles.frame}>
         {(worksheet.mode === WorksheetMode.EditingContent ||
           worksheet.mode === WorksheetMode.GivingFeedback) && (
-          <div className="editor-toolbar-shell">
+          <div className={styles.toolbarShell}>
             <Toolbar editor={focused?.editor ?? null} />
           </div>
         )}
         <WorksheetRevisionProvider worksheet={worksheet}>
           <FocusContext value={updateFocus}>
-            <div
-              className={
-                worksheet.mode === WorksheetMode.EditingContent
-                  ? "editor-content"
-                  : "learner-content"
-              }
-            >
+            <div className={styles.content}>
               {worksheet.content.map((value) => (
                 <BlockView key={value.id} value={value} />
               ))}

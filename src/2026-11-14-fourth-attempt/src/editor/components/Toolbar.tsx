@@ -1,11 +1,13 @@
 import clsx from "clsx"
 import { type CommandAction, type Editor, isMarkActive } from "prosekit/core"
 
+import styles from "./Toolbar.module.css"
+
 export function Toolbar({ editor }: { editor: Editor | null }) {
   const canToggleGap = canExecCommand(editor, "toggleGap")
 
   return (
-    <div className="toolbar" role="toolbar" aria-label="Formatting controls">
+    <div className={styles.toolbar} role="toolbar" aria-label="Formatting controls">
       <ToolbarButton
         label="Toggle Bold"
         shortLabel="B"
@@ -47,9 +49,9 @@ function ToolbarButton({
   onClick: () => void
 }) {
   const className = clsx(
-    "toolbar__button",
-    canExec ? "toolbar__button--enabled" : "toolbar__button--disabled",
-    isActive ? "toolbar__button--active" : "toolbar__button--idle",
+    styles.button,
+    canExec ? styles.enabled : styles.disabled,
+    isActive && styles.active,
   )
 
   return (

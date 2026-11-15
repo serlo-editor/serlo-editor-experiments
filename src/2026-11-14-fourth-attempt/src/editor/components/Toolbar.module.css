@@ -1,0 +1,33 @@
+.toolbar {
+  display: flex;
+  gap: 0.35rem;
+  padding: 0.5rem 0;
+  margin-bottom: var(--space-3);
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.button {
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  padding: 0.3rem 0.65rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-1);
+}
+
+.enabled:hover:not(:disabled) {
+  background: var(--color-lavender);
+}
+
+.active {
+  color: var(--color-accent-contrast);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}

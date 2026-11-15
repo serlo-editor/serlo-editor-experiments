@@ -11,6 +11,8 @@ import type { StoredTaggedObject } from "../../schema/tagged-object"
 import { WorksheetMode } from "../../worksheet"
 import { ExerciseFeedback, feedbackFields } from "../shared/feedback"
 
+import styles from "./index.module.css"
+
 const gapDefinition = definition.block({
   marks: { bold: true, italic: true, gap: true },
   blocks: { paragraph: true },
@@ -43,7 +45,7 @@ function GapView({
   mode: WorksheetMode
 }) {
   return (
-    <section className="exercise exercise--fill-blank">
+    <section className={styles.exercise} aria-label="Lückentext">
       <ExerciseBadge
         label="Lückentext"
         help={
@@ -56,7 +58,7 @@ function GapView({
         <RichText value={unit.content} />
       ) : (
         <>
-          <p className="exercise__instructions">Tippe die richtigen Antworten in die Lücken.</p>
+          <p className={styles.instructions}>Tippe die richtigen Antworten in die Lücken.</p>
           <GapInputs
             value={unit.content}
             values={answer?.values.snapshot() ?? {}}
@@ -105,7 +107,7 @@ function GapInputs({
       }
       const input = document.createElement("input")
       input.type = "text"
-      input.className = "preview-gap"
+      input.className = styles.previewGap!
       input.setAttribute("aria-label", `Lücke ${inputs.current.size + 1}`)
       input.autocomplete = "off"
       input.addEventListener("input", () => change.current(id, input.value))
@@ -126,7 +128,7 @@ function GapInputs({
       input.disabled = disabled
     }
   }, [content, schema, values, disabled])
-  return <div ref={host} className="preview-rich-text" />
+  return <div ref={host} className={styles.previewText} />
 }
 
 function gradeGap(

@@ -6,6 +6,8 @@ import type { StoredRichText } from "../../schema/rich-text"
 import type { StoredTaggedObject } from "../../schema/tagged-object"
 import { WorksheetMode } from "../../worksheet"
 
+import styles from "./feedback.module.css"
+
 const comment = richText({
   definition: definition.block({
     marks: { bold: true, italic: true },
@@ -37,14 +39,14 @@ export function ExerciseFeedback({
   if (mode !== WorksheetMode.GivingFeedback) {
     if (!comment.getEditor().state.doc.textContent.trim() && result === "unassessed") return null
     return (
-      <aside className="feedback-card" data-result={result} aria-label="Feedback zur Aufgabe">
-        <strong className="feedback-card__result">{label}</strong>
+      <aside className={styles.card} data-result={result} aria-label="Feedback zur Aufgabe">
+        <strong className={styles.result}>{label}</strong>
         <StaticRichText value={comment} />
       </aside>
     )
   }
   return (
-    <fieldset className="feedback-card" data-result={result}>
+    <fieldset className={styles.card} data-result={result}>
       <legend>Feedback zur Aufgabe</legend>
       <label>
         Bewertung
@@ -69,9 +71,11 @@ export function ExerciseFeedback({
 
 function FeedbackComment({ label, value }: { label: string; value: StoredRichText }) {
   return (
-    <div className="feedback-comment" role="group" aria-label={label}>
+    <div className={styles.comment} role="group" aria-label={label}>
       <span>{label}</span>
-      <RichText value={value} />
+      <div className={styles.editor}>
+        <RichText value={value} />
+      </div>
     </div>
   )
 }

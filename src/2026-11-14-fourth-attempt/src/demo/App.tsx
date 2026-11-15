@@ -8,6 +8,8 @@ import { useStorage } from "../editor/store/use-storage"
 import { openWorksheet, WorksheetMode } from "../editor/worksheet"
 import { initialContent } from "./initial-content"
 
+import styles from "./App.module.css"
+
 const modes = [
   { id: WorksheetMode.EditingContent, label: "1. Inhalt bearbeiten" },
   { id: WorksheetMode.Answering, label: "2. Aufgaben lösen" },
@@ -58,10 +60,10 @@ export default function App() {
   )
   const { worksheet, store, generation } = workspace
   return (
-    <main className="app">
-      <header className="app__header">
+    <main className={styles.app}>
+      <header className={styles.header}>
         <h1>Ein Arbeitsblatt · drei Dokumente</h1>
-        <nav className="app__view-switch" aria-label="Arbeitsmodus">
+        <nav className={styles.viewSwitch} aria-label="Arbeitsmodus">
           {modes.map((item) => (
             <button
               key={item.id}
@@ -80,11 +82,11 @@ export default function App() {
           ))}
         </nav>
       </header>
-      <div className="app__workspace">
-        <section className="app__authoring" aria-label="Aktiver Arbeitsbereich">
+      <div className={styles.workspace}>
+        <section className={styles.authoring} aria-label="Aktiver Arbeitsbereich">
           <Editor key={generation} worksheet={worksheet} store={store} name="Editor 1" />
         </section>
-        <aside className="app__preview" aria-label="Dokumente">
+        <aside className={styles.preview} aria-label="Dokumente">
           <Documents key={generation} worksheet={worksheet} store={store} />
         </aside>
       </div>
@@ -95,10 +97,10 @@ export default function App() {
 function Documents({ worksheet, store }: { worksheet: EditorWorksheet; store: FlatNodeStore }) {
   useStorage(store)
   return (
-    <section className="documents">
+    <section className={styles.documents}>
       <h2>Inhalt · Antworten · Feedback</h2>
       <p>Beim Moduswechsel: Snapshot → neuer Store → neues Arbeitsblatt → neuer Editor.</p>
-      <dl className="document-status">
+      <dl className={styles.status}>
         <dt>Inhalt</dt>
         <dd>{documentStatus(worksheet.mode === WorksheetMode.EditingContent)}</dd>
         <dt>Antworten</dt>
@@ -106,14 +108,14 @@ function Documents({ worksheet, store }: { worksheet: EditorWorksheet; store: Fl
         <dt>Feedback</dt>
         <dd>{documentStatus(worksheet.mode === WorksheetMode.GivingFeedback)}</dd>
       </dl>
-      <p className="documents__note">
+      <p className={styles.note}>
         Nur aktueller Modus ist bearbeitbar. Zurück zum Inhalt löscht Antworten und Feedback; zurück
         zu Aufgaben löscht Feedback.
       </p>
       <DocumentJSON label="Inhalt" snapshot={worksheet.content.snapshot()} />
       <DocumentJSON label="Antworten" snapshot={worksheet.answers.snapshot()} />
       <DocumentJSON label="Feedback" snapshot={worksheet.feedbacks.snapshot()} />
-      <p className="documents__note">
+      <p className={styles.note}>
         Debug-Ansicht enthält auch Lösungen. Schreibschutz ist keine Zugriffskontrolle.
       </p>
     </section>
@@ -126,7 +128,7 @@ function documentStatus(editable: boolean) {
 
 function DocumentJSON({ label, snapshot }: { label: string; snapshot: unknown }) {
   return (
-    <details className="document-json">
+    <details className={styles.json}>
       <summary>{label} · JSON</summary>
       <pre>{JSON.stringify(snapshot, null, 2)}</pre>
     </details>

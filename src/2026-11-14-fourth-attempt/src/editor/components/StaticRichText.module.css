@@ -1,0 +1,12 @@
+.root :global(p) {
+  margin: 0;
+}
+
+.root :global(p + p) {
+  margin-top: var(--space-2);
+}
+
+.root :global(ul),
+.root :global(ol) {
+  padding-left: 1.5rem;
+}
