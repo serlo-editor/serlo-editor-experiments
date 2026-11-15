@@ -8,6 +8,7 @@
   border-bottom: 1px solid var(--color-border);
 }
 
+.select,
 .button {
   min-width: 2.25rem;
   min-height: 2.25rem;
@@ -19,18 +20,20 @@
   cursor: pointer;
 }
 
-.button[aria-label="Bold"] {
-  font-weight: 700;
+.select {
+  min-width: 9rem;
 }
 
-.button[aria-label="Italic"] {
-  font-style: italic;
+.button svg {
+  width: 1rem;
+  height: 1rem;
 }
 
 .enabled:hover:not(:disabled):not(.active) {
   background: var(--color-lavender);
 }
 
+.select:focus-visible,
 .button:focus-visible {
   outline: 2px solid var(--color-accent);
   outline-offset: 2px;

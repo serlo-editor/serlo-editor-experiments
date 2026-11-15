@@ -16,17 +16,18 @@ test("shows only blocks available to focused editor", () => {
 
   const inlineMarkup = renderToStaticMarkup(<Toolbar editor={inline} />)
   const blockMarkup = renderToStaticMarkup(<Toolbar editor={block} />)
-  expect(inlineMarkup).not.toContain('aria-label="Heading 1"')
+  expect(inlineMarkup).not.toContain('aria-label="Text style"')
   expect(inlineMarkup).not.toContain('aria-label="Bullet list"')
-  expect(blockMarkup).toContain('aria-label="Heading 6"')
+  expect(blockMarkup).toContain('aria-label="Text style"')
+  expect(blockMarkup).toContain('value="6">Heading 6</option>')
   expect(blockMarkup).toContain('aria-label="Bullet list"')
   expect(blockMarkup).toContain('aria-label="Numbered list"')
 })
 
-test("heading and list buttons format selected block and reflect active kind", async () => {
+test("style select and list buttons format selected block and reflect active kind", async () => {
   const window = new Window()
   const globals = new Map<string, PropertyDescriptor | undefined>()
-  for (const key of ["window", "document", "navigator", "Node", "HTMLElement"]) {
+  for (const key of ["window", "document", "navigator", "Node", "HTMLElement", "Event"]) {
     globals.set(key, Object.getOwnPropertyDescriptor(globalThis, key))
     Object.defineProperty(globalThis, key, {
       configurable: true,
@@ -47,12 +48,17 @@ test("heading and list buttons format selected block and reflect active kind", a
   const render = () => flushSync(() => root.render(<Toolbar editor={editor} />))
   const button = (label: string) =>
     host.querySelector<HTMLButtonElement>(`[aria-label="${label}"]`)!
+  const select = () => host.querySelector<HTMLSelectElement>('select[aria-label="Text style"]')!
+  const chooseStyle = (value: string) => {
+    select().value = value
+    select().dispatchEvent(new Event("change", { bubbles: true }))
+  }
   try {
     render()
-    button("Heading 2").click()
+    chooseStyle("2")
     expect(editor.getDocJSON().content?.[0]).toMatchObject({ type: "heading", attrs: { level: 2 } })
     render()
-    expect(button("Heading 2").getAttribute("aria-pressed")).toBe("true")
+    expect(select().value).toBe("2")
 
     button("Bullet list").click()
     expect(editor.getDocJSON().content?.[0]).toMatchObject({
@@ -61,6 +67,7 @@ test("heading and list buttons format selected block and reflect active kind", a
     })
     render()
     expect(button("Bullet list").getAttribute("aria-pressed")).toBe("true")
+    expect(select().value).toBe("bullet")
 
     button("Numbered list").click()
     expect(editor.getDocJSON().content?.[0]).toMatchObject({
@@ -70,10 +77,16 @@ test("heading and list buttons format selected block and reflect active kind", a
     render()
     expect(button("Numbered list").getAttribute("aria-pressed")).toBe("true")
 
-    button("Paragraph").click()
+    expect(select().value).toBe("ordered")
+    chooseStyle("3")
+    expect(editor.getDocJSON().content?.[0]).toMatchObject({ type: "heading", attrs: { level: 3 } })
+    render()
+    expect(select().value).toBe("3")
+
+    chooseStyle("paragraph")
     expect(editor.getDocJSON().content?.[0]).toMatchObject({ type: "paragraph" })
     render()
-    expect(button("Paragraph").getAttribute("aria-pressed")).toBe("true")
+    expect(select().value).toBe("paragraph")
   } finally {
     flushSync(() => root.unmount())
     editor.unmount()

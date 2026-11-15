@@ -1,74 +1,100 @@
+import {
+  faBold,
+  faItalic,
+  faListOl,
+  faListUl,
+  faPuzzlePiece,
+} from "@fortawesome/free-solid-svg-icons"
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import clsx from "clsx"
 import { type CommandAction, type Editor, isMarkActive } from "prosekit/core"
+import { useState, type ReactNode } from "react"
 
 import styles from "./Toolbar.module.css"
 
 export function Toolbar({ editor }: { editor: Editor | null }) {
+  const [, setRevision] = useState(0)
   const canToggleGap = canExecCommand(editor, "toggleGap")
+  const listKind =
+    editor && ["bullet", "ordered"].find((kind) => isNodeActiveInEditor(editor, "list", { kind }))
+  const headingLevel =
+    editor && [1, 2, 3, 4, 5, 6].find((level) => isNodeActiveInEditor(editor, "heading", { level }))
+  const style = listKind ?? (headingLevel ? String(headingLevel) : "paragraph")
 
   return (
-    <div className={styles.toolbar} role="toolbar" aria-label="Formatting controls">
+    <div
+      className={styles.toolbar}
+      role="toolbar"
+      aria-label="Formatting controls"
+      onClick={() => setRevision((revision) => revision + 1)}
+    >
       {editor?.schema.nodes.paragraph && (
-        <ToolbarButton
-          label="Paragraph"
-          shortLabel="¶"
-          isActive={
-            isNodeActiveInEditor(editor, "paragraph") && !isNodeActiveInEditor(editor, "list")
-          }
-          canExec={canExecCommand(editor, "unwrapList") || canExecCommand(editor, "setParagraph")}
-          onClick={() => {
+        <select
+          className={styles.select}
+          aria-label="Text style"
+          value={style}
+          onChange={(event) => {
+            const value = event.currentTarget.value
             execCommand(editor, "unwrapList")
-            execCommand(editor, "setParagraph")
+            if (value === "paragraph") execCommand(editor, "setParagraph")
+            else execCommand(editor, "setHeading", { level: Number(value) })
+            setRevision((revision) => revision + 1)
           }}
-        />
+        >
+          <option value="paragraph">Text</option>
+          {editor.schema.nodes.heading &&
+            [1, 2, 3, 4, 5, 6].map((level) => (
+              <option key={level} value={level}>
+                Heading {level}
+              </option>
+            ))}
+          {listKind && (
+            <option value={listKind} disabled>
+              {listKind === "bullet" ? "Bullet list" : "Numbered list"}
+            </option>
+          )}
+        </select>
       )}
-      {editor?.schema.nodes.heading &&
-        [1, 2, 3, 4, 5, 6].map((level) => (
-          <ToolbarButton
-            key={level}
-            label={`Heading ${level}`}
-            shortLabel={`H${level}`}
-            isActive={isNodeActiveInEditor(editor, "heading", { level })}
-            canExec={canExecCommand(editor, "toggleHeading", { level })}
-            onClick={() => execCommand(editor, "toggleHeading", { level })}
-          />
-        ))}
       {editor?.schema.nodes.list &&
         [
-          { kind: "bullet", label: "Bullet list", shortLabel: "• List" },
-          { kind: "ordered", label: "Numbered list", shortLabel: "1. List" },
-        ].map(({ kind, label, shortLabel }) => (
+          { kind: "bullet", label: "Bullet list", icon: faListUl },
+          { kind: "ordered", label: "Numbered list", icon: faListOl },
+        ].map(({ kind, label, icon }) => (
           <ToolbarButton
             key={kind}
             label={label}
-            shortLabel={shortLabel}
             isActive={isNodeActiveInEditor(editor, "list", { kind })}
             canExec={canExecCommand(editor, "toggleList", { kind })}
             onClick={() => execCommand(editor, "toggleList", { kind })}
-          />
+          >
+            <FontAwesomeIcon icon={icon} />
+          </ToolbarButton>
         ))}
       <ToolbarButton
         label="Bold"
-        shortLabel="B"
         isActive={isMarkActiveInEditor(editor, "bold")}
         canExec={canExecCommand(editor, "toggleBold")}
         onClick={() => execCommand(editor, "toggleBold")}
-      />
+      >
+        <FontAwesomeIcon icon={faBold} />
+      </ToolbarButton>
       <ToolbarButton
         label="Italic"
-        shortLabel="I"
         isActive={isMarkActiveInEditor(editor, "italic")}
         canExec={canExecCommand(editor, "toggleItalic")}
         onClick={() => execCommand(editor, "toggleItalic")}
-      />
+      >
+        <FontAwesomeIcon icon={faItalic} />
+      </ToolbarButton>
       {canToggleGap ? (
         <ToolbarButton
           label="Gap"
-          shortLabel="Gap"
           isActive={isMarkActiveInEditor(editor, "gap")}
           canExec={canToggleGap}
           onClick={() => execCommand(editor, "toggleGap")}
-        />
+        >
+          <FontAwesomeIcon icon={faPuzzlePiece} />
+        </ToolbarButton>
       ) : null}
     </div>
   )
@@ -76,13 +102,13 @@ export function Toolbar({ editor }: { editor: Editor | null }) {
 
 function ToolbarButton({
   label,
-  shortLabel,
+  children,
   canExec,
   isActive,
   onClick,
 }: {
   label: string
-  shortLabel: string
+  children: ReactNode
   canExec: boolean
   isActive: boolean
   onClick: () => void
@@ -103,7 +129,7 @@ function ToolbarButton({
       onMouseDown={(e) => e.preventDefault()}
       onClick={onClick}
     >
-      {shortLabel}
+      {children}
     </button>
   )
 }

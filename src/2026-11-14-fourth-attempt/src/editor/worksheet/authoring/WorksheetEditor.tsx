@@ -31,7 +31,9 @@ export function WorksheetEditor({
   useStorage(store)
   const [focused, setFocused] = useState<{ id: RichTextId; editor: RichTextEditor } | null>(null)
   const updateFocus = useCallback((id: RichTextId, editor: RichTextEditor, hasFocus: boolean) => {
-    setFocused((previous) => (hasFocus ? { id, editor } : previous?.id === id ? null : previous))
+    setFocused((previous) =>
+      hasFocus ? { id, editor } : !editor.mounted && previous?.id === id ? null : previous,
+    )
   }, [])
 
   return (
