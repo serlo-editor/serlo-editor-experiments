@@ -5,24 +5,13 @@ import type { Branded } from "./branded.ts"
 type FirstId = Branded<string, "FirstId">
 type SecondId = Branded<string, "SecondId">
 
-test("branded values retain their underlying type", () => {
+test("branded values are strings, but strings and other brands are not interchangeable", () => {
   const firstId = "first" as FirstId
   const value: string = firstId
-
-  void value
-})
-
-test("unbranded values are not branded", () => {
   // @ts-expect-error strings do not carry a brand.
-  const firstId: FirstId = "first"
-
-  void firstId
-})
-
-test("different brands are not interchangeable", () => {
-  const firstId = "first" as FirstId
+  const unbranded: FirstId = "first"
   // @ts-expect-error values with different brands are incompatible.
   const secondId: SecondId = firstId
 
-  void secondId
+  void [value, unbranded, secondId]
 })

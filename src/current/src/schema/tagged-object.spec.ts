@@ -4,11 +4,11 @@ import { describeWithStores } from "@editor/test-utils"
 
 import { string } from "./primitives.ts"
 import { openRoot } from "./root.ts"
-import { taggedObject } from "./tagged-object.ts"
+import { isTaggedObject, taggedObject } from "./tagged-object.ts"
 import type { SnapshotOf } from "./types.ts"
 
 describeWithStores("tagged objects", (getStore) => {
-  test("stores fixed type alongside editable fields without block ID or renderer", () => {
+  test("stores fixed type alongside editable fields", () => {
     const schema = taggedObject({ type: "choice", fields: { response: string() } })
     expect(schema.defaultValue() satisfies SnapshotOf<typeof schema>).toEqual({
       type: "choice",
@@ -20,7 +20,8 @@ describeWithStores("tagged objects", (getStore) => {
     expect(value.snapshot()).toEqual(snapshot)
     value.response.set("Updated")
     expect(value.snapshot()).toEqual({ type: "choice", response: "Updated" })
-    expect(value).not.toHaveProperty("id")
+    expect(isTaggedObject(schema, value)).toBe(true)
+    expect(isTaggedObject(taggedObject({ type: "toggle", fields: {} }), value)).toBe(false)
   })
 })
 

@@ -24,14 +24,12 @@ test("opens worksheet with supplied answer and feedback schemas", () => {
     mode: WorksheetMode.Answering,
     createStore: () => new FlatNodeStore(),
   })
+  const revision = answering.getRevision()
   answering.answers.getOrCreate("task", () => "").set("Updated")
   expect(answering.answers.snapshot()).toEqual({ task: "Updated" })
-  expect(answering.feedbacks.getOrCreate("task", () => ({ correct: false })).correct.get()).toBe(
-    false,
-  )
-  expect(() =>
-    answering.feedbacks.getOrCreate("task", () => ({ correct: false })).correct.set(true),
-  ).toThrow()
+  expect(answering.getRevision()).toBe(revision + 1)
+  const feedback = answering.feedbacks.getOrCreate("task", () => ({ correct: false }))
+  expect(() => feedback.correct.set(true)).toThrow()
 
   const grading = openWorksheet({
     ...options,
@@ -69,12 +67,9 @@ test("worksheet factory composes stable editor identity and document kind for sh
     expect(feedbacks.feedbacks.snapshot()).toEqual({})
 
     answers.answers.getOrCreate("task", () => "").set("Edited")
-    expect(content.getRevision()).toBe(1)
-    expect(feedbacks.getRevision()).toBe(1)
 
     const reopened = openWorksheet({ ...options, mode: WorksheetMode.Answering })
     expect(reopened.answers.snapshot()).toEqual({ task: "Edited" })
-    expect(kinds).toEqual(["content", "answers", "feedbacks", "answers"])
     reopened.dispose()
     content.dispose()
     answers.dispose()

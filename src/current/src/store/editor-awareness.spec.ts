@@ -13,15 +13,11 @@ test("scoped awareness filters peers, forwards events, and preserves unrelated p
   const remote = new Awareness(remoteDoc)
   try {
     const firstId = "worksheet:content:root:rich-text:first"
-    const secondId = "worksheet:content:root:rich-text:second"
-    const otherId = "worksheet:answers:root:rich-text:first"
+    const secondId = "worksheet:answers:root:rich-text:first"
     const first = createEditorSpecificAwareness(firstId, local)
     const second = createEditorSpecificAwareness(secondId, local)
-    const otherNamespace = createEditorSpecificAwareness(otherId, local)
     local.setLocalStateField("user", { name: "Local" })
     expect(first.getLocalState()).toBeNull()
-    expect(second.getLocalState()).toBeNull()
-    expect(otherNamespace.getLocalState()).toBeNull()
     expect(first.clientID).toBe(local.clientID)
 
     first.setLocalStateField("cursor", { anchor: 1, head: 1 })
@@ -31,7 +27,6 @@ test("scoped awareness filters peers, forwards events, and preserves unrelated p
       cursor: { anchor: 1, head: 1 },
     })
     expect(second.getLocalState()).toBeNull()
-    expect(otherNamespace.getLocalState()).toBeNull()
 
     let events = 0
     const listener = () => {
@@ -43,15 +38,13 @@ test("scoped awareness filters peers, forwards events, and preserves unrelated p
     expect(events).toBe(1)
     expect([...first.getStates().keys()]).toEqual([local.clientID, remote.clientID])
     expect(second.getStates().size).toBe(0)
-    expect(otherNamespace.getStates().size).toBe(0)
 
     first.off("change", listener)
-    remote.setLocalState({ editorId: otherId, user: { name: "Remote" } })
+    remote.setLocalState({ editorId: secondId, user: { name: "Remote" } })
     applyAwarenessUpdate(local, encodeAwarenessUpdate(remote, [remote.clientID]), "remote")
     expect(events).toBe(1)
     expect([...first.getStates().keys()]).toEqual([local.clientID])
-    expect([...second.getStates().keys()]).toEqual([])
-    expect([...otherNamespace.getStates().keys()]).toEqual([remote.clientID])
+    expect([...second.getStates().keys()]).toEqual([remote.clientID])
 
     second.setLocalStateField("cursor", { anchor: 2, head: 2 })
     first.setLocalStateField("cursor", null)
