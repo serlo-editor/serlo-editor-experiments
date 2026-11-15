@@ -1,7 +1,7 @@
 import { useState } from "react"
 
 import { Root, type RootSnapshot } from "../editor/blocks"
-import { Answers, Feedback, initialFeedback } from "../editor/blocks/responses"
+import { Answers, Feedback } from "../editor/blocks/responses"
 import { Editor, type EditorWorksheet } from "../editor/components/Editor"
 import { FlatNodeStore } from "../editor/store"
 import { useStorage } from "../editor/store/use-storage"
@@ -41,10 +41,7 @@ function createWorkspace(mode: WorksheetMode, snapshot: Snapshot, generation: nu
 function nextSnapshot(worksheet: EditorWorksheet, mode: WorksheetMode): Snapshot {
   const content = worksheet.content.snapshot()
   const answers = mode === WorksheetMode.EditingContent ? {} : worksheet.answers.snapshot()
-  const feedbacks =
-    mode === WorksheetMode.EditingContent || mode === WorksheetMode.Answering
-      ? initialFeedback()
-      : worksheet.feedbacks.snapshot()
+  const feedbacks = worksheet.feedbacks.snapshot()
   return { content, answers, feedbacks }
 }
 
@@ -52,7 +49,7 @@ export default function App() {
   const [workspace, setWorkspace] = useState(() =>
     createWorkspace(
       WorksheetMode.EditingContent,
-      { content: initialContent, answers: {}, feedbacks: initialFeedback() },
+      { content: initialContent, answers: {}, feedbacks: {} },
       0,
     ),
   )

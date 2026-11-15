@@ -2,7 +2,6 @@ import { useCallback, useState } from "react"
 
 import type { RootValue } from "../blocks"
 import { Answers, Feedback } from "../blocks/responses"
-import { OverallFeedback } from "../blocks/shared/feedback"
 import type { RichTextEditor } from "../rich-text"
 import { BlockView } from "../schema"
 import type { StoredValueOf } from "../schema/types"
@@ -68,7 +67,6 @@ export function Editor({
               {worksheet.content.map((value) => (
                 <BlockView key={value.id} value={value} />
               ))}
-              <OverallFeedback />
             </div>
           </FocusContext>
         </WorksheetRevisionProvider>
