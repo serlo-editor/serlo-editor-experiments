@@ -19,6 +19,7 @@
     "test:e2e": "bun test ./e2e/worksheet.e2e.ts"
   },
   "dependencies": {
+    "@fortawesome/free-regular-svg-icons": "7.3.1",
     "@fortawesome/free-solid-svg-icons": "7.3.1",
     "@fortawesome/react-fontawesome": "3.5.0",
     "clsx": "2.1.1",

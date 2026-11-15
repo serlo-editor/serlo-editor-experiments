@@ -1,10 +1,5 @@
-import {
-  faBold,
-  faItalic,
-  faListOl,
-  faListUl,
-  faPuzzlePiece,
-} from "@fortawesome/free-solid-svg-icons"
+import { faPenToSquare } from "@fortawesome/free-regular-svg-icons"
+import { faBold, faItalic, faListOl, faListUl } from "@fortawesome/free-solid-svg-icons"
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
 import clsx from "clsx"
 import { type CommandAction, type Editor, isMarkActive } from "prosekit/core"
@@ -93,7 +88,7 @@ export function Toolbar({ editor }: { editor: Editor | null }) {
         canExec={canExecCommand(editor, "toggleGap")}
         onClick={() => execCommand(editor, "toggleGap")}
       >
-        <FontAwesomeIcon icon={faPuzzlePiece} />
+        <FontAwesomeIcon icon={faPenToSquare} />
       </ToolbarButton>
     </div>
   )
