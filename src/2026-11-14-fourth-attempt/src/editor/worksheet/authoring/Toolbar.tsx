@@ -14,11 +14,12 @@ import styles from "./Toolbar.module.css"
 
 export function Toolbar({ editor }: { editor: Editor | null }) {
   const [, setRevision] = useState(0)
-  const canToggleGap = canExecCommand(editor, "toggleGap")
-  const listKind =
-    editor && ["bullet", "ordered"].find((kind) => isNodeActiveInEditor(editor, "list", { kind }))
-  const headingLevel =
-    editor && [1, 2, 3, 4, 5, 6].find((level) => isNodeActiveInEditor(editor, "heading", { level }))
+  const listKind = ["bullet", "ordered"].find((kind) =>
+    isNodeActiveInEditor(editor, "list", { kind }),
+  )
+  const headingLevel = [1, 2, 3, 4, 5, 6].find((level) =>
+    isNodeActiveInEditor(editor, "heading", { level }),
+  )
   const style = listKind ?? (headingLevel ? String(headingLevel) : "paragraph")
 
   return (
@@ -61,7 +62,7 @@ export function Toolbar({ editor }: { editor: Editor | null }) {
         <ToolbarButton
           key={kind}
           label={label}
-          isActive={editor ? isNodeActiveInEditor(editor, "list", { kind }) : false}
+          isActive={isNodeActiveInEditor(editor, "list", { kind })}
           canExec={
             Boolean(editor?.schema.nodes.list) && canExecCommand(editor, "toggleList", { kind })
           }
@@ -89,7 +90,7 @@ export function Toolbar({ editor }: { editor: Editor | null }) {
       <ToolbarButton
         label="Gap"
         isActive={isMarkActiveInEditor(editor, "gap")}
-        canExec={canToggleGap}
+        canExec={canExecCommand(editor, "toggleGap")}
         onClick={() => execCommand(editor, "toggleGap")}
       >
         <FontAwesomeIcon icon={faPuzzlePiece} />
@@ -133,10 +134,12 @@ function ToolbarButton({
 }
 
 function isNodeActiveInEditor(
-  editor: Editor,
+  editor: Editor | null,
   nodeName: string,
   attrs?: { level?: number; kind?: string },
 ): boolean {
+  if (editor == null) return false
+
   const { $from } = editor.state.selection
   for (let depth = $from.depth; depth >= 0; depth--) {
     const node = $from.node(depth)
