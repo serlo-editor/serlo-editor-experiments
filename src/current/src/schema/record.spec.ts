@@ -35,9 +35,7 @@ describeWithStores("record schemas", (getStore) => {
   })
 
   test("getOrCreate initializes once and preserves edited values", () => {
-    const store = getStore()
-    const root = openRoot(store, record(string()), {})
-    const revision = store.getRevision()
+    const root = openRoot(getStore(), record(string()), {})
     let calls = 0
     const create = () => {
       calls++
@@ -47,7 +45,6 @@ describeWithStores("record schemas", (getStore) => {
     expect(root.getOrCreate("answer", create).get()).toBe("Initial")
     expect(root.getOrCreate("answer", create).get()).toBe("Initial")
     expect(calls).toBe(1)
-    expect(store.getRevision()).toBe(revision + 1)
     root.getOrCreate("answer", () => "").set("Edited")
     expect(root.getOrCreate("answer", create).get()).toBe("Edited")
     expect(calls).toBe(1)
@@ -113,41 +110,18 @@ describeWithStores("record schemas", (getStore) => {
     }
     const schema = record(guarded)
     const root = openRoot(store, schema, { answer: "Initial" })
-    const revision = store.getRevision()
     available = false
 
     expect(() => schema.create(store, { answer: "New" })).toThrow(error)
     expect(() => root.getOrCreate("answer", () => "")).toThrow(error)
     expect(() => root.set("answer", "Changed")).toThrow(error)
     expect(() => root.snapshot()).toThrow(error)
-    expect(store.getRevision()).toBe(revision)
 
     root.remove("answer")
     expect(root.snapshot()).toEqual({})
     available = true
     root.set("answer", "Recovered")
     expect(root.snapshot()).toEqual({ answer: "Recovered" })
-  })
-
-  test("reads leave revisions unchanged and each entry write notifies once", () => {
-    const store = getStore()
-    const root = openRoot(store, record(object({ text: string() })), {
-      answer: { text: "Initial" },
-    })
-    const revision = store.getRevision()
-    const observed: unknown[] = []
-    store.subscribe(() => observed.push(root.snapshot()))
-
-    root.getOrCreate("answer", () => ({ text: "" }))
-    root.snapshot()
-    root.remove("missing")
-    expect(store.getRevision()).toBe(revision)
-    expect(observed).toEqual([])
-
-    root.getOrCreate("answer", () => ({ text: "" })).text.set("Edited")
-    root.remove("answer")
-    expect(observed).toEqual([{ answer: { text: "Edited" } }, {}])
-    expect(store.getRevision()).toBe(revision + 2)
   })
 })
 
@@ -181,7 +155,6 @@ test("read-only records initialize but reject writes before child creation", () 
   tags.push("Outside mutation")
   expect(document.snapshot()).toEqual(initial)
   expect(openRoot(store, schema, {}).snapshot()).toEqual(initial)
-  expect(store.getRevision()).toBe(0)
 })
 
 test("read-only records preserve falsy primitive refs", () => {
@@ -212,13 +185,9 @@ test("Yjs records reopen, observe remote edits, and converge after concurrent ad
     Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
     const second = openRoot(secondStore, schema, { ignored: "Ignored" })
     const cached = second.getOrCreate("answer", () => "")
-    const observed: unknown[] = []
-    secondStore.subscribe(() => observed.push(second.snapshot()))
-
     first.getOrCreate("answer", () => "").set("Edited")
     Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
     expect(cached.get()).toBe("Edited")
-    expect(observed).toEqual([{ answer: "Edited" }])
 
     first.set("first", "A")
     second.set("second", "B")

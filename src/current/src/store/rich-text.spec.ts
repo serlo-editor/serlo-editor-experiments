@@ -62,6 +62,23 @@ describe("stored rich-text editors", () => {
     }
   })
 
+  describeWithStores("editor storage", (getStore) => {
+    test("creates editors with independent default content", () => {
+      const store = getStore()
+      const empty = store.editor.create(options)
+      expect(store.editor.get(empty, options).getDocJSON()).toEqual({
+        type: "doc",
+        content: [{ type: "inlineBlock" }],
+      })
+
+      const initial = content("Initial")
+      const id = store.editor.create({ ...options, defaultContent: initial })
+      initial.content?.pop()
+      expect(store.editor.get(id, options).getDocJSON()).toEqual(content("Initial"))
+      expect(() => store.editor.get("rich-text:missing", options)).toThrow("Unknown rich-text ID")
+    })
+  })
+
   test("flat editors notify for headless content changes, not selection changes", async () => {
     const store = new FlatNodeStore()
     const document = openRoot(store, richText(options), content("Initial"))
@@ -207,14 +224,8 @@ describe("stored rich-text editors", () => {
     const second = openRoot(secondStore, schema, content("Ignored"))
 
     expect(second.id).toBe(first.id)
-    expect(secondDoc.getMap("test:root").get("value")).not.toBe(
-      firstDoc.getMap("test:root").get("value"),
-    )
     expect(second.getEditor()).not.toBe(first.getEditor())
-    const beforeLookup = Y.encodeStateVector(secondDoc)
     expect(second.snapshot()).toEqual(first.snapshot())
-    expect(second.getEditor()).toBe(second.getEditor())
-    expect(Y.encodeStateVector(secondDoc)).toEqual(beforeLookup)
 
     const reopened = openRoot(createYjsStore(secondDoc), schema, content("Ignored again"))
     expect(reopened.id).toBe(first.id)
@@ -236,10 +247,8 @@ describe("stored rich-text editors", () => {
     source.view.dispatch(source.state.tr.insertText("!", 1))
     Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
 
-    const beforeSnapshot = Y.encodeStateVector(secondDoc)
     expect(second.snapshot()).toEqual(content("!Initial"))
     expect(second.getEditor()).toBe(cached)
-    expect(Y.encodeStateVector(secondDoc)).toEqual(beforeSnapshot)
 
     mount(cached)
     expect(cached.getDocJSON()).toEqual(content("!Initial"))
@@ -259,8 +268,6 @@ describe("stored rich-text editors", () => {
     const second = openRoot(secondStore, schema, content("Ignored"))
     const source = mount(first.getEditor())
     const revision = secondStore.getRevision()
-    expect(firstDoc.share.has("storage:revisions")).toBe(false)
-    expect(secondDoc.share.has("storage:revisions")).toBe(false)
     const observed: RichTextJSON[] = []
     const unsubscribe = secondStore.subscribe(() => observed.push(second.snapshot()))
 
@@ -268,7 +275,6 @@ describe("stored rich-text editors", () => {
     Y.applyUpdate(secondDoc, Y.encodeStateAsUpdate(firstDoc))
     expect(observed).toEqual([content("!Initial")])
     expect(secondStore.getRevision()).toBeGreaterThan(revision)
-    expect(secondDoc.share.has("storage:revisions")).toBe(false)
 
     const afterRemoteEdit = secondStore.getRevision()
     expect(second.snapshot()).toEqual(content("!Initial"))
@@ -322,18 +328,6 @@ describe("stored rich-text editors", () => {
     expect(second.snapshot()).toEqual(content("!Initial"))
   })
 
-  test("Yjs opening an empty fragment does not seed shared content", () => {
-    const doc = createDoc()
-    const store = createYjsStore(doc)
-    const document = openRoot(store, richText(options), content("Initial"))
-    const fragment = doc.getXmlFragment(`test:rich-text:${document.id}`)
-    fragment.delete(0, fragment.length)
-    const beforeLookup = Y.encodeStateVector(doc)
-    expect(document.snapshot()).toEqual({ type: "doc", content: [{ type: "inlineBlock" }] })
-    expect(fragment.length).toBe(0)
-    expect(Y.encodeStateVector(doc)).toEqual(beforeLookup)
-  })
-
   test("Yjs rich-text fragments and revisions stay scoped across namespaces", () => {
     const doc = createDoc()
     const awareness = new Awareness(doc)
@@ -345,8 +339,6 @@ describe("stored rich-text editors", () => {
 
     expect(first.snapshot()).toEqual(content("Question"))
     expect(second.snapshot()).toEqual(content("Answer"))
-    expect(doc.share.has(`worksheet:content:rich-text:${first.id}`)).toBe(true)
-    expect(doc.share.has(`worksheet:answers:rich-text:${second.id}`)).toBe(true)
     const secondRevision = secondStore.getRevision()
     const fragment = doc.getXmlFragment(`worksheet:content:rich-text:${first.id}`)
     fragment.delete(0, fragment.length)

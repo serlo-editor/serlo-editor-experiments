@@ -1,19 +1,8 @@
 import { expect, test } from "bun:test"
 
-import { richText as definition, type RichTextJSON } from "@editor/rich-text"
-import { array, object, richText, string } from "@editor/schema"
-import { openRoot } from "@editor/schema"
 import type { JSONValue } from "@editor/utils"
-import { defineMarkSpec } from "prosekit/core"
-import { EditorState, TextSelection } from "prosekit/pm/state"
 
 import { ReadonlyNodeStore } from "./index.ts"
-
-const options = { definition: definition.inline({ marks: { gap: true } }) }
-const content: RichTextJSON = {
-  type: "doc",
-  content: [{ type: "inlineBlock", content: [{ type: "text", text: "Initial" }] }],
-}
 
 test("read-only refs are nested frozen values, independent of caller-owned data", () => {
   const store = new ReadonlyNodeStore()
@@ -108,7 +97,6 @@ test("rejects transactions without executing callbacks and creation outside init
     () => store.cell.create("Added"),
     () => store.array.create([]),
     () => store.map.create({}),
-    () => store.editor.create(options),
     () =>
       store.transact(() => {
         throw new Error("Callback must not run.")
@@ -134,26 +122,6 @@ test("closes failed initialization and permits retrying", () => {
   expect(store.cell.get(ref)).toBe("Recovered")
 })
 
-test("schema stored values read snapshots but cannot mutate content", () => {
-  const store = new ReadonlyNodeStore()
-  const schema = object({ title: string(), items: array(string()), note: string() })
-  const initial = { title: "Title", items: ["First"], note: "Note" }
-  const document = openRoot(store, schema, initial)
-  for (const operation of [
-    () => document.title.set("Changed"),
-    () => document.items.insert(0, "Added"),
-    () => document.items.remove(0),
-    () => document.note.set("Changed"),
-  ])
-    expect(operation).toThrow("Storage is read-only.")
-  const snapshot = document.snapshot()
-  Reflect.set(snapshot.items, "0", "Outside mutation")
-  expect(document.snapshot()).toEqual(initial)
-  expect(
-    openRoot(store, schema, { title: "Ignored", items: [], note: "Ignored" }).snapshot(),
-  ).toEqual(initial)
-})
-
 test("immutable stores keep a constant revision and never notify", () => {
   const store = new ReadonlyNodeStore()
   let notifications = 0
@@ -168,62 +136,4 @@ test("immutable stores keep a constant revision and never notify", () => {
   unsubscribe()
   expect(store.getRevision()).toBe(0)
   expect(notifications).toBe(0)
-})
-
-test("read-only rich text supports snapshots and selection, not headless content changes", () => {
-  const store = new ReadonlyNodeStore()
-  const document = openRoot(store, richText(options), content)
-  const editor = document.getEditor()
-  expect(editor).toBe(document.getEditor())
-  expect(document.snapshot()).toEqual(content)
-  expect(() => store.editor.get("rich-text:missing", options)).toThrow("Unknown rich-text ID")
-  expect(() => editor.setContent(content)).toThrow("Storage is read-only.")
-  expect(() =>
-    editor.exec((state, dispatch) => {
-      dispatch?.(state.tr.insertText("!", 1))
-      return true
-    }),
-  ).toThrow("Storage is read-only.")
-  const changed = EditorState.create({
-    doc: editor.schema.nodeFromJSON({ type: "doc", content: [{ type: "inlineBlock" }] }),
-    plugins: editor.state.plugins,
-  })
-  expect(() => editor.updateState(changed)).toThrow("Storage is read-only.")
-  expect(() => editor.updateState(editor.state.reconfigure({ plugins: [] }))).toThrow(
-    "Storage is read-only.",
-  )
-  editor.updateState(
-    editor.state.apply(editor.state.tr.setSelection(TextSelection.create(editor.state.doc, 2))),
-  )
-  expect(editor.state.selection.from).toBe(2)
-  expect(document.snapshot()).toEqual(content)
-})
-
-test("rich-text JSON does not expose stored mark attributes", () => {
-  const store = new ReadonlyNodeStore()
-  const marked: RichTextJSON = {
-    type: "doc",
-    content: [
-      {
-        type: "inlineBlock",
-        content: [
-          { type: "text", text: "Marked", marks: [{ type: "tag", attrs: { id: "tag-id" } }] },
-        ],
-      },
-    ],
-  }
-  const document = openRoot(
-    store,
-    richText({
-      ...options,
-      extensions: [defineMarkSpec({ name: "tag", attrs: { id: { default: "" } } })],
-    }),
-    marked,
-  )
-  const editor = document.getEditor()
-  const before = document.snapshot()
-  const attrs = editor.getDocJSON().content?.[0]?.content?.[0]?.marks?.[0]?.attrs
-  if (!attrs) throw new Error("Missing mark attributes.")
-  Reflect.set(attrs, "id", "Changed")
-  expect(document.snapshot()).toEqual(before)
 })

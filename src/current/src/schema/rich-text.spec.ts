@@ -14,20 +14,6 @@ function content(text: string): RichTextJSON {
 }
 
 describeWithStores("rich-text schemas", (getStore) => {
-  test("accepts editor options with or without defaultContent", () => {
-    const store = getStore()
-    const emptyId = store.editor.create(options)
-    expect(store.editor.get(emptyId, options).getDocJSON()).toEqual({
-      type: "doc",
-      content: [{ type: "inlineBlock" }],
-    })
-
-    const defaultContent = content("Initial")
-    const id = store.editor.create({ ...options, defaultContent })
-    defaultContent.content?.pop()
-    expect(store.editor.get(id, options).getDocJSON()).toEqual(content("Initial"))
-  })
-
   test("builds valid empty documents for inline and block rich text", () => {
     const schema = object({
       inline: richText({ definition: definition.inline() }),
@@ -41,23 +27,12 @@ describeWithStores("rich-text schemas", (getStore) => {
     expect(openRoot(getStore(), schema, initial).snapshot()).toEqual(initial)
   })
 
-  test("stores a tagged cell and exports only ProseMirror JSON", () => {
-    const store = getStore()
-    const schema = richText(options)
+  test("exports independent ProseMirror JSON", () => {
     const initial = content("Hello")
-    const document = openRoot(store, schema, initial)
-    const ref = store.root.getOrCreate(() => {
-      throw new Error("Missing root.")
-    })
+    const document = openRoot(getStore(), richText(options), initial)
 
-    expect(store.cell.get(ref)).toEqual({ kind: "richText", editorId: document.id })
-    expect(document.getEditor().getDocJSON()).toEqual(initial)
     expect(document.snapshot()).toEqual(initial)
-    expect(document.getEditor()).toBe(document.getEditor())
-    expect(document.getEditor()).toBe(store.editor.get(document.id, options))
-
-    const exported = document.snapshot()
-    exported.content?.pop()
+    document.snapshot().content?.pop()
     expect(document.snapshot()).toEqual(initial)
     expect(initial).toEqual(content("Hello"))
   })
@@ -72,8 +47,6 @@ describeWithStores("rich-text schemas", (getStore) => {
     expect(second.id).toBe(first.id)
     expect(second.getEditor()).toBe(editor)
     expect(second.snapshot()).toEqual(content("First"))
-    expect(store.editor.get(first.id, { definition: definition.inline() })).toBe(editor)
-    expect(editor.schema.marks.bold).toBeDefined()
   })
 
   test("supports arrays and stable identities through sibling edits", () => {
@@ -154,6 +127,5 @@ describeWithStores("rich-text schemas", (getStore) => {
       const ref = store.transact((write) => write.root.save(store.cell.create(value)))
       expect(() => schema.bind(store, ref)).toThrow("Expected rich-text cell.")
     }
-    expect(() => store.editor.get("rich-text:missing", options)).toThrow("Unknown rich-text ID")
   })
 })

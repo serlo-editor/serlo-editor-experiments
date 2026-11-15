@@ -31,11 +31,9 @@ describeWithStores("Document", (getStore) => {
     const root = document
 
     expect(root.snapshot()).toBe("Initial")
-    expect(document.snapshot()).toBe("Initial")
 
     root.set("Changed")
 
-    expect(root.snapshot()).toBe("Changed")
     expect(document.snapshot()).toBe("Changed")
   })
 
@@ -47,11 +45,9 @@ describeWithStores("Document", (getStore) => {
       bind: (store, ref) => ({ snapshot: () => store.cell.get(ref) }),
     }
 
-    const first = openRoot(store, schema, "First")
+    openRoot(store, schema, "First")
     const second = openRoot(store, schema, "Ignored")
 
     expect(second.snapshot()).toBe("First")
-    expect(second.snapshot()).toBe("First")
-    expect(first.snapshot()).toBe("First")
   })
 })

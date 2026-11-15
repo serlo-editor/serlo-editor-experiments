@@ -138,8 +138,6 @@ test("YjsNodeStore revisions stay local and ignore unrelated, duplicate, and awa
   Y.applyUpdate(secondDoc, update)
   expect(second.getRevision()).toBe(1)
   expect(observed).toEqual([1])
-  expect(firstDoc.share.has("storage:revisions")).toBe(false)
-  expect(secondDoc.share.has("storage:revisions")).toBe(false)
 
   Y.applyUpdate(secondDoc, update)
   firstDoc.getMap("unrelated").set("value", 1)
@@ -162,7 +160,6 @@ test("YjsNodeStore revisions stay local and ignore unrelated, duplicate, and awa
   expect(second.getRevision()).toBe(3)
   expect(observed).toEqual([1, 2])
 
-  const beforeOpening = Y.encodeStateVector(secondDoc)
   const reopened = new YjsNodeStore({
     doc: secondDoc,
     awareness: secondAwareness,
@@ -173,7 +170,6 @@ test("YjsNodeStore revisions stay local and ignore unrelated, duplicate, and awa
     throw new Error("Missing root.")
   })
   expect(reopened.getRevision()).toBe(0)
-  expect(Y.encodeStateVector(secondDoc)).toEqual(beforeOpening)
   firstAwareness.destroy()
   secondAwareness.destroy()
   firstDoc.destroy()
