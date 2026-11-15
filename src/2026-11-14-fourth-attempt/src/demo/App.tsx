@@ -41,7 +41,10 @@ function createWorkspace(mode: WorksheetMode, snapshot: Snapshot, generation: nu
 function nextSnapshot(worksheet: EditorWorksheet, mode: WorksheetMode): Snapshot {
   const content = worksheet.content.snapshot()
   const answers = mode === WorksheetMode.EditingContent ? {} : worksheet.answers.snapshot()
-  const feedbacks = worksheet.feedbacks.snapshot()
+  const feedbacks =
+    mode === WorksheetMode.EditingContent || mode === WorksheetMode.Answering
+      ? {}
+      : worksheet.feedbacks.snapshot()
   return { content, answers, feedbacks }
 }
 

@@ -1,12 +1,10 @@
 import { RichText } from "../../components/RichText"
 import { StaticRichText } from "../../components/StaticRichText"
-import type { RichTextJSON } from "../../rich-text"
 import { richText as definition } from "../../rich-text"
-import { isTaggedObject, richText, string, taggedObject } from "../../schema"
+import { richText, string } from "../../schema"
 import type { StoredRichText } from "../../schema/rich-text"
 import type { StoredTaggedObject } from "../../schema/tagged-object"
 import { WorksheetMode } from "../../worksheet"
-import { useWorksheet } from "../../worksheet"
 
 const comment = richText({
   definition: definition.block({
@@ -15,8 +13,6 @@ const comment = richText({
   }),
 })
 export const feedbackFields = { comment, result: string(), automaticResult: string() }
-export const overallKey = "__overall"
-export const Overall = taggedObject({ type: "overall", fields: feedbackFields })
 
 const results = [
   { value: "unassessed", label: "Noch nicht bewertet" },
@@ -71,26 +67,6 @@ export function ExerciseFeedback({
   )
 }
 
-export function OverallFeedback() {
-  const { mode, feedbacks } = useWorksheet()
-  const overall = feedbacks.snapshot()[overallKey]
-  const entry = overall ? feedbacks.getOrCreate(overallKey, () => overall) : undefined
-  if (!entry || !isTaggedObject(Overall, entry)) return null
-  const comment = entry.comment
-  if (mode !== WorksheetMode.GivingFeedback)
-    return comment.getEditor().state.doc.textContent.trim() ? (
-      <aside className="feedback-card">
-        <h3>Gesamtfeedback</h3>
-        <StaticRichText value={comment} />
-      </aside>
-    ) : null
-  return (
-    <section className="feedback-card">
-      <FeedbackComment label="Gesamtfeedback" value={comment} />
-    </section>
-  )
-}
-
 function FeedbackComment({ label, value }: { label: string; value: StoredRichText }) {
   return (
     <div className="feedback-comment" role="group" aria-label={label}>
@@ -98,13 +74,4 @@ function FeedbackComment({ label, value }: { label: string; value: StoredRichTex
       <RichText value={value} />
     </div>
   )
-}
-
-export function feedbackText(text = ""): RichTextJSON {
-  return {
-    type: "doc",
-    content: [
-      text ? { type: "paragraph", content: [{ type: "text", text }] } : { type: "paragraph" },
-    ],
-  }
 }

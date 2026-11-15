@@ -9,7 +9,7 @@ import type { StoredBlock } from "../../schema/block"
 import type { StoredRichText } from "../../schema/rich-text"
 import type { StoredTaggedObject } from "../../schema/tagged-object"
 import { WorksheetMode } from "../../worksheet"
-import { ExerciseFeedback, feedbackFields, feedbackText } from "../shared/feedback"
+import { ExerciseFeedback, feedbackFields } from "../shared/feedback"
 
 const gapDefinition = definition.block({
   marks: { bold: true, italic: true, gap: true },
@@ -24,7 +24,7 @@ export const FillInTheGapExercise = exercise({
   feedback: { fields: feedbackFields },
   grade: (unit, answer) => ({
     type: "fill-in-the-blank",
-    comment: feedbackText(),
+    comment: feedbackFields.comment.defaultValue(),
     result: "automatic",
     automaticResult: gradeGap(unit, answer),
   }),

@@ -6,7 +6,7 @@ import { array, boolean, exercise, object, record, richText, string } from "../.
 import type { StoredBlock } from "../../schema/block"
 import type { StoredTaggedObject } from "../../schema/tagged-object"
 import { WorksheetMode } from "../../worksheet"
-import { ExerciseFeedback, feedbackFields, feedbackText } from "../shared/feedback"
+import { ExerciseFeedback, feedbackFields } from "../shared/feedback"
 
 const inlineDefinition = definition.inline({ marks: { bold: true, italic: true } })
 const choiceUnitFields = {
@@ -27,7 +27,7 @@ export const MultipleChoiceExercise = exercise({
   feedback: { fields: feedbackFields },
   grade: (unit, answer) => ({
     type: "multiple-choice",
-    comment: feedbackText(),
+    comment: feedbackFields.comment.defaultValue(),
     result: "automatic",
     automaticResult: gradeChoice(unit, answer),
   }),
