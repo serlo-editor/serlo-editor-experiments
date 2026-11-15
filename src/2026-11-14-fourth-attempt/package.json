@@ -12,7 +12,7 @@
     "fix": "bun run fix:lint && bun run fix:format && bun run check",
     "fix:format": "oxfmt",
     "fix:lint": "oxlint --fix",
-    "dev": "bun --watch src/index.html",
+    "dev": "bun dev.ts",
     "format": "oxfmt",
     "preview": "bun run build && bun dist/index.html",
     "test": "bun test --only-failures",
