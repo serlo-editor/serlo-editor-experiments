@@ -1,21 +1,20 @@
 import { ExerciseBadge } from "@editor/blocks/shared/ExerciseBadge"
 import { ExerciseFeedback, feedbackFields } from "@editor/blocks/shared/feedback"
 import { RichText, StaticRichText } from "@editor/components"
-import { richText as definition } from "@editor/rich-text"
 import { array, boolean, exercise, object, record, richText, string } from "@editor/schema"
 import type { StoredBlock, StoredTaggedObject } from "@editor/schema"
 import { WorksheetMode } from "@editor/worksheet"
 
-import styles from "./index.module.css"
+import { inlineRichTextDefinition } from "../text/definitions.ts"
 
-const inlineDefinition = definition.inline({ marks: { bold: true, italic: true } })
+import styles from "./index.module.css"
 const choiceUnitFields = {
-  question: richText({ definition: inlineDefinition }),
+  question: richText({ definition: inlineRichTextDefinition }),
   options: array(
     object({
       optionId: string(),
       isCorrect: boolean(),
-      text: richText({ definition: inlineDefinition }),
+      text: richText({ definition: inlineRichTextDefinition }),
     }),
   ),
 }

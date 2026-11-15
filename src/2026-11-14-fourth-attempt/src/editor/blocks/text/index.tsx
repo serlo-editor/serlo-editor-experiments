@@ -1,15 +1,11 @@
 import { RichText, StaticRichText } from "@editor/components"
-import { richText as definition } from "@editor/rich-text"
 import { block, richText } from "@editor/schema"
 import type { StoredBlock } from "@editor/schema"
 import { WorksheetMode, useWorksheet } from "@editor/worksheet"
 
-const textDefinition = definition.block({
-  marks: { bold: true, italic: true },
-  blocks: { paragraph: true, heading: true, orderedList: true, bulletList: true },
-})
+import { textContentRichTextDefinition } from "./definitions.ts"
 
-const textFields = { content: richText({ definition: textDefinition }) }
+const textFields = { content: richText({ definition: textContentRichTextDefinition }) }
 
 export const TextContent = block({ type: "text", fields: textFields, render: TextView })
 
