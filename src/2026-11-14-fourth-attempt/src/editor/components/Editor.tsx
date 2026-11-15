@@ -1,10 +1,8 @@
 import type { RootValue } from "@editor/blocks"
-import { Answers, Feedback } from "@editor/blocks/responses"
+import { Answers, Feedback } from "@editor/blocks"
 import type { RichTextEditor } from "@editor/rich-text"
-import { BlockView } from "@editor/schema"
-import type { StoredValueOf } from "@editor/schema/types"
-import type { NodeStore, NodeRefs, RichTextId } from "@editor/store"
-import { useStorage } from "@editor/store/use-storage"
+import { BlockView, type StoredValueOf } from "@editor/schema"
+import { useStorage, type NodeStore, type NodeRefs, type RichTextId } from "@editor/store"
 import { WorksheetMode, WorksheetRevisionProvider, type Worksheet } from "@editor/worksheet"
 import { useCallback, useState } from "react"
 

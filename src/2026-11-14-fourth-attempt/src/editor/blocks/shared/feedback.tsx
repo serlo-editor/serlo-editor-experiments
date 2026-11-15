@@ -1,9 +1,7 @@
-import { RichText } from "@editor/components/RichText"
-import { StaticRichText } from "@editor/components/StaticRichText"
+import { RichText, StaticRichText } from "@editor/components"
 import { richText as definition } from "@editor/rich-text"
 import { richText, string } from "@editor/schema"
-import type { StoredRichText } from "@editor/schema/rich-text"
-import type { StoredTaggedObject } from "@editor/schema/tagged-object"
+import type { StoredRichText, StoredTaggedObject } from "@editor/schema"
 import { WorksheetMode } from "@editor/worksheet"
 
 import styles from "./feedback.module.css"

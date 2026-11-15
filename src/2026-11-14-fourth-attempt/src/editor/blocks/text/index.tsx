@@ -1,5 +1,4 @@
-import { RichText } from "@editor/components/RichText"
-import { StaticRichText } from "@editor/components/StaticRichText"
+import { RichText, StaticRichText } from "@editor/components"
 import { richText as definition } from "@editor/rich-text"
 import { block, richText } from "@editor/schema"
 import { WorksheetMode, useWorksheet } from "@editor/worksheet"

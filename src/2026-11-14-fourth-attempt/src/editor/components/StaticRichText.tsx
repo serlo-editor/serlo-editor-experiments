@@ -1,4 +1,4 @@
-import type { StoredRichText } from "@editor/schema/rich-text"
+import type { StoredRichText } from "@editor/schema"
 import { DOMSerializer, type Schema } from "prosekit/pm/model"
 import { useCallback, useLayoutEffect, useRef } from "react"
 
