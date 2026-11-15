@@ -2,7 +2,7 @@ import { ExerciseBadge } from "@editor/blocks/shared/ExerciseBadge"
 import { ExerciseFeedback, feedbackFields } from "@editor/blocks/shared/feedback"
 import { RichText, StaticRichText } from "@editor/blocks/shared/rich-text"
 import { array, boolean, exercise, object, record, richText, string } from "@editor/schema"
-import type { ExerciseRenderPropsOf, StoredBlock, StoredTaggedObject } from "@editor/schema"
+import type { ExerciseRenderProps, StoredBlock, StoredTaggedObject } from "@editor/schema"
 import { WorksheetMode } from "@editor/worksheet"
 
 import { inlineRichTextDefinition } from "../text/definitions.ts"
@@ -20,14 +20,7 @@ const choiceUnitFields = {
 }
 const choiceAnswerFields = { selected: record(boolean()) }
 
-export const MultipleChoiceExercise: ReturnType<
-  typeof exercise<
-    "multiple-choice",
-    typeof choiceUnitFields,
-    typeof choiceAnswerFields,
-    typeof feedbackFields
-  >
-> = exercise({
+export const MultipleChoiceExercise = exercise({
   unit: { type: "multiple-choice", fields: choiceUnitFields },
   answer: { fields: choiceAnswerFields },
   feedback: { fields: feedbackFields },
@@ -45,7 +38,12 @@ function ChoiceView({
   answer,
   feedback,
   mode,
-}: ExerciseRenderPropsOf<typeof MultipleChoiceExercise>) {
+}: ExerciseRenderProps<
+  "multiple-choice",
+  typeof choiceUnitFields,
+  typeof choiceAnswerFields,
+  typeof feedbackFields
+>) {
   return (
     <section className={styles.exercise} aria-label="Multiple Choice">
       <ExerciseBadge label="Multiple Choice" help="Mehrere Antworten können richtig sein." />
