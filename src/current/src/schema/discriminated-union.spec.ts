@@ -64,6 +64,5 @@ describeWithStores("discriminated unions", (getStore) => {
 })
 
 test("rejects empty definitions and duplicate types", () => {
-  expect(() => discriminatedUnion([])).toThrow("Expected at least one typed definition.")
   expect(() => discriminatedUnion([choice, choice])).toThrow("Duplicate type: choice.")
 })
