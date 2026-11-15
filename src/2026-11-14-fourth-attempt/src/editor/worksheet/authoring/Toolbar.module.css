@@ -21,7 +21,7 @@
 }
 
 .select {
-  min-width: 9rem;
+  width: 9rem;
 }
 
 .button svg {
@@ -45,7 +45,8 @@
   border-color: var(--color-accent);
 }
 
-.disabled {
+.disabled,
+.select:disabled {
   cursor: not-allowed;
   opacity: 0.45;
 }

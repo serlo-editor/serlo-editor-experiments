@@ -28,48 +28,48 @@ export function Toolbar({ editor }: { editor: Editor | null }) {
       aria-label="Formatting controls"
       onClick={() => setRevision((revision) => revision + 1)}
     >
-      {editor?.schema.nodes.paragraph && (
-        <select
-          className={styles.select}
-          aria-label="Text style"
-          value={style}
-          onChange={(event) => {
-            const value = event.currentTarget.value
-            execCommand(editor, "unwrapList")
-            if (value === "paragraph") execCommand(editor, "setParagraph")
-            else execCommand(editor, "setHeading", { level: Number(value) })
-            setRevision((revision) => revision + 1)
-          }}
-        >
-          <option value="paragraph">Text</option>
-          {editor.schema.nodes.heading &&
-            [1, 2, 3, 4, 5, 6].map((level) => (
-              <option key={level} value={level}>
-                Heading {level}
-              </option>
-            ))}
-          {listKind && (
-            <option value={listKind} disabled>
-              {listKind === "bullet" ? "Bullet list" : "Numbered list"}
+      <select
+        className={styles.select}
+        aria-label="Text style"
+        value={style}
+        disabled={!editor?.schema.nodes.paragraph}
+        onChange={(event) => {
+          const value = event.currentTarget.value
+          execCommand(editor, "unwrapList")
+          if (value === "paragraph") execCommand(editor, "setParagraph")
+          else execCommand(editor, "setHeading", { level: Number(value) })
+          setRevision((revision) => revision + 1)
+        }}
+      >
+        <option value="paragraph">Text</option>
+        {editor?.schema.nodes.heading &&
+          [1, 2, 3, 4, 5, 6].map((level) => (
+            <option key={level} value={level}>
+              Heading {level}
             </option>
-          )}
-        </select>
-      )}
-      {editor?.schema.nodes.list &&
-        [
-          { kind: "bullet", label: "Bullet list", icon: faListUl },
-          { kind: "ordered", label: "Numbered list", icon: faListOl },
-        ].map(({ kind, label, icon }) => (
-          <ToolbarButton
-            key={kind}
-            label={label}
-            isActive={isNodeActiveInEditor(editor, "list", { kind })}
-            canExec={canExecCommand(editor, "toggleList", { kind })}
-            onClick={() => execCommand(editor, "toggleList", { kind })}
-          >
-            <FontAwesomeIcon icon={icon} />
-          </ToolbarButton>
-        ))}
+          ))}
+        {listKind && (
+          <option value={listKind} disabled>
+            {listKind === "bullet" ? "Bullet list" : "Numbered list"}
+          </option>
+        )}
+      </select>
+      {[
+        { kind: "bullet", label: "Bullet list", icon: faListUl },
+        { kind: "ordered", label: "Numbered list", icon: faListOl },
+      ].map(({ kind, label, icon }) => (
+        <ToolbarButton
+          key={kind}
+          label={label}
+          isActive={editor ? isNodeActiveInEditor(editor, "list", { kind }) : false}
+          canExec={
+            Boolean(editor?.schema.nodes.list) && canExecCommand(editor, "toggleList", { kind })
+          }
+          onClick={() => execCommand(editor, "toggleList", { kind })}
+        >
+          <FontAwesomeIcon icon={icon} />
+        </ToolbarButton>
+      ))}
       <ToolbarButton
         label="Bold"
         isActive={isMarkActiveInEditor(editor, "bold")}
@@ -86,16 +86,14 @@ export function Toolbar({ editor }: { editor: Editor | null }) {
       >
         <FontAwesomeIcon icon={faItalic} />
       </ToolbarButton>
-      {canToggleGap ? (
-        <ToolbarButton
-          label="Gap"
-          isActive={isMarkActiveInEditor(editor, "gap")}
-          canExec={canToggleGap}
-          onClick={() => execCommand(editor, "toggleGap")}
-        >
-          <FontAwesomeIcon icon={faPuzzlePiece} />
-        </ToolbarButton>
-      ) : null}
+      <ToolbarButton
+        label="Gap"
+        isActive={isMarkActiveInEditor(editor, "gap")}
+        canExec={canToggleGap}
+        onClick={() => execCommand(editor, "toggleGap")}
+      >
+        <FontAwesomeIcon icon={faPuzzlePiece} />
+      </ToolbarButton>
     </div>
   )
 }

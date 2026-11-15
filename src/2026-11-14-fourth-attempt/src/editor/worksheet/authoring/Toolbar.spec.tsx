@@ -8,7 +8,7 @@ import { renderToStaticMarkup } from "react-dom/server"
 
 import { Toolbar } from "./Toolbar"
 
-test("shows only blocks available to focused editor", () => {
+test("keeps controls in place and disables unavailable controls", () => {
   const inline = createRichTextEditor({ definition: richText.inline({ marks: { bold: true } }) })
   const block = createRichTextEditor({
     definition: richText.block({ blocks: { paragraph: true, heading: true, bulletList: true } }),
@@ -16,12 +16,14 @@ test("shows only blocks available to focused editor", () => {
 
   const inlineMarkup = renderToStaticMarkup(<Toolbar editor={inline} />)
   const blockMarkup = renderToStaticMarkup(<Toolbar editor={block} />)
-  expect(inlineMarkup).not.toContain('aria-label="Text style"')
-  expect(inlineMarkup).not.toContain('aria-label="Bullet list"')
+  expect(inlineMarkup).toContain('aria-label="Text style" disabled=""')
+  expect(inlineMarkup).toContain('aria-label="Bullet list" aria-pressed="false" disabled=""')
+  expect(inlineMarkup).toContain('aria-label="Gap" aria-pressed="false" disabled=""')
   expect(blockMarkup).toContain('aria-label="Text style"')
   expect(blockMarkup).toContain('value="6">Heading 6</option>')
   expect(blockMarkup).toContain('aria-label="Bullet list"')
   expect(blockMarkup).toContain('aria-label="Numbered list"')
+  expect(blockMarkup).toContain('aria-label="Gap" aria-pressed="false" disabled=""')
 })
 
 test("style select and list buttons format selected block and reflect active kind", async () => {
