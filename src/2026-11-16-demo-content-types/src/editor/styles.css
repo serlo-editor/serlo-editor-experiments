@@ -1,0 +1,1171 @@
+@import "prosekit/basic/style.css";
+@import "prosekit/basic/typography.css";
+@import "prosekit/extensions/yjs/style.css";
+@import "@fontsource/inclusive-sans/400.css";
+@import "@fontsource/inclusive-sans/400-italic.css";
+@import "@fontsource/inclusive-sans/500.css";
+@import "@fontsource/inclusive-sans/700.css";
+
+:root {
+  --font-sans: "Inclusive Sans", sans-serif;
+  --color-page-bg: #ffffff;
+  --color-surface: #ffffff;
+  --color-surface-subtle: #faf8f7;
+  --color-border: #e5e5e5;
+  --color-border-focus: #d4d4d4;
+  --color-text: #202020;
+  --color-text-muted: #757575;
+  --color-accent: #5364c8;
+  --color-accent-contrast: #ffffff;
+  --color-lavender: #f4f4ff;
+  --space-1: 0.5rem;
+  --space-2: 1rem;
+  --space-3: 1.5rem;
+  --space-4: 2rem;
+  --radius-1: 0.5rem;
+  --radius-2: 0.75rem;
+  --radius-3: 1rem;
+  --shadow-1: 0 2px 4px rgb(0 0 0 / 10%);
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  background: var(--color-page-bg);
+}
+
+#root {
+  min-height: 100vh;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+}
+
+button,
+input[type="checkbox"],
+summary {
+  cursor: pointer;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.surface {
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2);
+}
+
+.editor-card {
+  width: 100%;
+  min-width: 0;
+  background: var(--color-surface);
+}
+
+.editor-card__title {
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
+  margin: 0 0 var(--space-3);
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-accent);
+}
+
+.editor-card__accent {
+  width: 0.5rem;
+  height: 0.5rem;
+  background: var(--accent-color);
+  border-radius: 50%;
+}
+
+.editor-frame {
+  background: var(--color-surface);
+  border: 0;
+  border-radius: 0;
+}
+
+.rich-text-field {
+  --toolbar-height: 2.625rem;
+  min-width: 0;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2);
+}
+
+/* thicker border on focus without shifting the layout */
+.rich-text-field:focus-within {
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 1px var(--color-border-focus);
+}
+
+/* reserves the toolbar's height at the bottom too, so the text sits centered */
+.rich-text-field__content {
+  padding: 0.75rem 1rem calc(0.75rem + var(--toolbar-height));
+  font-size: 1.125rem;
+}
+
+/* prosekit's typography fixes paragraphs to 16px */
+.rich-text-field__content .ProseMirror p {
+  font-size: inherit;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  min-height: var(--toolbar-height);
+  gap: 0.125rem;
+  align-items: center;
+  padding: 0.375rem 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* stays rendered so the field keeps its height, only hidden while unfocused */
+.rich-text-field:not(:focus-within) .toolbar {
+  visibility: hidden;
+}
+
+.toolbar__button {
+  display: grid;
+  padding: 0.375rem;
+  color: #525252;
+  background: transparent;
+  border: 0;
+  border-radius: 0.375rem;
+  place-items: center;
+}
+
+.toolbar__button svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.toolbar__button:hover:not(:disabled) {
+  background: #f5f5f5;
+}
+
+.toolbar__button--active {
+  color: #4338ca;
+  background: #eef2ff;
+}
+
+.toolbar__button--gap {
+  display: inline-flex;
+  gap: 0.375rem;
+  align-items: center;
+  margin-left: auto;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--color-accent);
+  background: var(--color-lavender);
+  border: 1px solid #b6bdeb;
+}
+
+.toolbar__button--gap:hover:not(:disabled) {
+  background: #e6e8fb;
+}
+
+.toolbar__button--gap.toolbar__button--active {
+  color: var(--color-accent-contrast);
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+}
+
+.toolbar__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.3;
+}
+
+.editor-content {
+  display: flex;
+  flex-direction: column;
+  gap: 3rem;
+  font-size: 1.05rem;
+  line-height: 1.6;
+}
+
+.editor-rich-text {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ProseMirror {
+  padding: 0;
+  outline: none;
+}
+
+/* collaborator's caret, tall enough to cover the glyphs of the line */
+.ProseMirror .ProseMirror-yjs-cursor {
+  height: 1.25em;
+}
+
+/* name label of a collaborator's cursor, sits directly on top of the caret */
+.ProseMirror .ProseMirror-yjs-cursor > div {
+  position: absolute;
+  top: auto;
+  bottom: 100%;
+  left: -2px;
+  padding: 0.125rem 0.375rem;
+  font-family: var(--font-sans);
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  border-radius: 0.25rem 0.25rem 0.25rem 0;
+}
+
+.editor-rich-text--inline {
+  display: block;
+  flex: 1;
+}
+
+.editor-content p {
+  margin: 0;
+}
+
+.exercise {
+  min-width: 0;
+  line-height: 1.5;
+}
+
+.exercise-badge {
+  display: inline-flex;
+  gap: 0.4rem;
+  align-items: center;
+  width: fit-content;
+  padding: 0.15rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--color-text-muted);
+  border: 1px solid #b9b9bd;
+  border-radius: 999px;
+}
+
+.exercise-badge__help {
+  display: inline-grid;
+  width: 0.85rem;
+  height: 0.85rem;
+  font-size: 0.65rem;
+  place-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+}
+
+.editor-content .exercise > .exercise-badge {
+  padding: 0;
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--color-accent);
+  border: 0;
+}
+
+.exercise__field-label {
+  margin: 1.75rem 0 0.8rem;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.exercise__field-label:has(+ .exercise__hint) {
+  margin-bottom: 0.25rem;
+}
+
+/* scoped to beat `.editor-content p` */
+.editor-content .exercise__hint {
+  margin: 0 0 1.25rem;
+  font-size: 0.875rem;
+  color: var(--color-text-muted);
+}
+
+.answer-list + .add-answer {
+  margin-top: 0.75rem;
+}
+
+.text-input {
+  width: 100%;
+  min-width: 0;
+  padding: 0.6rem 1rem;
+  font-size: 1.125rem;
+  color: var(--color-text);
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2);
+  outline: none;
+}
+
+.text-input:focus {
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 1px var(--color-border-focus);
+}
+
+.text-input--number {
+  width: 7rem;
+}
+
+.number-field {
+  display: inline-flex;
+  gap: 0.75rem;
+  align-items: center;
+  color: var(--color-text-muted);
+}
+
+.toggle {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.8rem;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+.toggle input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  accent-color: var(--color-accent);
+}
+
+/* picture with drop zones, shared by editor and learner preview */
+.zone-canvas {
+  position: relative;
+  overflow: hidden;
+  user-select: none;
+  border-radius: var(--radius-2);
+}
+
+.zone-canvas--editor {
+  cursor: crosshair;
+  touch-action: none;
+  border: 1px solid var(--color-border);
+}
+
+.zone-canvas__image {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+}
+
+.zone-canvas__blank {
+  aspect-ratio: 4 / 3;
+  background: #e8ecf8;
+}
+
+.zone {
+  position: absolute;
+  cursor: move;
+  background: rgb(99 102 241 / 18%);
+  border: 2px solid #6366f1;
+  border-radius: 0.375rem;
+}
+
+.zone--selected {
+  background: rgb(99 102 241 / 32%);
+  box-shadow: 0 0 0 2px #ffffff;
+}
+
+.zone--draft {
+  pointer-events: none;
+  border-style: dashed;
+}
+
+.zone__label {
+  position: absolute;
+  top: 0.25rem;
+  left: 0.25rem;
+  max-width: calc(100% - 0.5rem);
+  padding: 0.05rem 0.3rem;
+  overflow: hidden;
+  font-size: 0.7rem;
+  font-weight: 700;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  background: rgb(255 255 255 / 90%);
+  border-radius: 0.25rem;
+}
+
+.zone-panel {
+  padding: 1rem;
+  margin-top: 1rem;
+  background: var(--color-lavender);
+  border-radius: var(--radius-2);
+}
+
+.zone-panel__header {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.zone-panel__number {
+  display: grid;
+  flex-shrink: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #4338ca;
+  background: #e0e7ff;
+  border-radius: 50%;
+  place-items: center;
+}
+
+/* scoped to beat `.editor-content p` */
+.editor-content .zone-panel__label {
+  margin: 1rem 0 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.zone-panel .answer-input {
+  background: var(--color-surface);
+}
+
+.answer-input {
+  display: flex;
+  gap: var(--space-1);
+  align-items: center;
+  min-width: 0;
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+  font-size: 1.125rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-2);
+}
+
+.answer-input:focus-within {
+  border-color: var(--color-border-focus);
+  box-shadow: 0 0 0 1px var(--color-border-focus);
+}
+
+.answer-input__remove {
+  display: grid;
+  flex-shrink: 0;
+  padding: 0.5rem;
+  color: #737373;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  place-items: center;
+  transition:
+    background-color 150ms,
+    color 150ms;
+}
+
+.answer-input__remove:hover,
+.answer-input__remove:active {
+  color: #262626;
+  background: #eef2ff;
+}
+
+.answer-input__remove svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.exercise__question .rich-text-field__content {
+  min-height: 5.75rem;
+}
+
+.exercise--fill-blank > .rich-text-field {
+  margin-top: var(--space-3);
+}
+
+.ProseMirror .gap-mark {
+  display: inline-block;
+  min-width: 3rem;
+  padding: 0.15rem 0.5rem;
+  margin: 0 0.15rem;
+  color: var(--color-accent);
+  background: var(--color-lavender);
+  border: 1px solid #b6bdeb;
+  border-radius: var(--radius-1);
+}
+
+.answer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.answer-list li {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+}
+
+.answer-list .answer-input {
+  flex: 1;
+}
+
+/* fixed width, so toggling the label never resizes the answer input */
+.correctness-slot {
+  display: flex;
+  flex-shrink: 0;
+  width: 6rem;
+}
+
+.correctness {
+  display: inline-flex;
+  gap: 0.375rem;
+  align-items: center;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: #737373;
+  background: #f5f5f5;
+  border-radius: 0.375rem;
+  transition:
+    background-color 150ms,
+    color 150ms;
+}
+
+.correctness:hover {
+  color: #404040;
+  background: #e5e5e5;
+}
+
+.correctness:has(:focus-visible) {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
+}
+
+.correctness svg {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  stroke-width: 2;
+}
+
+.correctness--correct,
+.correctness--correct:hover {
+  color: #14532d;
+  background: #dcfce7;
+}
+
+.correctness--correct svg {
+  fill: #14532d;
+  stroke: #dcfce7;
+}
+
+.add-answer {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-text);
+  background: transparent;
+  border: 0;
+  border-radius: var(--radius-1);
+  transition: background-color 150ms;
+}
+
+.add-answer:hover,
+.add-answer:active {
+  background: #eef2ff;
+}
+
+.add-answer svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  color: #6366f1;
+  stroke-width: 1.75;
+}
+
+.extra-answers {
+  padding: 1.5rem;
+  margin-top: 2rem;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-3);
+}
+
+.extra-answers > .exercise__field-label:first-child {
+  margin-top: 0;
+}
+
+.extra-answers__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0;
+  margin: 0 0 1.5rem;
+  list-style: none;
+}
+
+.extra-answers__tag {
+  display: inline-flex;
+  gap: 0.25rem;
+  align-items: center;
+  padding: 0.25rem 0.25rem 0.25rem 0.75rem;
+  font-size: 1.125rem;
+  background: #f5f5f5;
+  border-radius: var(--radius-1);
+}
+
+.extra-answers__remove {
+  display: grid;
+  padding: 0.375rem;
+  color: #737373;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  place-items: center;
+}
+
+.extra-answers__remove:hover {
+  color: #262626;
+  background: #e5e5e5;
+}
+
+.extra-answers__remove svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+/* scoped to beat `.editor-content p` */
+.editor-content .extra-answers__label {
+  margin: 0 0 0.5rem;
+  font-weight: 700;
+}
+
+.extra-answers__row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  max-width: 28rem;
+}
+
+.extra-answers__add {
+  display: grid;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  color: #ffffff;
+  background: #4c60ba;
+  border: 0;
+  border-radius: 50%;
+  place-items: center;
+  transition: background-color 150ms;
+}
+
+.extra-answers__add:hover:not(:disabled) {
+  background: #3e4f9e;
+}
+
+.extra-answers__add:disabled {
+  cursor: not-allowed;
+  background: #d4d4d4;
+}
+
+.extra-answers__add svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+.toolbar__group {
+  display: flex;
+  gap: 0.125rem;
+  align-items: center;
+}
+
+.toolbar__divider {
+  width: 1px;
+  height: 1.25rem;
+  margin: 0 0.375rem;
+  background: var(--color-border);
+}
+
+.toolbar__menu {
+  position: relative;
+  margin-left: 0.375rem;
+}
+
+.toolbar__button--menu {
+  display: inline-flex;
+  gap: 0.125rem;
+  align-items: center;
+}
+
+.toolbar__button--menu svg:last-child {
+  width: 0.75rem;
+  height: 0.75rem;
+}
+
+.toolbar__menu-list {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  z-index: 5;
+  min-width: 14rem;
+  padding: 0.25rem;
+  margin: 0.25rem 0 0;
+  list-style: none;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-1);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 12%);
+}
+
+.toolbar__menu-item {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  width: 100%;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.875rem;
+  color: var(--color-text);
+  text-align: left;
+  background: transparent;
+  border: 0;
+  border-radius: 0.375rem;
+}
+
+.toolbar__menu-item:hover {
+  background: #f5f5f5;
+}
+
+.toolbar__menu-item svg {
+  width: 1rem;
+  height: 1rem;
+  color: #737373;
+}
+
+/* rich content, shared by the editor and the learner preview */
+.rich-text-field__content .ProseMirror > * + *,
+.preview-rich-text > * + * {
+  margin-top: 0.75em;
+}
+
+.rich-text-field__content .ProseMirror h1,
+.preview-rich-text h1 {
+  margin: 0;
+  font-size: 1.6em;
+  line-height: 1.25;
+}
+
+.rich-text-field__content .ProseMirror h2,
+.preview-rich-text h2 {
+  margin: 0;
+  font-size: 1.3em;
+  line-height: 1.3;
+}
+
+.rich-text-field__content .ProseMirror pre,
+.preview-rich-text pre {
+  padding: 0.75em 1em;
+  margin: 0;
+  overflow-x: auto;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.85em;
+  line-height: 1.5;
+  background: #f5f5f5;
+  border-radius: var(--radius-1);
+}
+
+.prosemirror-math-source code {
+  padding: 0 0.25em;
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 0.9em;
+  background: #eef2ff;
+  border-radius: 0.25rem;
+}
+
+.prosemirror-math-block .prosemirror-math-display,
+.preview-rich-text .prosemirror-math-block {
+  text-align: center;
+}
+
+.math-empty {
+  font-style: italic;
+  color: #9ca3af;
+}
+
+.rich-text-field__content table,
+.preview-rich-text table {
+  width: 100%;
+  overflow: hidden;
+  font-size: inherit;
+  line-height: 1.4;
+  table-layout: fixed;
+  border: 1px solid #c8c8cc;
+  border-spacing: 0;
+  border-collapse: separate;
+  border-radius: var(--radius-2);
+}
+
+.rich-text-field__content :is(td, th),
+.preview-rich-text :is(td, th) {
+  position: relative;
+  padding: 0.5em 0.6em;
+  text-align: left;
+  vertical-align: top;
+  border-right: 1px solid #d6d6da;
+  border-bottom: 1px solid #d6d6da;
+}
+
+.rich-text-field__content tr > :last-child,
+.preview-rich-text tr > :last-child {
+  border-right: none;
+}
+
+.rich-text-field__content tr:last-child > *,
+.preview-rich-text tr:last-child > * {
+  border-bottom: none;
+}
+
+.rich-text-field__content th,
+.preview-rich-text th {
+  font-weight: 600;
+  background: #f3f6fd;
+}
+
+.rich-text-field__content :is(td, th) p,
+.preview-rich-text :is(td, th) p {
+  margin: 0;
+}
+
+/* cell selection (drag across cells) */
+.ProseMirror .selectedCell::after {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  content: "";
+  background: rgb(99 102 241 / 12%);
+}
+
+.rich-text-field__content img,
+.preview-rich-text img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radius-1);
+}
+
+.embed iframe {
+  display: block;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border: 0;
+  border-radius: var(--radius-1);
+}
+
+.embed--geogebra iframe {
+  aspect-ratio: 4 / 3;
+}
+
+/* spoiler: a node view with a toggle in the editor, <details> in the preview */
+:root {
+  /* lets `height: auto` animate */
+  interpolate-size: allow-keywords;
+}
+
+.spoiler,
+.box {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid #c8c8cc;
+  border-radius: var(--radius-2);
+}
+
+.spoiler__title,
+.box__title {
+  position: relative;
+  min-height: 1.5em;
+  padding: 0.5em 0.8em;
+  margin: 0;
+  line-height: 1.5;
+  background: #f3f6fd;
+  border-bottom: 1px solid #e2e6f4;
+}
+
+.spoiler__title {
+  padding-left: 1.7em;
+  font-weight: 600;
+  list-style: none;
+  cursor: pointer;
+  transition: border-color 0.2s ease;
+}
+
+.spoiler__title::-webkit-details-marker {
+  display: none;
+}
+
+/* the disclosure triangle: a ::before of the summary in the preview, a button in the editor */
+summary.spoiler__title::before,
+.spoiler__toggle::before {
+  display: block;
+  width: 0;
+  height: 0;
+  content: "";
+  border-top: 0.29em solid transparent;
+  border-bottom: 0.29em solid transparent;
+  border-left: 0.38em solid currentColor;
+  transition: transform 0.2s ease;
+}
+
+summary.spoiler__title::before {
+  position: absolute;
+  top: 50%;
+  left: 0.7em;
+  transform: translateY(-50%);
+}
+
+details.spoiler[open] > summary.spoiler__title::before {
+  transform: translateY(-50%) rotate(90deg);
+}
+
+details.spoiler:not([open]) > .spoiler__title,
+.spoiler:not([data-open]) .spoiler__title {
+  border-bottom-color: transparent;
+}
+
+.spoiler__toggle {
+  position: absolute;
+  top: 0.5em;
+  left: 0.55em;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 1em;
+  height: 1.5em;
+  padding: 0;
+  color: inherit;
+  background: none;
+  border: 0;
+}
+
+.spoiler[data-open] > .spoiler__toggle::before {
+  transform: rotate(90deg);
+}
+
+.spoiler__content,
+.box__content {
+  padding: 0.6em 0.8em;
+}
+
+/* opening and closing slides the content out of and into the title */
+details.spoiler::details-content {
+  block-size: 0;
+  overflow: hidden;
+  transition:
+    block-size 0.2s ease,
+    content-visibility 0.2s allow-discrete;
+}
+
+details.spoiler[open]::details-content {
+  block-size: auto;
+}
+
+.ProseMirror .spoiler__content {
+  height: auto;
+  overflow: hidden;
+  transition:
+    height 0.2s ease,
+    padding 0.2s ease;
+}
+
+.ProseMirror .spoiler:not([data-open]) .spoiler__content {
+  height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.spoiler__content > * + *,
+.box__content > * + * {
+  margin-top: 0.75em;
+}
+
+/* the title bar keeps its height without a title, and contains the floated badge */
+.box__title {
+  display: flow-root;
+  min-height: calc(1.5em + 1em);
+  font-weight: 400;
+}
+
+/* placeholder for an empty title */
+.ProseMirror :is(.spoiler__title, .box__title):has(> br:only-child)::after {
+  position: absolute;
+  top: 0.5em;
+  pointer-events: none;
+  content: "Titel";
+  font-weight: 400;
+  color: #b4bbe3;
+}
+
+/* room for the type picker, which is not part of the title */
+.ProseMirror .box__title {
+  padding-right: 10rem;
+}
+
+.box__picker {
+  position: absolute;
+  top: 0.5em;
+  right: 0.6em;
+  z-index: 1;
+  display: flex;
+  gap: 0.3rem;
+  align-items: center;
+  height: 1.5em;
+  color: #4f46e5;
+}
+
+.box__picker-icon {
+  display: flex;
+}
+
+.box__picker svg {
+  width: 1rem;
+  height: 1rem;
+}
+
+.box__picker select {
+  padding: 0.1rem 0.3rem;
+  font-size: 0.75rem;
+  color: #525252;
+  background: rgb(255 255 255 / 80%);
+  border: 1px solid #c7d2fe;
+  border-radius: 0.375rem;
+}
+
+/* the type badge, floated so the title text flows around it */
+.box__badge {
+  display: flex;
+  float: right;
+  gap: 0.3em;
+  align-items: center;
+  height: 1.5em;
+  margin-left: 0.8em;
+  font-size: 0.85em;
+  line-height: 1;
+  color: #4f46e5;
+  user-select: none;
+}
+
+.box__badge svg {
+  width: 1.1em;
+  height: 1.1em;
+}
+
+/* images and embeds: an editing card in the editor, the media itself in the preview */
+.media-card {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  padding: 0.6rem;
+  font-size: 1rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: var(--radius-2);
+}
+
+.media-card--selected {
+  outline: 2px solid #c7d2fe;
+  outline-offset: 2px;
+}
+
+.media-card__thumbnail {
+  display: flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 7rem;
+  overflow: hidden;
+  aspect-ratio: 16 / 9;
+  color: #9ca3af;
+  background: #e5e7eb;
+  border-radius: var(--radius-1);
+}
+
+.media-card__thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 0;
+}
+
+.media-card__thumbnail svg {
+  width: 1.75rem;
+  height: 1.75rem;
+}
+
+.media-card__fields {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.media-card__label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.media-card__input {
+  width: 100%;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.875rem;
+  color: #374151;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.375rem;
+  outline: none;
+}
+
+.media-card__input:focus {
+  border-color: #c7d2fe;
+  box-shadow: 0 0 0 2px #e0e7ff;
+}
+
+.media-card__hint {
+  font-size: 0.75rem;
+  color: #b45309;
+}
+
+.media-card__remove {
+  display: grid;
+  flex: none;
+  align-self: flex-start;
+  padding: 0.25rem;
+  color: #9ca3af;
+  background: transparent;
+  border: 0;
+  border-radius: 50%;
+  place-items: center;
+}
+
+.media-card__remove:hover {
+  color: #b91c1c;
+  background: #fee2e2;
+}
+
+.media-card__remove svg {
+  width: 1rem;
+  height: 1rem;
+}

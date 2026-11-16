@@ -1,0 +1,202 @@
+import { createRichTextEditor, type RichTextEditor } from "@editor/rich-text"
+import type { JSONValue } from "@editor/utils"
+import { defineMountHandler } from "prosekit/core"
+import { type Awareness, defineYjs } from "prosekit/extensions/yjs"
+import { prosemirrorToYXmlFragment, yXmlFragmentToProseMirrorRootNode } from "y-prosemirror"
+import * as Y from "yjs"
+
+import { ChangeTracker } from "./change-tracker.ts"
+import { createEditorSpecificAwareness } from "./editor-awareness.ts"
+import type { NodeKind, NodeStore, NodeWriter, Ref, RichTextId } from "./types.ts"
+import { withWriter } from "./writer.ts"
+
+type YArray = Y.Array<YjsNodeRef>
+type YMap = Y.Map<YjsNodeRef>
+
+type YjsNodeRefs = { cell: Y.Map<JSONValue> & Ref; array: YArray & Ref; map: YMap & Ref }
+type YjsNodeRef = YjsNodeRefs[NodeKind]
+
+type YjsNodeStoreContract = NodeStore<YjsNodeRefs>
+
+export class YjsNodeStore implements YjsNodeStoreContract {
+  private readonly rootName: string
+  private readonly richTextPrefix: string
+  private readonly doc: Y.Doc
+  private readonly awareness: Awareness
+  private readonly editors = new Map<RichTextId, RichTextEditor>()
+  private readonly changes = new ChangeTracker()
+  private readonly onAfterTransaction = (transaction: Y.Transaction) => {
+    if (this.hasStorageChanges(transaction)) this.changes.publish()
+  }
+
+  /** storeName identifies one logical store; shared Y.Doc still shares sync and access policy. */
+  constructor(args: { awareness: Awareness; doc: Y.Doc; storeName: string }) {
+    this.rootName = `${args.storeName}:root`
+    this.richTextPrefix = `${args.storeName}:rich-text:`
+    this.doc = args.doc
+    this.awareness = args.awareness
+
+    // Store follows document lifetime; track local and remote changes without subscribers.
+    this.doc.on("afterTransaction", this.onAfterTransaction)
+  }
+
+  readonly cell: YjsNodeStoreContract["cell"] = {
+    create: (value) => new Y.Map<JSONValue>([["value", value]]) as YjsNodeRefs["cell"],
+    get: (ref) => {
+      const value = ref.get("value")
+      if (value === undefined) {
+        throw new Error("Cell value absent.")
+      }
+      return value
+    },
+  }
+
+  readonly array: YjsNodeStoreContract["array"] = {
+    create: (items) => Y.Array.from([...items]) as YjsNodeRefs["array"],
+    get: (ref) => ref.toArray(),
+  }
+
+  readonly map: YjsNodeStoreContract["map"] = {
+    create: (fields) => new Y.Map<YjsNodeRef>(Object.entries(fields)) as YjsNodeRefs["map"],
+    get: (ref) => Object.fromEntries(ref.entries()),
+    getField: (ref, field) => ref.get(field),
+  }
+
+  readonly editor: YjsNodeStoreContract["editor"] = {
+    create: (options) => {
+      // Validate against the combined schema before writing anything to Yjs.
+      const editor = createRichTextEditor(options)
+      editor.state.doc.check()
+      const id: RichTextId = `rich-text:${crypto.randomUUID()}`
+      this.transact(() => {
+        prosemirrorToYXmlFragment(editor.state.doc, this.doc.getXmlFragment(this.fragmentName(id)))
+      })
+      return id
+    },
+
+    get: (id, config) => {
+      const name = this.fragmentName(id)
+      if (!this.doc.share.has(name)) throw new Error(`Unknown rich-text ID: ${id}.`)
+      const fragment = this.doc.getXmlFragment(name)
+      let editor = this.editors.get(id)
+      if (!editor) {
+        editor = createRichTextEditor({
+          ...config,
+          extensions: [
+            ...(config.extensions ?? []),
+            defineYjs({
+              doc: this.doc,
+              fragment,
+              awareness: createEditorSpecificAwareness(`${this.rootName}:${id}`, this.awareness),
+            }),
+            defineSafeYjsTeardown(),
+          ],
+        })
+        this.editors.set(id, editor)
+      }
+
+      refreshUnmountedEditor(editor, fragment)
+      return editor
+    },
+  }
+
+  readonly root: YjsNodeStoreContract["root"] = {
+    getOrCreate: (create) =>
+      this.transact(
+        (write) =>
+          this.doc.getMap<YjsNodeRef>(this.rootName).get("value") ?? write.root.save(create()),
+      ),
+  }
+
+  getRevision(): number {
+    return this.changes.getRevision()
+  }
+
+  subscribe(listener: () => void): () => void {
+    return this.changes.subscribe(listener)
+  }
+
+  dispose(): void {
+    this.doc.off("afterTransaction", this.onAfterTransaction)
+    for (const editor of this.editors.values()) editor.unmount()
+    this.editors.clear()
+    this.changes.dispose()
+  }
+
+  transact<T>(callback: (write: NodeWriter<YjsNodeRefs>) => T): T {
+    return this.doc.transact(() => withWriter(this.writer, callback), this)
+  }
+
+  private readonly writer: NodeWriter<YjsNodeRefs> = {
+    cell: {
+      set: (ref, value) => {
+        if (!Object.is(ref.get("value"), value)) ref.set("value", value)
+      },
+    },
+    array: {
+      remove: (ref, index) => ref.delete(index, 1),
+      insert: (ref, index, item) => ref.insert(index, [item]),
+    },
+    map: {
+      set: (ref, field, item) => {
+        if (ref.get(field) !== item) ref.set(field, item)
+      },
+      remove: (ref, field) => {
+        ref.delete(field)
+      },
+    },
+    root: {
+      save: (ref) => {
+        const root = this.doc.getMap<YjsNodeRef>(this.rootName)
+        if (root.get("value") !== ref) root.set("value", ref)
+        return ref
+      },
+    },
+  }
+
+  private fragmentName(id: RichTextId): string {
+    return `${this.richTextPrefix}${id}`
+  }
+
+  private hasStorageChanges(transaction: Y.Transaction): boolean {
+    for (const [name, type] of this.doc.share) {
+      if (
+        (name === this.rootName || name.startsWith(this.richTextPrefix)) &&
+        (transaction.changed.has(type) || transaction.changedParentTypes.has(type))
+      ) {
+        return true
+      }
+    }
+    return false
+  }
+}
+
+function defineSafeYjsTeardown() {
+  // y-prosemirror 1.3.7 can dispatch queued cursor metadata after teardown.
+  return defineMountHandler((view) => {
+    const dispatch = view.dispatch.bind(view)
+    view.dispatch = (transaction) => {
+      if (!view.isDestroyed) dispatch(transaction)
+    }
+  })
+}
+
+function refreshUnmountedEditor(editor: RichTextEditor, fragment: Y.XmlFragment): void {
+  if (editor.mounted) return
+
+  // Yjs view bindings are inactive while unmounted. Refresh local state only;
+  // opening/snapshotting must never initialize or overwrite the shared fragment.
+  const currentDoc =
+    fragment.length === 0
+      ? editor.schema.topNodeType.createAndFill()
+      : yXmlFragmentToProseMirrorRootNode(fragment, editor.schema)
+  if (!currentDoc) throw new Error("Cannot create empty rich-text document.")
+  currentDoc.check()
+  if (!editor.state.doc.eq(currentDoc)) {
+    editor.updateState(
+      editor.state.apply(
+        editor.state.tr.replaceWith(0, editor.state.doc.content.size, currentDoc.content),
+      ),
+    )
+  }
+}
